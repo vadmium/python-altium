@@ -38,7 +38,8 @@ Common data types represented by properties:
 * Strings (eParameterType_String):
     Most properties are directly decodable as ASCII strings,
     although the byte 0x8E has been seen bracketing parts of some strings
-* Integers (eParameterType_Integer): `|RECORD=31`, `|OWNERPARTID=-1`
+* Integers (eParameterType_Integer): `|RECORD=31`, `|OWNERPARTID=-1`.
+    Default value if property is missing seems to be 0.
     * Enumerated types: `|RECORD=1`/`2`/. . ., `|RECORD=17|STYLE=1`/`2`/. . .
     * Bitfields:
         `|COLOR=8388608` (= 0x800000), `|PINCONGLOMERATE=58` (= 0x3A)
@@ -49,7 +50,7 @@ Common data types represented by properties:
             * 16–23: Blue
 * Fixed point numbers (eParameterType_Float): `|ENDANGLE=360.000`
 * Boolean (eParameterType_Boolean): `|ISHIDDEN=T|PARTIDLOCKED=F`
-* Co-ordinate pairs: `|LOCATION.X=200|LOCATION.Y=100`.
+* Co-ordinate pairs (points): `|LOCATION.X=200|LOCATION.Y=100`.
     The _y_ values increase from bottom to top.
 * Lists:
     `|FONTIDCOUNT=2|SIZE1=10|FONTNAME1=`. . .`|SIZE2=10|FONTNAME2=`. . .
@@ -59,12 +60,15 @@ Common data types represented by properties:
 
 * TRotateBy90: 0 is default (rightwards)
 
+Each item in the "FileHeader" stream describes an object.
 The first object is a header object with the following properties:
 * `|HEADER=Protel for Windows - Schematic Capture Binary File Version 5.0`
 * `|WEIGHT=`_integer_: number of remaining objects
 
 All subsequent objects are indexed starting from zero.
 The type of these objects is identified by their `|RECORD` properties.
+
+If a proprterty is given with a value below, that documents the value I have seen used for it
 
 ## `|RECORD=1` (Schematic Component) ##
 Set up component part.
@@ -163,19 +167,22 @@ Polygon for component symbol
 * `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .
 
 ## `|RECORD=8` (Ellipse) ##
-Circle
-* `|OWNERINDEX|ISNOTACCESIBLE=T|OWNERPARTID=1|LOCATION.X|LOCATION.Y|RADIUS`
+Inherits Circle properties
+* `|RADIUS`
 * `|RADIUS_FRAC=94381`: Optional
 * `|SECONDARYRADIUS`
 * `|SECONDARYRADIUS_FRAC`: Optional
 * `|COLOR|AREACOLOR|ISSOLID=T`
+
+Circle:
+* `|OWNERINDEX|ISNOTACCESIBLE=T|OWNERPARTID=1|LOCATION.X|LOCATION.Y`
 
 ## `|RECORD=10` (Round Rectangle) ##
 As for Rectangle; additionally:
 * `|CORNERXRADIUS|CORNERYRADIUS`
 
 ## `|RECORD=11` (Elliptical Arc)
-As for Arc; additionally:
+Inherits Arc properties
 * `|SECONDARYRADIUS`: Radius along _x_ axis; `|RADIUS` is along _y_ axis
 
 ## `|RECORD=12` (Arc) ##
@@ -302,7 +309,7 @@ Text box
 * `|Text`: Special code “`~1`” starts a new line
 
 ## `|RECORD=29` (Junction) ##
-Junction of connected pins, wires, etc, represented by a dot
+Junction of connected pins, wires, etc, sometimes represented by a dot
 * `|INDEXINSHEET=-1`: Optional
 * `|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.Y`
@@ -326,7 +333,8 @@ First object after the header object
     * 1 (eSheetA4): “A3”, 1550 × 1150
     * 5 (eSheetA): “A”, 950 × 760
 * `|SYSTEMFONT=1|BORDERON=T`
-* `|TITLEBLOCKON=T`: Optional. Enables the rectangle with title, etc details.
+* `|TITLEBLOCKON=T`:
+    Optional. Enables the rectangle with title, etc, details.
 * `|SHEETNUMBERSPACESIZE=4`
 * `|AREACOLOR=16317695` (= #FFFCF8)
 * `|SNAPGRIDON=T|SNAPGRIDSIZE|VISIBLEGRIDON=T|VISIBLEGRIDSIZE=10`
