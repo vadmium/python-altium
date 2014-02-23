@@ -40,17 +40,8 @@ class Renderer(base.Renderer):
             css.append("{} {{\n{}}}\n".format(selector, rules))
         self.tree(("style", dict(type="text/css"), css))
     
-    def addobjects(self, objects):
-        with self.element("defs", dict()):
-            for d in objects:
-                with self.element("g", dict(id=d.__name__)):
-                    d(self)
-    
-    def draw(self, object, offset):
-        attrs = {"xlink:href": "#{}".format(object.__name__)}
-        if offset:
-            attrs.update(zip("xy", map(format, offset)))
-        self.emptyelement("use", attrs)
+    def finish(self):
+        self.xml.endElement("svg")
     
     def line(self, a=None, b=None, *pos, **kw):
         attrs = dict()
@@ -116,8 +107,17 @@ class Renderer(base.Renderer):
             attrs.update(zip("xy", map(format, start)))
         self.emptyelement("rect", attrs)
     
-    def finish(self):
-        self.xml.endElement("svg")
+    def addobjects(self, objects):
+        with self.element("defs", dict()):
+            for d in objects:
+                with self.element("g", dict(id=d.__name__)):
+                    d(self)
+    
+    def draw(self, object, offset=None):
+        attrs = {"xlink:href": "#{}".format(object.__name__)}
+        if offset:
+            attrs.update(zip("xy", map(format, offset)))
+        self.emptyelement("use", attrs)
     
     @contextmanager
     def offset(self, offset):
