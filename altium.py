@@ -250,12 +250,9 @@ def main(filename):
     for obj in objects:
         if (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR"} and
         obj["RECORD"] == b"29" and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
-            attrs = {"r": "2", "class": "solid"}
-            for x in range(2):
-                location = int(obj["LOCATION." + "XY"[x]])
-                attrs["c" + "xy"[x]] = format(location * (1, -1)[x])
-            attrs.update(color=colour(obj["COLOR"]))
-            renderer.emptyelement("circle", attrs)
+            location = (int(obj["LOCATION." + x]) for x in "XY")
+            col = colour(obj["COLOR"])
+            renderer.circle(2, location, colour=col)
         
         elif (obj.keys() - {"INDEXINSHEET", "IOTYPE", "ALIGNMENT"} == {"RECORD", "OWNERPARTID", "STYLE", "WIDTH", "LOCATION.X", "LOCATION.Y", "COLOR", "AREACOLOR", "TEXTCOLOR", "NAME", "UNIQUEID"} and
         obj["RECORD"] == Record.PORT and obj["OWNERPARTID"] == b"-1"):
@@ -265,12 +262,15 @@ def main(filename):
             else:
                 points = "0,-5 {xx},-5 {x},0 {xx},+5 0,+5".format(x=width, xx=width - 5)
             shapeattrs = {
-                "stroke": colour(obj["COLOR"]),
-                "fill": colour(obj["AREACOLOR"]),
                 "style": "stroke-width: 0.6",
                 "points": points,
             }
-            labelattrs = dict(color=colour(obj["TEXTCOLOR"]))
+            renderer._colour(shapeattrs, colour(obj["COLOR"]))
+            shapeattrs["stroke"] = shapeattrs.pop("color")
+            renderer._colour(shapeattrs, colour(obj["AREACOLOR"]))
+            shapeattrs["fill"] = shapeattrs.pop("color")
+            labelattrs = dict()
+            renderer._colour(labelattrs, colour(obj["TEXTCOLOR"]))
             if (obj.get("ALIGNMENT") == b"2") ^ (obj["STYLE"] != b"7"):
                 labelattrs["x"] = "10"
                 anchor = "start"
@@ -293,8 +293,8 @@ def main(filename):
             points = list()
             for location in range(int(obj["LOCATIONCOUNT"])):
                 location = format(1 + location)
-                points.append(",".join(format(int(obj["XY"[x] + location]) * (1, -1)[x]) for x in range(2)))
-            renderer.emptyelement("polyline", dict(color=colour(obj["COLOR"]), points=" ".join(points)))
+                points.append(tuple(int(obj[x + location]) for x in "XY"))
+            renderer.polyline(points, colour=colour(obj["COLOR"]))
         elif (obj.keys() == {"RECORD", "OWNERINDEX"} and
         obj["RECORD"] in {b"46", b"48", b"44"} or
         obj.keys() - {"USECOMPONENTLIBRARY", "DESCRIPTION", "DATAFILECOUNT", "MODELDATAFILEENTITY0", "MODELDATAFILEKIND0", "DATALINKSLOCKED", "DATABASEDATALINKSLOCKED", "ISCURRENT", "INDEXINSHEET", "INTEGRATEDMODEL", "DATABASEMODEL"} == {"RECORD", "OWNERINDEX", "MODELNAME", "MODELTYPE"} and
@@ -332,7 +332,7 @@ def main(filename):
                         break
                     else:
                         raise LookupError("Parameter value for |OWNERINDEX={}|TEXT={}".format(obj["OWNERINDEX"].decode("ascii"), obj["TEXT"].decode("ascii")))
-                    attrs.update(color=colour(obj["COLOR"]))
+                    renderer._colour(attrs, colour(obj["COLOR"]))
                     transforms.insert(0, "translate({})".format(", ".join(format(int(obj["LOCATION." + "XY"[x]]) * (1, -1)[x]) for x in range(2))))
                     attrs["transform"] = " ".join(transforms)
                     attrs["class"] = "font" + obj["FONTID"].decode("ascii")
@@ -346,7 +346,8 @@ def main(filename):
             owner = objects[1 + int(obj["OWNERINDEX"])]
             if int(owner["PARTCOUNT"]) > 2:
                 desig += chr(ord("A") + int(owner["CURRENTPARTID"]) - 1)
-            attrs = dict(color=colour(obj["COLOR"]))
+            attrs = dict()
+            renderer._colour(attrs, colour(obj["COLOR"]))
             attrs["class"] = "font" + obj["FONTID"].decode()
             attrs.update(("xy"[x], format(int(obj["LOCATION." + "XY"[x]]) * (1, -1)[x])) for x in range(2))
             renderer.tree(("text", attrs, (desig,)))
@@ -367,11 +368,12 @@ def main(filename):
             owner = objects[1 + int(obj["OWNERINDEX"])]
             if (obj["OWNERPARTID"] == owner["CURRENTPARTID"] and
             obj.get("OWNERPARTDISPLAYMODE", b"0") == owner.get("DISPLAYMODE", b"0")):
-                attrs = dict(color=colour(obj["COLOR"]), style="stroke-width: {}".format(int(obj["LINEWIDTH"])))
-                for x in range(2):
-                    attrs["xy"[x] + "1"] = format(int(obj["LOCATION." + "XY"[x]]) * (1, -1)[x])
-                    attrs["xy"[x] + "2"] = format(int(obj["CORNER." + "XY"[x]]) * (1, -1)[x])
-                renderer.emptyelement("line", attrs)
+                renderer.line(
+                    colour=colour(obj["COLOR"]),
+                    width=int(obj["LINEWIDTH"]),
+                    a=(int(obj["LOCATION." + x]) for x in "XY"),
+                    b=(int(obj["CORNER." + x]) for x in "XY"),
+                )
         
         elif (obj.keys() - {"NAME", "SWAPIDPIN", "OWNERPARTDISPLAYMODE", "ELECTRICAL", "DESCRIPTION", "SWAPIDPART", "SYMBOL_OUTEREDGE"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "DESIGNATOR", "FORMALTYPE", "LOCATION.X", "LOCATION.Y", "PINCONGLOMERATE", "PINLENGTH"} and
         obj["RECORD"] == Record.PIN and obj["FORMALTYPE"] == b"1"):
@@ -431,7 +433,10 @@ def main(filename):
                 (marker, offset) = {PowerObjectStyle.ARROW: ("arrow", 12), PowerObjectStyle.BAR: ("rail", 12), PowerObjectStyle.GND: ("gnd", 20)}.get(obj["STYLE"], (None, 0))
             location = tuple(int(obj["LOCATION." + "XY"[x]]) for x in range(2))
             
-            with renderer.element("g", dict(color=colour(obj["COLOR"]), transform="translate({})".format(", ".join(format(location[x] * (+1, -1)[x]) for x in range(2))))):
+            a = dict()
+            renderer._colour(a, colour(obj["COLOR"]))
+            a["transform"] = "translate({})".format(", ".join(format(location[x] * (+1, -1)[x]) for x in range(2)))
+            with renderer.element("g", a):
                 attrs = {"xlink:href": "#{}".format(marker)}
                 if orient:
                     attrs.update(transform="rotate({})".format({b"2": 180, b"3": 90, b"1": 270}[orient]))
@@ -454,9 +459,12 @@ def main(filename):
             owner = objects[1 + int(obj["OWNERINDEX"])]
             if (obj["OWNERPARTID"] == owner["CURRENTPARTID"] and
             obj.get("OWNERPARTDISPLAYMODE", b"0") == owner.get("DISPLAYMODE", b"0")):
-                attrs = {"style": "stroke-width: 0.6", "stroke": colour(obj["COLOR"])}
+                attrs = {"style": "stroke-width: 0.6"}
+                renderer._colour(attrs, colour(obj["COLOR"]))
+                attrs["stroke"] = attrs.pop("color")
                 if "ISSOLID" in obj:
-                    attrs["fill"] = colour(obj["AREACOLOR"])
+                    renderer._colour(attrs, colour(obj["AREACOLOR"]))
+                    attrs["fill"] = attrs.pop("color")
                 else:
                     attrs["fill"] = "none"
                 topleft = tuple(int(obj[("LOCATION.X", "CORNER.Y")[x]]) * (+1, -1)[x] for x in range(2))
@@ -470,7 +478,8 @@ def main(filename):
         
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERPARTID", "COLOR", "FONTID", "LOCATION.X", "LOCATION.Y", "TEXT"} and
         obj["RECORD"] == Record.NET_LABEL and obj["OWNERPARTID"] == b"-1"):
-            attrs = dict(color=colour(obj["COLOR"]))
+            attrs = dict()
+            renderer._colour(attrs, colour(obj["COLOR"]))
             attrs["transform"] = "translate({})".format(", ".join(format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x]) for x in range(2)))
             attrs["class"] = "font" + obj["FONTID"].decode("ascii")
             renderer.tree(("text", attrs, overline(obj["TEXT"])))
@@ -488,7 +497,7 @@ def main(filename):
                     for x in range(2):
                         location = int(obj["LOCATION." + "XY"[x]])
                         attrs["c" + "xy"[x]] = format(location * (+1, -1)[x])
-                    attrs.update(color=colour(obj["COLOR"]))
+                    renderer._colour(attrs, colour(obj["COLOR"]))
                     renderer.emptyelement("circle", attrs)
                 else:
                     r2 = obj.get("SECONDARYRADIUS")
@@ -505,22 +514,26 @@ def main(filename):
                         a.append(format((int(obj["LOCATION." + "XY"[x]]) + da * r[x]) * (+1, -1)[x]))
                         d.append(format((db - da) * r[x] * (+1, -1)[x]))
                     large = (endangle - startangle) % 360 > 180
-                    renderer.emptyelement("path", dict(color=colour(obj["COLOR"]), d="M{a} a{r} 0 {large:d},0 {d}".format(a=",".join(a), r=",".join(map(format, r)), large=large, d=",".join(d))))
+                    at = dict()
+                    renderer._colour(at, colour(obj["COLOR"]))
+                    at["d"] = "M{a} a{r} 0 {large:d},0 {d}".format(a=",".join(a), r=",".join(map(format, r)), large=large, d=",".join(d))
+                    renderer.emptyelement("path", at)
         
         elif (obj.keys() - {"INDEXINSHEET", "LINEWIDTH"} > {"RECORD", "AREACOLOR", "COLOR", "ISNOTACCESIBLE", "ISSOLID", "LOCATIONCOUNT", "OWNERINDEX", "OWNERPARTID"} and
-        obj["RECORD"] == b"7" and obj["AREACOLOR"] == b"16711680" and obj["ISNOTACCESIBLE"] == b"T" and obj["ISSOLID"] == b"T" and obj.get("LINEWIDTH", b"1") == b"1" and obj["OWNERPARTID"] == b"1"):
+        obj["RECORD"] == Record.POLYGON and obj["AREACOLOR"] == b"16711680" and obj["ISNOTACCESIBLE"] == b"T" and obj["ISSOLID"] == b"T" and obj.get("LINEWIDTH", b"1") == b"1" and obj["OWNERPARTID"] == b"1"):
             points = list()
             for location in range(int(obj["LOCATIONCOUNT"])):
                 location = format(1 + location)
-                points.append(",".join(format(int(obj["XY"[x] + location]) * (1, -1)[x]) for x in range(2)))
-            renderer.emptyelement("polygon", {"class": "solid", "color": colour(obj["COLOR"]), "points": " ".join(points)})
+                points.append(tuple(int(obj[x + location]) for x in "XY"))
+            renderer.polygon(colour=colour(obj["COLOR"]), points=points)
         elif (obj.keys() - {"INDEXINSHEET", "ISNOTACCESIBLE", "OWNERINDEX", "ORIENTATION", "JUSTIFICATION", "COLOR"} == {"RECORD", "FONTID", "LOCATION.X", "LOCATION.Y", "OWNERPARTID", "TEXT"} and
         obj["RECORD"] == Record.LABEL):
             if obj["OWNERPARTID"] == b"-1" or obj["OWNERPARTID"] == objects[1 + int(obj["OWNERINDEX"])]["CURRENTPARTID"]:
                 text(renderer, obj)
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "COLOR", "LOCATION.X", "LOCATION.Y", "OWNERPARTID"} and
         obj["RECORD"] == b"22" and obj["OWNERPARTID"] == b"-1"):
-            attrs = {"xlink:href": "#nc", "color": colour(obj["COLOR"])}
+            attrs = {"xlink:href": "#nc"}
+            renderer._colour(attrs, colour(obj["COLOR"]))
             for x in range(2):
                 location = int(obj["LOCATION." + "XY"[x]])
                 attrs["xy"[x]] = format(location * (1, -1)[x])
@@ -538,28 +551,35 @@ def main(filename):
         
         elif (obj.keys() == {"RECORD", "OWNERINDEX", "ISNOTACCESIBLE", "OWNERPARTID", "LINEWIDTH", "COLOR", "LOCATIONCOUNT", "X1", "Y1", "X2", "Y2", "X3", "Y3", "X4", "Y4"} and
         obj["RECORD"] == Record.BEZIER and obj["ISNOTACCESIBLE"] == b"T" and obj["OWNERPARTID"] == b"1" and obj["LINEWIDTH"] == b"1" and obj["LOCATIONCOUNT"] == b"4"):
-            renderer.emptyelement("path", dict(color=colour(obj["COLOR"]), d="M{} C {} {} {}".format(*(",".join(format(int(obj["XY"[x] + format(1 + n)]) * (+1, -1)[x]) for x in range(2)) for n in range(4)))))
+            a = dict()
+            renderer._colour(a, colour(obj["COLOR"]))
+            a["d"] = "M{} C {} {} {}".format(*(",".join(format(int(obj["XY"[x] + format(1 + n)]) * (+1, -1)[x]) for x in range(2)) for n in range(4)))
+            renderer.emptyelement("path", a)
         
         elif (obj.keys() - {"RADIUS_FRAC", "SECONDARYRADIUS_FRAC"} == {"RECORD", "OWNERINDEX", "ISNOTACCESIBLE", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "RADIUS", "SECONDARYRADIUS", "COLOR", "AREACOLOR", "ISSOLID"} and
         obj["RECORD"] == Record.ELLIPSE and obj["ISNOTACCESIBLE"] == b"T" and obj.get("RADIUS_FRAC", b"94381") == b"94381" and obj["SECONDARYRADIUS"] == obj["RADIUS"] and obj.get("SECONDARYRADIUS_FRAC", b"22993") == b"22993" and obj["ISSOLID"] == b"T"):
             attrs = {
-                "stroke": colour(obj["COLOR"]),
-                "fill": colour(obj["AREACOLOR"]),
                 "r": obj["RADIUS"].decode("ascii"),
                 "stroke-width": "0.6",
             }
+            renderer._colour(attrs, colour(obj["COLOR"]))
+            attrs["stroke"] = attrs.pop("color")
+            renderer._colour(attrs, colour(obj["AREACOLOR"]))
+            attrs["fill"] = attrs.pop("color")
             attrs.update(("c" + "xy"[x], format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x])) for x in range(2))
             renderer.emptyelement("circle", attrs)
         
         elif (obj.keys() - {"INDEXINSHEET", "SYMBOLTYPE"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "XSIZE", "YSIZE", "COLOR", "AREACOLOR", "ISSOLID", "UNIQUEID"} and
         obj["RECORD"] == Record.SHEET_SYMBOL and obj["OWNERPARTID"] == b"-1" and obj["ISSOLID"] == b"T" and obj.get("SYMBOLTYPE", b"Normal") == b"Normal"):
             attrs = {
-                "stroke": colour(obj["COLOR"]),
-                "fill": colour(obj["AREACOLOR"]),
                 "width": obj["XSIZE"].decode("ascii"),
                 "height": obj["YSIZE"].decode("ascii"),
                 "style": "stroke-width: 0.6",
             }
+            renderer._colour(attrs, colour(obj["COLOR"]))
+            attrs["stroke"] = attrs.pop("color")
+            renderer._colour(attrs, colour(obj["AREACOLOR"]))
+            attrs["fill"] = attrs.pop("color")
             attrs.update(("xy"[x], format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x])) for x in range(2))
             renderer.emptyelement("rect", attrs)
         
@@ -581,13 +601,13 @@ def main(filename):
     renderer.finish()
 
 def colour(c):
-    return "#" + "".join(map("{:02X}".format, int(c).to_bytes(3, "little")))
+    return (x / 0xFF for x in int(c).to_bytes(3, "little"))
 
 def text(renderer, obj, attrs=(), transforms=()):
     attrs = dict(attrs)
     c = obj.get("COLOR")
     if c:
-        attrs.update(color=colour(c))
+        renderer._colour(attrs, colour(c))
     t = ["translate({})".format(", ".join(format(int(obj["LOCATION." + "XY"[x]]) * (1, -1)[x]) for x in range(2)))]
     t.extend(transforms)
     attrs["transform"] = " ".join(t)
@@ -626,12 +646,12 @@ def polyline(renderer, obj):
     points = list()
     for location in range(int(obj["LOCATIONCOUNT"])):
         location = format(1 + location)
-        points.append(",".join(format(int(obj["XY"[x] + location]) * (1, -1)[x]) for x in range(2)))
-    attrs = dict(points=" ".join(points))
+        points.append(tuple(int(obj[x + location]) for x in "XY"))
+    kw = dict(points=points)
     c = obj.get("COLOR")
     if c:
-        attrs.update(color=colour(c))
-    renderer.emptyelement("polyline", attrs)
+        kw.update(colour=colour(c))
+    renderer.polyline(**kw)
 
 if __name__ == "__main__":
     from funcparams import command

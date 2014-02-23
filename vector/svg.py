@@ -72,16 +72,18 @@ class Renderer(base.Renderer):
                 attrs["y{}".format(n)] = format(yn * self.flip[1])
         self._line(attrs, *pos, **kw)
     
-    def _line(self, attrs, **kw):
+    def _line(self, attrs, *, colour=None, **kw):
         self._width(attrs, **kw)
+        self._colour(attrs, colour)
         self.emptyelement("line", attrs)
     
-    def polyline(self, points, *, **kw):
+    def polyline(self, points, *, colour=None, **kw):
         s = list()
         for (x, y) in points:
             s.append("{},{}".format(x, y * self.flip[1]))
         attrs = {"points": " ".join(s)}
         self._width(attrs, **kw)
+        self._colour(attrs, colour)
         self.emptyelement("polyline", attrs)
     
     def box(self, dim, start=None, *pos, **kw):
@@ -111,19 +113,21 @@ class Renderer(base.Renderer):
         if width is not None:
             attrs["style"] = "stroke-width: {}".format(width)
     
-    def circle(self, r, point=None):
+    def circle(self, r, point=None, *, colour=None):
         attrs = {"r": format(r), "class": "solid"}
         if point:
             (x, y) = point
             attrs["cx"] = format(x)
             attrs["cy"] = format(y * self.flip[1])
+        self._colour(attrs, colour)
         self.emptyelement("circle", attrs)
     
-    def polygon(self, points):
+    def polygon(self, points, *, colour=None):
         s = list()
         for (x, y) in points:
             s.append("{},{}".format(x, y * self.flip[1]))
         attrs = {"class": "solid", "points": " ".join(s)}
+        self._colour(attrs, colour)
         self.emptyelement("polygon", attrs)
     
     def rectangle(self, dim, start=None):
@@ -132,6 +136,11 @@ class Renderer(base.Renderer):
         if start:
             attrs.update(zip("xy", map(format, start)))
         self.emptyelement("rect", attrs)
+    
+    def _colour(self, attrs, colour=None):
+        if colour:
+            colour = (min(int(x * 0x100), 0xFF) for x in colour)
+            attrs["color"] = "#" + "".join(map("{:02X}".format, colour))
     
     def addobjects(self, objects):
         with self.element("defs", dict()):
