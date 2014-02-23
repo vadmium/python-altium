@@ -207,7 +207,8 @@ def main(filename):
         ))
     ))
     
-    with element(svg, "g", {"transform": "translate(0, {})".format(-size[1])}):
+    translate = "translate(0, {})".format(-size[1])
+    with element(svg, "g", {"transform": translate}):
         tree(svg, (
             ("rect", {"class": "outline", "style": "stroke-width: 0.6", "width": format(size[0]), "height": format(size[1])}, ()),
             ("rect", {"class": "outline", "style": "stroke-width: 0.6", "x": "20", "y": "20", "width": format(size[0] - 2 * 20), "height": format(size[1] - 2 * 20)}, ()),
@@ -221,7 +222,8 @@ def main(filename):
                     if side:
                         translate[axis ^ 1] += size[axis ^ 1] - 20
                     with element(svg, "g", dict(transform="translate({})".format(", ".join(map(format, translate))))):
-                        tree(svg, (("text", {"style": "dominant-baseline: middle; text-anchor: middle"}, (chr(ord("1A"[axis]) + n),)),))
+                        label = chr(ord("1A"[axis]) + n)
+                        tree(svg, (("text", {"style": "dominant-baseline: middle; text-anchor: middle"}, (label,)),))
                         if n + 1 < 4:
                             x = format(size[axis] / 4 / 2)
                             emptyElement(svg, "line", dict(style="stroke-width: 0.6", x1=x, y1="-10", x2=x, y2="+10", transform="rotate({})".format(axis * 90)))
@@ -276,7 +278,12 @@ def main(filename):
                 points = "0,0 5,-5 {xx},-5 {x},0 {xx},+5 5,+5".format(x=width, xx=width - 5)
             else:
                 points = "0,-5 {xx},-5 {x},0 {xx},+5 0,+5".format(x=width, xx=width - 5)
-            shapeattrs = {"stroke": colour(obj["COLOR"]), "fill": colour(obj["AREACOLOR"]), "style": "stroke-width: 0.6", "points": points}
+            shapeattrs = {
+                "stroke": colour(obj["COLOR"]),
+                "fill": colour(obj["AREACOLOR"]),
+                "style": "stroke-width: 0.6",
+                "points": points,
+            }
             labelattrs = dict(color=colour(obj["TEXTCOLOR"]))
             if (obj.get("ALIGNMENT") == b"2") ^ (obj["STYLE"] != b"7"):
                 labelattrs["x"] = "10"
@@ -451,7 +458,8 @@ def main(filename):
                     }.get(orient, "text-anchor: middle; dominant-baseline: middle")
                     attrs = dict(style=style)
                     attrs.update(("xy"[x], format({b"2": (-1, 0), b"3": (0, -1), None: (+1, 0), b"1": (0, +1)}[orient][x] * offset * (+1, -1)[x])) for x in range(2))
-                    tree(svg, (("text", attrs, (obj["TEXT"].decode("ascii"),)),))
+                    t = obj["TEXT"].decode("ascii")
+                    tree(svg, (("text", attrs, (t,)),))
         
         elif (obj.keys() - {"INDEXINSHEET", "OWNERPARTDISPLAYMODE", "ISSOLID", "LINEWIDTH", "CORNERXRADIUS", "CORNERYRADIUS"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "AREACOLOR", "COLOR", "CORNER.X", "CORNER.Y", "ISNOTACCESIBLE", "LOCATION.X", "LOCATION.Y"} and
         obj["RECORD"] in {Record.RECTANGLE, Record.ROUND_RECTANGLE} and obj["ISNOTACCESIBLE"] == b"T" and obj.get("ISSOLID", b"T") == b"T"):
@@ -505,8 +513,9 @@ def main(filename):
                     for x in range(2):
                         sincos = (cos, sin)[x]
                         da = sincos(radians(startangle))
+                        db = sincos(radians(endangle))
                         a.append(format((int(obj["LOCATION." + "XY"[x]]) + da * r[x]) * (+1, -1)[x]))
-                        d.append(format((sincos(radians(endangle)) - da) * r[x] * (+1, -1)[x]))
+                        d.append(format((db - da) * r[x] * (+1, -1)[x]))
                     large = (endangle - startangle) % 360 > 180
                     emptyElement(svg, "path", dict(color=colour(obj["COLOR"]), d="M{a} a{r} 0 {large:d},0 {d}".format(a=",".join(a), r=",".join(map(format, r)), large=large, d=",".join(d))))
         
@@ -545,13 +554,24 @@ def main(filename):
         
         elif (obj.keys() - {"RADIUS_FRAC", "SECONDARYRADIUS_FRAC"} == {"RECORD", "OWNERINDEX", "ISNOTACCESIBLE", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "RADIUS", "SECONDARYRADIUS", "COLOR", "AREACOLOR", "ISSOLID"} and
         obj["RECORD"] == Record.ELLIPSE and obj["ISNOTACCESIBLE"] == b"T" and obj.get("RADIUS_FRAC", b"94381") == b"94381" and obj["SECONDARYRADIUS"] == obj["RADIUS"] and obj.get("SECONDARYRADIUS_FRAC", b"22993") == b"22993" and obj["ISSOLID"] == b"T"):
-            attrs = {"stroke": colour(obj["COLOR"]), "fill": colour(obj["AREACOLOR"]), "r": obj["RADIUS"].decode("ascii"), "stroke-width": "0.6"}
+            attrs = {
+                "stroke": colour(obj["COLOR"]),
+                "fill": colour(obj["AREACOLOR"]),
+                "r": obj["RADIUS"].decode("ascii"),
+                "stroke-width": "0.6",
+            }
             attrs.update(("c" + "xy"[x], format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x])) for x in range(2))
             emptyElement(svg, "circle", attrs)
         
         elif (obj.keys() - {"INDEXINSHEET", "SYMBOLTYPE"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "XSIZE", "YSIZE", "COLOR", "AREACOLOR", "ISSOLID", "UNIQUEID"} and
         obj["RECORD"] == Record.SHEET_SYMBOL and obj["OWNERPARTID"] == b"-1" and obj["ISSOLID"] == b"T" and obj.get("SYMBOLTYPE", b"Normal") == b"Normal"):
-            attrs = {"stroke": colour(obj["COLOR"]), "fill": colour(obj["AREACOLOR"]), "width": obj["XSIZE"].decode("ascii"), "height": obj["YSIZE"].decode("ascii"), "style": "stroke-width: 0.6"}
+            attrs = {
+                "stroke": colour(obj["COLOR"]),
+                "fill": colour(obj["AREACOLOR"]),
+                "width": obj["XSIZE"].decode("ascii"),
+                "height": obj["YSIZE"].decode("ascii"),
+                "style": "stroke-width: 0.6",
+            }
             attrs.update(("xy"[x], format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x])) for x in range(2))
             emptyElement(svg, "rect", attrs)
         
