@@ -633,14 +633,6 @@ def overline(name):
         tspans.append(("tspan", dict(), (plain,)))
     return tspans
 
-def line(svg, obj):
-    attrs = dict(color=colour(obj["COLOR"]))
-    for location in range(2):
-        location = format(1 + location)
-        for x in range(2):
-            attrs["xy"[x] + location] = format(int(obj["XY"[x] + location]) * (1, -1)[x])
-    emptyElement(svg, "line", attrs)
-
 def polyline(svg, obj):
     points = list()
     for location in range(int(obj["LOCATIONCOUNT"])):
