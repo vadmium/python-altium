@@ -97,8 +97,7 @@ class SheetStyle:
     A3 = b"1"
     A = b"5"
 
-from xml.sax.saxutils import XMLGenerator
-from contextlib import contextmanager
+from vector import svg
 from sys import stderr
 from math import sin, cos, radians
 from textwrap import TextWrapper
@@ -121,35 +120,17 @@ def main(filename):
     if "USECUSTOMSHEET" in sheet:
         size = tuple(int(sheet["CUSTOM" + "XY"[x]]) for x in range(2))
     
-    svg = XMLGenerator(encoding="utf-8", short_empty_elements=True)
-    svg.startElement("svg", {
-        "xmlns": "http://www.w3.org/2000/svg",
-        "xmlns:xlink": "http://www.w3.org/1999/xlink",
-        # Units are 1/100" or 10 mils
-        "width": "{}in".format((size[0] + 0.6) / 100),
-        "height": "{}in".format((size[1] + 0.6) / 100),
-        "viewBox": "{},{} {},{}".format(-0.3, -size[1] - 0.3, size[0] + 0.6, size[1] + 0.6),
-    })
+    # Units are 1/100" or 10 mils
+    renderer = svg.Renderer(size, "in", 1/100, margin=0.3, line=1, down=-1)
     
-    style = """
-        .outline, path, line, polyline {{
-            stroke: currentColor;
-            fill: none;
-            stroke-width: {line};
-        }}
-        
-        .solid {{
-            fill: currentColor;
-            stroke: none;
-        }}
-        
-        text {{
+    style = ["""
+        text {
             font-size: 8.75px;
             dominant-baseline: text-after-edge;
             fill: currentColor;
-        }}
-    """
-    style = [style.format(line="1")]
+        }
+    """]
+    
     for n in range(int(sheet["FONTIDCOUNT"])):
         n = format(1 + n)
         style.append("""
@@ -167,20 +148,26 @@ def main(filename):
         if bold:
             style.append("font-weight: bold;")
         style.append("}")
-                
-    arrow = ("polygon", {"class": "solid", "points": "0,0 -2,-3 5,0 -2,+3"}, ())
-    tree(svg, (
-        ("style", dict(type="text/css"), style),
-        ("defs", dict(), (
-            ("marker", dict(overflow="visible", markerUnits="userSpaceOnUse", id="input"), (
-                ("g", dict(transform="scale(-1)"), (arrow,)),
-            )),
-            ("marker", dict(overflow="visible", markerUnits="userSpaceOnUse", id="output"), (
-                ("polygon", dict(points="0,+2.5 7,0 0,-2.5"), ()),
-            )),
-            ("marker", dict(overflow="visible", markerUnits="userSpaceOnUse", id="io"), (
-                ("polygon", dict(points="-5,0 0,+2.5 +5,0 0,-2.5"), ()),
-            )),
+    renderer.tree(("style", dict(type="text/css"), style))
+    
+    def basearrow(renderer):
+        renderer.polygon(((0, 0), (-2, -3), (5, 0), (-2, +3)))
+    
+    with renderer.element("defs", dict()):
+        with renderer.element("marker",
+        dict(overflow="visible", markerUnits="userSpaceOnUse", id="input")):
+            with renderer.element("g", dict(transform="scale(-1)")):
+                basearrow(renderer)
+        
+        with renderer.element("marker",
+        dict(overflow="visible", markerUnits="userSpaceOnUse", id="output")):
+            renderer.polygon(((0, +2.5), (7, 0), (0, -2.5)))
+        
+        with renderer.element("marker",
+        dict(overflow="visible", markerUnits="userSpaceOnUse", id="io")):
+            renderer.polygon(((-5, 0), (0, +2.5), (+5, 0), (0, -2.5)))
+        
+        svg.tree(
             ("g", dict(id="gnd"), (
                 ("line", dict(x2="10"), ()),
                 ("line", dict(y1="-7", y2="+7", x1="10", x2="10", style="stroke-width: 1.5"), ()),
@@ -204,15 +191,14 @@ def main(filename):
                 ("line", dict(x1="+3", y1="+3", x2="-3", y2="-3", style="stroke-width: 0.6"), ()),
                 ("line", dict(x1="-3", y1="+3", x2="+3", y2="-3", style="stroke-width: 0.6"), ()),
             )),
-        ))
-    ))
+        )
     
     translate = "translate(0, {})".format(-size[1])
-    with element(svg, "g", {"transform": translate}):
-        tree(svg, (
+    with renderer.element("g", {"transform": translate}):
+        renderer.tree(
             ("rect", {"class": "outline", "style": "stroke-width: 0.6", "width": format(size[0]), "height": format(size[1])}, ()),
             ("rect", {"class": "outline", "style": "stroke-width: 0.6", "x": "20", "y": "20", "width": format(size[0] - 2 * 20), "height": format(size[1] - 2 * 20)}, ()),
-        ))
+        )
         for axis in range(2):
             for side in range(2):
                 for n in range(4):
@@ -221,12 +207,12 @@ def main(filename):
                     translate[axis ^ 1] = 10
                     if side:
                         translate[axis ^ 1] += size[axis ^ 1] - 20
-                    with element(svg, "g", dict(transform="translate({})".format(", ".join(map(format, translate))))):
+                    with renderer.element("g", dict(transform="translate({})".format(", ".join(map(format, translate))))):
                         label = chr(ord("1A"[axis]) + n)
-                        tree(svg, (("text", {"style": "dominant-baseline: middle; text-anchor: middle"}, (label,)),))
+                        renderer.tree(("text", {"style": "dominant-baseline: middle; text-anchor: middle"}, (label,)))
                         if n + 1 < 4:
                             x = format(size[axis] / 4 / 2)
-                            emptyElement(svg, "line", dict(style="stroke-width: 0.6", x1=x, y1="-10", x2=x, y2="+10", transform="rotate({})".format(axis * 90)))
+                            renderer.emptyelement("line", dict(style="stroke-width: 0.6", x1=x, y1="-10", x2=x, y2="+10", transform="rotate({})".format(axis * 90)))
         
         if "TITLEBLOCKON" in sheet:
             if not os.path.isabs(filename):
@@ -235,7 +221,7 @@ def main(filename):
                 if os.path.samefile(pwd, cwd):
                     cwd = pwd
                 filename = os.path.join(pwd, filename)
-            tree(svg, (("g", {"transform": "translate({})".format(", ".join(map(format, (s - 20 for s in size))))}, (
+            renderer.tree(("g", {"transform": "translate({})".format(", ".join(map(format, (s - 20 for s in size))))}, (
                 ("polyline", dict(style="stroke-width: 0.6", points="-350,-0 -350,-80 -0,-80"), ()),
                 ("line", dict(style="stroke-width: 0.6", x1="-350", y1="-50", y2="-50"), ()),
                 ("line", dict(style="stroke-width: 0.6", x1="-300", y1="-50", x2="-300", y2="-20"), ()),
@@ -258,7 +244,7 @@ def main(filename):
                     ("tspan", dict(x="-117"), ("of",)),
                 )),
                 ("text", dict(x="-145", y="-0"), ("Drawn By:",)),
-            )),))
+            )))
     
     for obj in objects:
         if (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR"} and
@@ -268,7 +254,7 @@ def main(filename):
                 location = int(obj["LOCATION." + "XY"[x]])
                 attrs["c" + "xy"[x]] = format(location * (1, -1)[x])
             attrs.update(color=colour(obj["COLOR"]))
-            emptyElement(svg, "circle", attrs)
+            renderer.emptyelement("circle", attrs)
         
         elif (obj.keys() - {"INDEXINSHEET", "IOTYPE", "ALIGNMENT"} == {"RECORD", "OWNERPARTID", "STYLE", "WIDTH", "LOCATION.X", "LOCATION.Y", "COLOR", "AREACOLOR", "TEXTCOLOR", "NAME", "UNIQUEID"} and
         obj["RECORD"] == Record.PORT and obj["OWNERPARTID"] == b"-1"):
@@ -295,10 +281,10 @@ def main(filename):
                 shapeattrs.update(transform="rotate(90) translate({})".format(-width))
                 labelattrs.update(transform="rotate(-90)")
             labelattrs.update(style="dominant-baseline: middle; text-anchor: {}".format(anchor))
-            tree(svg, (("g", dict(transform="translate({})".format(translate)), (
+            renderer.tree(("g", dict(transform="translate({})".format(translate)), (
                 ("polygon", shapeattrs, ()),
                 ("text", labelattrs, overline(obj["NAME"])),
-            )),))
+            )))
         
         elif (obj.keys() - {"INDEXINSHEET"} >= {"RECORD", "OWNERPARTID", "LINEWIDTH", "COLOR", "LOCATIONCOUNT", "X1", "Y1", "X2", "Y2"} and
         obj["RECORD"] == Record.WIRE and obj["OWNERPARTID"] == b"-1" and obj["LINEWIDTH"] == b"1"):
@@ -306,7 +292,7 @@ def main(filename):
             for location in range(int(obj["LOCATIONCOUNT"])):
                 location = format(1 + location)
                 points.append(",".join(format(int(obj["XY"[x] + location]) * (1, -1)[x]) for x in range(2)))
-            emptyElement(svg, "polyline", dict(color=colour(obj["COLOR"]), points=" ".join(points)))
+            renderer.emptyelement("polyline", dict(color=colour(obj["COLOR"]), points=" ".join(points)))
         elif (obj.keys() == {"RECORD", "OWNERINDEX"} and
         obj["RECORD"] in {b"46", b"48", b"44"} or
         obj.keys() - {"USECOMPONENTLIBRARY", "DESCRIPTION", "DATAFILECOUNT", "MODELDATAFILEENTITY0", "MODELDATAFILEKIND0", "DATALINKSLOCKED", "DATABASEDATALINKSLOCKED", "ISCURRENT", "INDEXINSHEET", "INTEGRATEDMODEL", "DATABASEMODEL"} == {"RECORD", "OWNERINDEX", "MODELNAME", "MODELTYPE"} and
@@ -348,9 +334,9 @@ def main(filename):
                     transforms.insert(0, "translate({})".format(", ".join(format(int(obj["LOCATION." + "XY"[x]]) * (1, -1)[x]) for x in range(2))))
                     attrs["transform"] = " ".join(transforms)
                     attrs["class"] = "font" + obj["FONTID"].decode("ascii")
-                    tree(svg, (("text", attrs, (val.decode("ascii"),)),))
+                    renderer.tree(("text", attrs, (val.decode("ascii"),)))
                 else:
-                    text(svg, obj, attrs=attrs, transforms=transforms)
+                    text(renderer, obj, attrs=attrs, transforms=transforms)
         
         elif (obj.keys() - {"INDEXINSHEET", "ISMIRRORED", "LOCATION.X_FRAC", "LOCATION.Y_FRAC"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR", "FONTID", "TEXT", "NAME", "READONLYSTATE"} and
         obj["RECORD"] == Record.DESIGNATOR and obj["OWNERPARTID"] == b"-1" and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["NAME"] == b"Designator" and obj["READONLYSTATE"] == b"1"):
@@ -361,7 +347,7 @@ def main(filename):
             attrs = dict(color=colour(obj["COLOR"]))
             attrs["class"] = "font" + obj["FONTID"].decode()
             attrs.update(("xy"[x], format(int(obj["LOCATION." + "XY"[x]]) * (1, -1)[x])) for x in range(2))
-            tree(svg, (("text", attrs, (desig,)),))
+            renderer.tree(("text", attrs, (desig,)))
         
         elif (obj.keys() >= {"RECORD", "OWNERPARTID", "OWNERINDEX", "LOCATIONCOUNT", "X1", "X2", "Y1", "Y2"} and
         obj["RECORD"] == Record.POLYLINE and obj.get("ISNOTACCESIBLE", b"T") == b"T" and obj.get("LINEWIDTH", b"1") == b"1"):
@@ -372,7 +358,7 @@ def main(filename):
                 current = (obj["OWNERPARTID"] == owner["CURRENTPARTID"] and
                     obj.get("OWNERPARTDISPLAYMODE", b"0") == owner.get("DISPLAYMODE", b"0"))
             if current:
-                polyline(svg, obj)
+                polyline(renderer, obj)
         
         elif (obj.keys() - {"OWNERPARTDISPLAYMODE", "INDEXINSHEET"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "COLOR", "ISNOTACCESIBLE", "LINEWIDTH", "LOCATION.X", "LOCATION.Y", "CORNER.X", "CORNER.Y"} and
         obj["RECORD"] == Record.LINE and obj["ISNOTACCESIBLE"] == b"T"):
@@ -383,7 +369,7 @@ def main(filename):
                 for x in range(2):
                     attrs["xy"[x] + "1"] = format(int(obj["LOCATION." + "XY"[x]]) * (1, -1)[x])
                     attrs["xy"[x] + "2"] = format(int(obj["CORNER." + "XY"[x]]) * (1, -1)[x])
-                emptyElement(svg, "line", attrs)
+                renderer.emptyelement("line", attrs)
         
         elif (obj.keys() - {"NAME", "SWAPIDPIN", "OWNERPARTDISPLAYMODE", "ELECTRICAL", "DESCRIPTION", "SWAPIDPART", "SYMBOL_OUTEREDGE"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "DESIGNATOR", "FORMALTYPE", "LOCATION.X", "LOCATION.Y", "PINCONGLOMERATE", "PINLENGTH"} and
         obj["RECORD"] == Record.PIN and obj["FORMALTYPE"] == b"1"):
@@ -431,7 +417,7 @@ def main(filename):
                     attrs.update(transform=" ".join(transforms))
                     translated.append(("text", attrs, (obj["DESIGNATOR"].decode("ascii"),)))
                 
-                tree(svg, (("g", dict(transform="translate({})".format(", ".join(format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x]) for x in range(2)))), translated),))
+                renderer.tree(("g", dict(transform="translate({})".format(", ".join(format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x]) for x in range(2)))), translated))
         
         elif (obj.keys() - {"INDEXINSHEET", "ORIENTATION", "STYLE", "ISCROSSSHEETCONNECTOR"} == {"RECORD", "OWNERPARTID", "COLOR", "LOCATION.X", "LOCATION.Y", "SHOWNETNAME", "TEXT"} and
         obj["RECORD"] == Record.POWER_OBJECT and obj["OWNERPARTID"] == b"-1"):
@@ -443,11 +429,11 @@ def main(filename):
                 (marker, offset) = {PowerObjectStyle.ARROW: ("arrow", 12), PowerObjectStyle.BAR: ("rail", 12), PowerObjectStyle.GND: ("gnd", 20)}.get(obj["STYLE"], (None, 0))
             location = tuple(int(obj["LOCATION." + "XY"[x]]) for x in range(2))
             
-            with element(svg, "g", dict(color=colour(obj["COLOR"]), transform="translate({})".format(", ".join(format(location[x] * (+1, -1)[x]) for x in range(2))))):
+            with renderer.element("g", dict(color=colour(obj["COLOR"]), transform="translate({})".format(", ".join(format(location[x] * (+1, -1)[x]) for x in range(2))))):
                 attrs = {"xlink:href": "#{}".format(marker)}
                 if orient:
                     attrs.update(transform="rotate({})".format({b"2": 180, b"3": 90, b"1": 270}[orient]))
-                emptyElement(svg, "use", attrs)
+                renderer.emptyelement("use", attrs)
                 
                 if obj["SHOWNETNAME"] != b"F":
                     style = {
@@ -459,7 +445,7 @@ def main(filename):
                     attrs = dict(style=style)
                     attrs.update(("xy"[x], format({b"2": (-1, 0), b"3": (0, -1), None: (+1, 0), b"1": (0, +1)}[orient][x] * offset * (+1, -1)[x])) for x in range(2))
                     t = obj["TEXT"].decode("ascii")
-                    tree(svg, (("text", attrs, (t,)),))
+                    renderer.tree(("text", attrs, (t,)))
         
         elif (obj.keys() - {"INDEXINSHEET", "OWNERPARTDISPLAYMODE", "ISSOLID", "LINEWIDTH", "CORNERXRADIUS", "CORNERYRADIUS"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "AREACOLOR", "COLOR", "CORNER.X", "CORNER.Y", "ISNOTACCESIBLE", "LOCATION.X", "LOCATION.Y"} and
         obj["RECORD"] in {Record.RECTANGLE, Record.ROUND_RECTANGLE} and obj["ISNOTACCESIBLE"] == b"T" and obj.get("ISSOLID", b"T") == b"T"):
@@ -478,14 +464,14 @@ def main(filename):
                     radius = obj.get("CORNER{}RADIUS".format("XY"[x]))
                     if radius:
                         attrs["r" + "xy"[x]] = radius.decode("ascii")
-                emptyElement(svg, "rect", attrs)
+                renderer.emptyelement("rect", attrs)
         
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERPARTID", "COLOR", "FONTID", "LOCATION.X", "LOCATION.Y", "TEXT"} and
         obj["RECORD"] == Record.NET_LABEL and obj["OWNERPARTID"] == b"-1"):
             attrs = dict(color=colour(obj["COLOR"]))
             attrs["transform"] = "translate({})".format(", ".join(format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x]) for x in range(2)))
             attrs["class"] = "font" + obj["FONTID"].decode("ascii")
-            tree(svg, (("text", attrs, overline(obj["TEXT"])),))
+            renderer.tree(("text", attrs, overline(obj["TEXT"])))
         
         elif (obj.keys() - {"INDEXINSHEET", "OWNERPARTDISPLAYMODE", "STARTANGLE", "SECONDARYRADIUS"} == {"RECORD", "OWNERPARTID", "OWNERINDEX", "COLOR", "ENDANGLE", "ISNOTACCESIBLE", "LINEWIDTH", "LOCATION.X", "LOCATION.Y", "RADIUS"} and
         obj["RECORD"] in {Record.ARC, Record.ELLIPTICAL_ARC} and obj["ISNOTACCESIBLE"] == b"T" and obj["LINEWIDTH"] == b"1" and obj.get("OWNERPARTDISPLAYMODE", b"1") == b"1"):
@@ -501,7 +487,7 @@ def main(filename):
                         location = int(obj["LOCATION." + "XY"[x]])
                         attrs["c" + "xy"[x]] = format(location * (+1, -1)[x])
                     attrs.update(color=colour(obj["COLOR"]))
-                    emptyElement(svg, "circle", attrs)
+                    renderer.emptyelement("circle", attrs)
                 else:
                     r2 = obj.get("SECONDARYRADIUS")
                     if r2:
@@ -517,7 +503,7 @@ def main(filename):
                         a.append(format((int(obj["LOCATION." + "XY"[x]]) + da * r[x]) * (+1, -1)[x]))
                         d.append(format((db - da) * r[x] * (+1, -1)[x]))
                     large = (endangle - startangle) % 360 > 180
-                    emptyElement(svg, "path", dict(color=colour(obj["COLOR"]), d="M{a} a{r} 0 {large:d},0 {d}".format(a=",".join(a), r=",".join(map(format, r)), large=large, d=",".join(d))))
+                    renderer.emptyelement("path", dict(color=colour(obj["COLOR"]), d="M{a} a{r} 0 {large:d},0 {d}".format(a=",".join(a), r=",".join(map(format, r)), large=large, d=",".join(d))))
         
         elif (obj.keys() - {"INDEXINSHEET", "LINEWIDTH"} > {"RECORD", "AREACOLOR", "COLOR", "ISNOTACCESIBLE", "ISSOLID", "LOCATIONCOUNT", "OWNERINDEX", "OWNERPARTID"} and
         obj["RECORD"] == b"7" and obj["AREACOLOR"] == b"16711680" and obj["ISNOTACCESIBLE"] == b"T" and obj["ISSOLID"] == b"T" and obj.get("LINEWIDTH", b"1") == b"1" and obj["OWNERPARTID"] == b"1"):
@@ -525,32 +511,32 @@ def main(filename):
             for location in range(int(obj["LOCATIONCOUNT"])):
                 location = format(1 + location)
                 points.append(",".join(format(int(obj["XY"[x] + location]) * (1, -1)[x]) for x in range(2)))
-            emptyElement(svg, "polygon", {"class": "solid", "color": colour(obj["COLOR"]), "points": " ".join(points)})
+            renderer.emptyelement("polygon", {"class": "solid", "color": colour(obj["COLOR"]), "points": " ".join(points)})
         elif (obj.keys() - {"INDEXINSHEET", "ISNOTACCESIBLE", "OWNERINDEX", "ORIENTATION", "JUSTIFICATION", "COLOR"} == {"RECORD", "FONTID", "LOCATION.X", "LOCATION.Y", "OWNERPARTID", "TEXT"} and
         obj["RECORD"] == Record.LABEL):
             if obj["OWNERPARTID"] == b"-1" or obj["OWNERPARTID"] == objects[1 + int(obj["OWNERINDEX"])]["CURRENTPARTID"]:
-                text(svg, obj)
+                text(renderer, obj)
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "COLOR", "LOCATION.X", "LOCATION.Y", "OWNERPARTID"} and
         obj["RECORD"] == b"22" and obj["OWNERPARTID"] == b"-1"):
             attrs = {"xlink:href": "#nc", "color": colour(obj["COLOR"])}
             for x in range(2):
                 location = int(obj["LOCATION." + "XY"[x]])
                 attrs["xy"[x]] = format(location * (1, -1)[x])
-            emptyElement(svg, "use", attrs)
+            renderer.emptyelement("use", attrs)
         elif (obj.keys() - {"CLIPTORECT"} == {"RECORD", "ALIGNMENT", "AREACOLOR", "CORNER.X", "CORNER.Y", "FONTID", "ISSOLID", "LOCATION.X", "LOCATION.Y", "OWNERPARTID", "Text", "WORDWRAP"} and
         obj["RECORD"] == b"28" and obj["ALIGNMENT"] == b"1" and obj["AREACOLOR"] == b"16777215" and obj.get("CLIPTORECT", b"T") == b"T" and obj["ISSOLID"] == b"T" and obj["OWNERPARTID"] == b"-1" and obj["WORDWRAP"] == b"T"):
             attrs = {"class": "font" + obj["FONTID"].decode("ascii")}
             lhs = int(obj["LOCATION.X"])
             attrs.update(transform="translate({}, {})".format(lhs, -int(obj["CORNER.Y"])))
-            with element(svg, "text", attrs):
+            with renderer.element("text", attrs):
                 wrapper = TextWrapper(width=(int(obj["CORNER.X"]) - lhs) / 4.375)  # Very hacky approximation of the size of each character as one en wide
                 for hardline in obj["Text"].decode("ascii").split("~1"):
                     for softline in wrapper.wrap(hardline):
-                        tree(svg, (("tspan", {"x": "0", "dy": "10", "xml:space": "preserve"}, (softline,)),))
+                        renderer.tree(("tspan", {"x": "0", "dy": "10", "xml:space": "preserve"}, (softline,)))
         
         elif (obj.keys() == {"RECORD", "OWNERINDEX", "ISNOTACCESIBLE", "OWNERPARTID", "LINEWIDTH", "COLOR", "LOCATIONCOUNT", "X1", "Y1", "X2", "Y2", "X3", "Y3", "X4", "Y4"} and
         obj["RECORD"] == Record.BEZIER and obj["ISNOTACCESIBLE"] == b"T" and obj["OWNERPARTID"] == b"1" and obj["LINEWIDTH"] == b"1" and obj["LOCATIONCOUNT"] == b"4"):
-            emptyElement(svg, "path", dict(color=colour(obj["COLOR"]), d="M{} C {} {} {}".format(*(",".join(format(int(obj["XY"[x] + format(1 + n)]) * (+1, -1)[x]) for x in range(2)) for n in range(4)))))
+            renderer.emptyelement("path", dict(color=colour(obj["COLOR"]), d="M{} C {} {} {}".format(*(",".join(format(int(obj["XY"[x] + format(1 + n)]) * (+1, -1)[x]) for x in range(2)) for n in range(4)))))
         
         elif (obj.keys() - {"RADIUS_FRAC", "SECONDARYRADIUS_FRAC"} == {"RECORD", "OWNERINDEX", "ISNOTACCESIBLE", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "RADIUS", "SECONDARYRADIUS", "COLOR", "AREACOLOR", "ISSOLID"} and
         obj["RECORD"] == Record.ELLIPSE and obj["ISNOTACCESIBLE"] == b"T" and obj.get("RADIUS_FRAC", b"94381") == b"94381" and obj["SECONDARYRADIUS"] == obj["RADIUS"] and obj.get("SECONDARYRADIUS_FRAC", b"22993") == b"22993" and obj["ISSOLID"] == b"T"):
@@ -561,7 +547,7 @@ def main(filename):
                 "stroke-width": "0.6",
             }
             attrs.update(("c" + "xy"[x], format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x])) for x in range(2))
-            emptyElement(svg, "circle", attrs)
+            renderer.emptyelement("circle", attrs)
         
         elif (obj.keys() - {"INDEXINSHEET", "SYMBOLTYPE"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "XSIZE", "YSIZE", "COLOR", "AREACOLOR", "ISSOLID", "UNIQUEID"} and
         obj["RECORD"] == Record.SHEET_SYMBOL and obj["OWNERPARTID"] == b"-1" and obj["ISSOLID"] == b"T" and obj.get("SYMBOLTYPE", b"Normal") == b"Normal"):
@@ -573,11 +559,11 @@ def main(filename):
                 "style": "stroke-width: 0.6",
             }
             attrs.update(("xy"[x], format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x])) for x in range(2))
-            emptyElement(svg, "rect", attrs)
+            renderer.emptyelement("rect", attrs)
         
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR", "FONTID", "TEXT"} and
         obj["RECORD"] in {Record.SHEET_NAME, Record.SHEET_FILE_NAME} and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
-            text(svg, obj)
+            text(renderer, obj)
         
         elif (obj.keys() == {"RECORD", "OWNERINDEX", "INDEXINSHEET", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "CORNER.X", "CORNER.Y", "EMBEDIMAGE", "FILENAME"} and
         obj["RECORD"] == Record.IMAGE and obj["OWNERINDEX"] == b"1" and obj["OWNERPARTID"] == b"-1" and obj["EMBEDIMAGE"] == b"T" and obj["FILENAME"] == b"newAltmLogo.bmp"):
@@ -585,36 +571,17 @@ def main(filename):
             attrs = {"style": "stroke-width: 0.6", "class": "outline"}
             attrs.update(("xy"[x], format(topleft[x])) for x in range(2))
             attrs.update((("width", "height")[x], format(int(obj[("CORNER.X", "LOCATION.Y")[x]]) * (+1, -1)[x] - topleft[x])) for x in range(2))
-            emptyElement(svg, "rect", attrs)
+            renderer.emptyelement("rect", attrs)
         
         else:
             print("".join("|{}={!r}".format(p, v) for (p, v) in sorted(obj.items())), file=stderr)
     
-    svg.endElement("svg")
-
-@contextmanager
-def element(xml, name, *pos, **kw):
-    xml.startElement(name, *pos, **kw)
-    yield
-    xml.endElement(name)
-
-def emptyElement(*pos, **kw):
-    with element(*pos, **kw):
-        pass
-
-def tree(xml, elements):
-    for e in elements:
-        if isinstance(e, str):
-            xml.characters(e)
-        else:
-            (name, attrs, children) = e
-            with element(xml, name, attrs):
-                tree(xml, children)
+    renderer.finish()
 
 def colour(c):
     return "#" + "".join(map("{:02X}".format, int(c).to_bytes(3, "little")))
 
-def text(svg, obj, attrs=(), transforms=()):
+def text(renderer, obj, attrs=(), transforms=()):
     attrs = dict(attrs)
     c = obj.get("COLOR")
     if c:
@@ -623,7 +590,7 @@ def text(svg, obj, attrs=(), transforms=()):
     t.extend(transforms)
     attrs["transform"] = " ".join(t)
     attrs["class"] = "font" + obj["FONTID"].decode("ascii")
-    tree(svg, (("text", attrs, (obj["TEXT"].decode("ascii"),)),))
+    renderer.tree(("text", attrs, (obj["TEXT"].decode("ascii"),)))
 
 def overline(name):
     tspans = list()
@@ -653,7 +620,7 @@ def overline(name):
         tspans.append(("tspan", dict(), (plain,)))
     return tspans
 
-def polyline(svg, obj):
+def polyline(renderer, obj):
     points = list()
     for location in range(int(obj["LOCATIONCOUNT"])):
         location = format(1 + location)
@@ -662,7 +629,7 @@ def polyline(svg, obj):
     c = obj.get("COLOR")
     if c:
         attrs.update(color=colour(c))
-    emptyElement(svg, "polyline", attrs)
+    renderer.emptyelement("polyline", attrs)
 
 if __name__ == "__main__":
     from funcparams import command

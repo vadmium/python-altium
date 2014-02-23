@@ -3,86 +3,104 @@ from contextlib import contextmanager
 from . import base
 
 class Renderer(base.Renderer):
-    def __init__(self, size, line=0.4, colour="black"):
-        self.svg = XMLGenerator(encoding="UTF-8", short_empty_elements=True)
-        self.svg.startElement("svg", {
-            "xmlns:xlink": "http://www.w3.org/1999/xlink",
+    def __init__(self, size, units, unitmult=1, *, margin=0,
+    down=+1,  # -1 if y axis points upwards
+    line=None):
+        width = size[0] + 2 * margin
+        height = size[1] + 2 * margin
+        if down < 0:
+            top = -size[1]
+            self.flip = (+1, -1)
+        else:
+            top = 0
+            self.flip = (+1, +1)
+        viewbox = "{},{} {},{}".format(-margin, top - margin, width, height)
+        
+        self.xml = XMLGenerator(encoding="UTF-8", short_empty_elements=True)
+        self.xml.startElement("svg", {
             "xmlns": "http://www.w3.org/2000/svg",
-            "width": "{}mm".format(size[0]),
-            "height": "{}mm".format(size[1]),
-            "viewBox": "{},{} {},{}".format(0, 0, size[0], size[1]),
+            "xmlns:xlink": "http://www.w3.org/1999/xlink",
+            "width": "{}{}".format(width * unitmult, units),
+            "height": "{}{}".format(height * unitmult, units),
+            "viewBox": viewbox,
         })
         
-        style = """
-            /*.outline, path,*/ line/*, polyline*/ {{
-                stroke: {colour};
-                fill: none;
-                stroke-width: {line};
-            }}
-            
-            .solid {{
-                fill: {colour};
-                stroke: none;
-            }}
-        """
-        style = style.format(line=line, colour=colour)
-        tree(self.svg, (("style", dict(type="text/css"), (style,)),))
+        outline = ["stroke: currentColor", "fill: none"]
+        if line is not None:
+            outline.append("stroke-width: {}".format(line))
+        
+        rulesets = (
+            (".outline, path, line, polyline", outline),
+            (".solid", ("fill: currentColor", "stroke: none")),
+        )
+        
+        css = list()
+        for (selector, rules) in rulesets:
+            rules = "".join(map("  {};\n".format, rules))
+            css.append("{} {{\n{}}}\n".format(selector, rules))
+        self.tree(("style", dict(type="text/css"), css))
     
     def set_objects(self, objects):
-        with element(self.svg, "defs", dict()):
+        with self.element("defs", dict()):
             for d in objects:
-                with element(self.svg, "g", dict(id=type(d).__name__)):
+                with self.element("g", dict(id=type(d).__name__)):
                     d.draw(self)
     
     def draw(self, object, offset):
         attrs = {"xlink:href": "#{}".format(type(object).__name__)}
         if offset:
             attrs.update(zip("xy", map(format, offset)))
-        emptyElement(self.svg, "use", attrs)
+        self.emptyelement("use", attrs)
     
-    def line(self, *points):
+    def line(self, a=None, b=None):
         attrs = dict()
-        for (n, p) in enumerate(points, 1):
-            for (x, s) in zip(p, "xy"):
-                attrs[s + format(n)] = format(x)
-        emptyElement(self.svg, "line", attrs)
+        for (n, p) in enumerate((a, b), 1):
+            if p:
+                (x, y) = p
+                attrs["x{}".format(n)] = format(x)
+                attrs["y{}".format(n)] = format(y * self.flip[1])
+        self.emptyelement("line", attrs)
     
     def circle(self, r, point=None):
         attrs = {"r": format(r), "class": "solid"}
         if point:
-            attrs.update(zip(("cx", "cy"), map(format, point)))
-        emptyElement(self.svg, "circle", attrs)
+            (x, y) = point
+            attrs["cx"] = format(x)
+            attrs["cy"] = format(y * self.flip[1])
+        self.emptyelement("circle", attrs)
     
     def polygon(self, points):
-        points = " ".join(",".join(map(format, point)) for point in points)
-        attrs = {"class": "solid", "points": points}
-        emptyElement(self.svg, "polygon", attrs)
+        s = list()
+        for (x, y) in points:
+            s.append("{},{}".format(x, y * self.flip[1]))
+        attrs = {"class": "solid", "points": " ".join(s)}
+        self.emptyelement("polygon", attrs)
     
     def rectangle(self, dim, start=None):
         attrs = {"class": "solid"}
         attrs.update(zip(("width", "height"), map(format, dim)))
         if start:
             attrs.update(zip("xy", map(format, start)))
-        emptyElement(self.svg, "rect", attrs)
+        self.emptyelement("rect", attrs)
     
     def finish(self):
-        self.svg.endElement("svg")
-
-@contextmanager
-def element(xml, name, *pos, **kw):
-    xml.startElement(name, *pos, **kw)
-    yield
-    xml.endElement(name)
-
-def emptyElement(*pos, **kw):
-    with element(*pos, **kw):
-        pass
-
-def tree(xml, elements):
-    for e in elements:
-        if isinstance(e, str):
-            xml.characters(e)
-        else:
-            (name, attrs, children) = e
-            with element(xml, name, attrs):
-                tree(xml, children)
+        self.xml.endElement("svg")
+    
+    @contextmanager
+    def element(self, name, *pos, **kw):
+        self.xml.startElement(name, *pos, **kw)
+        yield
+        self.xml.endElement(name)
+    
+    def emptyelement(self, *pos, **kw):
+        with self.element(*pos, **kw):
+            pass
+    
+    def tree(self, *elements):
+        for e in elements:
+            if isinstance(e, str):
+                self.xml.characters(e)
+            else:
+                (name, attrs, children) = e
+                with self.element(name, attrs):
+                    self.tree(*children)
