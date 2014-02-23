@@ -24,6 +24,11 @@ class Renderer(base.Renderer):
         width = width or self.linewidth
         self.canvas.create_line(*points, fill=self.colour, width=width)
     
+    def box(self, dim, start=(0, 0), *, width=None):
+        coords = tuple((x, o + x) for (x, o) in zip(start, dim))
+        points = (x[i] * self.scaling for i in range(2) for x in coords)
+        self.canvas.create_rectangle(*points, outline=self.colour)
+    
     def circle(self, r, centre=(0, 0)):
         coords = tuple((o - r, o + r) for o in centre)
         points = (x[i] * self.scaling for i in range(2) for x in coords)

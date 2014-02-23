@@ -72,9 +72,8 @@ class Renderer(base.Renderer):
                 attrs["y{}".format(n)] = format(yn * self.flip[1])
         self._line(attrs, *pos, **kw)
     
-    def _line(self, attrs, *, width=None):
-        if width is not None:
-            attrs["style"] = "stroke-width: {}".format(width)
+    def _line(self, attrs, **kw):
+        self._width(attrs, **kw)
         self.emptyelement("line", attrs)
     
     def polyline(self, points, *, **kw):
@@ -84,6 +83,33 @@ class Renderer(base.Renderer):
         attrs = {"points": " ".join(s)}
         self._width(attrs, **kw)
         self.emptyelement("polyline", attrs)
+    
+    def box(self, dim, start=None, *pos, **kw):
+        attrs = {"class": "outline"}
+        (w, h) = dim
+        attrs["width"] = format(w)
+        attrs["height"] = format(h)
+        
+        if self.flip[1] < 0:
+            # Compensate for SVG not allowing negative height
+            if start:
+                (x, y) = start
+            else:
+                x = 0
+                y = 0
+            y += h
+            start = (x, y)
+        
+        if start:
+            (x, y) = start
+            attrs["x"] = format(x)
+            attrs["y"] = format(y * self.flip[1])
+        self._width(attrs, *pos, **kw)
+        self.emptyelement("rect", attrs)
+    
+    def _width(self, attrs, *, width=None):
+        if width is not None:
+            attrs["style"] = "stroke-width: {}".format(width)
     
     def circle(self, r, point=None):
         attrs = {"r": format(r), "class": "solid"}

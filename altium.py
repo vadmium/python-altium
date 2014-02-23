@@ -195,10 +195,8 @@ def main(filename):
     renderer.addobjects(symbols)
     
     with renderer.offset((0, size[1])) as base:
-        base.tree(
-            ("rect", {"class": "outline", "style": "stroke-width: 0.6", "width": format(size[0]), "height": format(size[1])}, ()),
-            ("rect", {"class": "outline", "style": "stroke-width: 0.6", "x": "20", "y": "20", "width": format(size[0] - 2 * 20), "height": format(size[1] - 2 * 20)}, ()),
-        )
+        base.box(size, (0, -size[1]), width=0.6)
+        base.box((x - 2 * 20 for x in size), (20, 20 - size[1]), width=0.6)
         for axis in range(2):
             for side in range(2):
                 for n in range(4):
