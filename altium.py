@@ -105,10 +105,14 @@ import os
 import os.path
 from datetime import date
 
-def main(filename):
-    """Convert an Altium *.SchDoc schematic file into an SVG file
+def main(filename, renderer="svg"):
+    """Convert an Altium *.SchDoc schematic file
     
-    The SVG file is written to the standard output."""
+    By default, the schematic is converted to an SVG file,
+    written to the standard output. It may also be rendered using TK.
+    """
+    
+    #~ renderer = {"svg", "tk"}[renderer]
     
     with open(filename, "rb") as file:
         objects = read(file)
