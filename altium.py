@@ -4,7 +4,6 @@ import struct
 from io import SEEK_CUR
 
 try:
-    # Python 3 fork: https://bitbucket.org/vadmium/olefileio
     from OleFileIO_PL import OleFileIO
 except ImportError:
     # Pillow version tends to do illegal seeks with Altium files
