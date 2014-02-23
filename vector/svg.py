@@ -86,6 +86,14 @@ class Renderer(base.Renderer):
             attrs["style"] = "stroke-width: {}".format(width)
         self.emptyelement("line", attrs)
     
+    def polyline(self, points, *, **kw):
+        s = list()
+        for (x, y) in points:
+            s.append("{},{}".format(x, y * self.flip[1]))
+        attrs = {"points": " ".join(s)}
+        self._width(attrs, **kw)
+        self.emptyelement("polyline", attrs)
+    
     def circle(self, r, point=None):
         attrs = {"r": format(r), "class": "solid"}
         if point:

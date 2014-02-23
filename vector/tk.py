@@ -16,8 +16,11 @@ class Renderer(base.Renderer):
         )
         self.canvas.pack(fill=tkinter.BOTH, expand=True)
     
-    def line(self, a=(0, 0), b=(0, 0), width=None):
-        points = (x * self.scaling for point in (a, b) for x in point)
+    def line(self, a=(0, 0), b=(0, 0), *pos, **kw):
+        self.polyline(a, b, *pos, **kw)
+    
+    def polyline(self, points, *, width=None):
+        points = (x * self.scaling for point in points for x in point)
         width = width or self.linewidth
         self.canvas.create_line(*points, fill=self.colour, width=width)
     

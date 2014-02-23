@@ -167,14 +167,6 @@ def main(filename):
         with renderer.element("marker",
         dict(overflow="visible", markerUnits="userSpaceOnUse", id="io")):
             renderer.polygon(((-5, 0), (0, +2.5), (+5, 0), (0, -2.5)))
-        
-        svg.tree(
-            ("g", dict(id="dchevron"), (
-                ("line", dict(x2="5"), ()),
-                ("polyline", dict(points="8,+4 5,0 8,-4"), ()),
-                ("polyline", dict(points="11,+4 8,0 11,-4"), ()),
-            )),
-        )
     
     symbols = list()
     @symbols.append
@@ -191,6 +183,11 @@ def main(filename):
     def arrow(renderer):
         renderer.hline(b=5)
         basearrow(OffsetRenderer(renderer, (5, 0)))
+    @symbols.append
+    def dchevron(renderer):
+        renderer.hline(b=5)
+        renderer.polyline(((8, +4), (5, 0), (8, -4)))
+        renderer.polyline(((11, +4), (8, 0), (11, -4)))
     @symbols.append
     def nc(renderer):
         renderer.line((+3, +3), (-3, -3), width=0.6)
@@ -226,7 +223,8 @@ def main(filename):
                     cwd = pwd
                 filename = os.path.join(pwd, filename)
             with renderer.element("g", {"transform": "translate({})".format(", ".join(map(format, (s - 20 for s in size))))}):
-                renderer.emptyelement("polyline", dict(style="stroke-width: 0.6", points="-350,-0 -350,-80 -0,-80"), ())
+                points = ((-350, 0), (-350, 80), (-0, 80))
+                renderer.polyline(points, width=0.6)
                 renderer.hline(a=-350, y=50, width=0.6)
                 renderer.vline(50, 20, -300, width=0.6)
                 renderer.vline(50, 20, -100, width=0.6)
