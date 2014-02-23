@@ -104,6 +104,7 @@ from textwrap import TextWrapper
 import os
 import os.path
 from datetime import date
+from vector import OffsetRenderer
 
 def main(filename):
     """Convert an Altium *.SchDoc schematic file into an SVG file
@@ -168,20 +169,6 @@ def main(filename):
             renderer.polygon(((-5, 0), (0, +2.5), (+5, 0), (0, -2.5)))
         
         svg.tree(
-            ("g", dict(id="gnd"), (
-                ("line", dict(x2="10"), ()),
-                ("line", dict(y1="-7", y2="+7", x1="10", x2="10", style="stroke-width: 1.5"), ()),
-                ("line", dict(y1="-4", y2="+4", x1="13", x2="13", style="stroke-width: 1.5"), ()),
-                ("line", dict(y1="-1", y2="+1", x1="16", x2="16", style="stroke-width: 1.5"), ()),
-            )),
-            ("g", dict(id="rail"), (
-                ("line", dict(x2="10"), ()),
-                ("line", dict(y1="-7", y2="+7", x1="10", x2="10", style="stroke-width: 1.5"), ()),
-            )),
-            ("g", dict(id="arrow"), (
-                ("line", dict(x2="5"), ()),
-                ("g", dict(transform="translate(5)"), (arrow,))
-            )),
             ("g", dict(id="dchevron"), (
                 ("line", dict(x2="5"), ()),
                 ("polyline", dict(points="8,+4 5,0 8,-4"), ()),
@@ -190,6 +177,20 @@ def main(filename):
         )
     
     symbols = list()
+    @symbols.append
+    def gnd(renderer):
+        renderer.hline(b=10)
+        renderer.vline(-7, +7, 10, width=1.5)
+        renderer.vline(-4, +4, 13, width=1.5)
+        renderer.vline(-1, +1, 16, width=1.5)
+    @symbols.append
+    def rail(renderer):
+        renderer.hline(b=10)
+        renderer.vline(-7, +7, 10, width=1.5)
+    @symbols.append
+    def arrow(renderer):
+        renderer.hline(b=5)
+        basearrow(OffsetRenderer(renderer, (5, 0)))
     @symbols.append
     def nc(renderer):
         renderer.line((+3, +3), (-3, -3), width=0.6)
@@ -224,30 +225,31 @@ def main(filename):
                 if os.path.samefile(pwd, cwd):
                     cwd = pwd
                 filename = os.path.join(pwd, filename)
-            renderer.tree(("g", {"transform": "translate({})".format(", ".join(map(format, (s - 20 for s in size))))}, (
-                ("polyline", dict(style="stroke-width: 0.6", points="-350,-0 -350,-80 -0,-80"), ()),
-                ("line", dict(style="stroke-width: 0.6", x1="-350", y1="-50", y2="-50"), ()),
-                ("line", dict(style="stroke-width: 0.6", x1="-300", y1="-50", x2="-300", y2="-20"), ()),
-                ("line", dict(style="stroke-width: 0.6", x1="-100", y1="-50", x2="-100", y2="-20"), ()),
-                ("line", dict(style="stroke-width: 0.6", x1="-350", y1="-20", y2="-20"), ()),
-                ("line", dict(style="stroke-width: 0.6", x1="-350", y1="-10", y2="-10"), ()),
-                ("line", dict(style="stroke-width: 0.6", x1="-150", y1="-20", x2="-150"), ()),
+            with renderer.element("g", {"transform": "translate({})".format(", ".join(map(format, (s - 20 for s in size))))}):
+                renderer.emptyelement("polyline", dict(style="stroke-width: 0.6", points="-350,-0 -350,-80 -0,-80"), ())
+                renderer.hline(a=-350, y=50, width=0.6)
+                renderer.vline(50, 20, -300, width=0.6)
+                renderer.vline(50, 20, -100, width=0.6)
+                renderer.hline(a=-350, y=20, width=0.6)
+                renderer.hline(a=-350, y=10, width=0.6)
+                renderer.vline(a=20, x=-150, width=0.6)
                 
-                ("text", dict(x="-345", y="-70"), ("Title",)),
-                ("text", dict(x="-345", y="-40"), ("Size",)),
-                ("text", dict(x="-340", y="-30", style="dominant-baseline: middle"), (sheetstyle,)),
-                ("text", dict(x="-295", y="-40"), ("Number",)),
-                ("text", dict(x="-95", y="-40"), ("Revision",)),
-                ("text", dict(x="-345", y="-10"), ("Date",)),
-                ("text", dict(x="-300", y="-10"), (format(date.fromtimestamp(stat.st_mtime), "%x"),)),
-                ("text", dict(x="-345", y="-0"), ("File",)),
-                ("text", dict(x="-300", y="-0"), (filename,)),
-                ("text", dict(x="-145", y="-10"), (
-                    "Sheet",
-                    ("tspan", dict(x="-117"), ("of",)),
-                )),
-                ("text", dict(x="-145", y="-0"), ("Drawn By:",)),
-            )))
+                renderer.tree(
+                    ("text", dict(x="-345", y="-70"), ("Title",)),
+                    ("text", dict(x="-345", y="-40"), ("Size",)),
+                    ("text", dict(x="-340", y="-30", style="dominant-baseline: middle"), (sheetstyle,)),
+                    ("text", dict(x="-295", y="-40"), ("Number",)),
+                    ("text", dict(x="-95", y="-40"), ("Revision",)),
+                    ("text", dict(x="-345", y="-10"), ("Date",)),
+                    ("text", dict(x="-300", y="-10"), (format(date.fromtimestamp(stat.st_mtime), "%x"),)),
+                    ("text", dict(x="-345", y="-0"), ("File",)),
+                    ("text", dict(x="-300", y="-0"), (filename,)),
+                    ("text", dict(x="-145", y="-10"), (
+                        "Sheet",
+                        ("tspan", dict(x="-117"), ("of",)),
+                    )),
+                    ("text", dict(x="-145", y="-0"), ("Drawn By:",)),
+                )
     
     for obj in objects:
         if (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR"} and

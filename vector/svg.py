@@ -52,13 +52,36 @@ class Renderer(base.Renderer):
             attrs.update(zip("xy", map(format, offset)))
         self.emptyelement("use", attrs)
     
-    def line(self, a=None, b=None, width=None):
+    def line(self, a=None, b=None, *pos, **kw):
         attrs = dict()
         for (n, p) in enumerate((a, b), 1):
             if p:
                 (x, y) = p
                 attrs["x{}".format(n)] = format(x)
                 attrs["y{}".format(n)] = format(y * self.flip[1])
+        self._line(attrs, *pos, **kw)
+    
+    def hline(self, a=None, b=None, y=None, *pos, **kw):
+        attrs = dict()
+        if y is not None:
+            y = format(y * self.flip[1])
+            attrs.update(y1=y, y2=y)
+        for (n, xn) in enumerate((a, b), 1):
+            if xn is not None:
+                attrs["x{}".format(n)] = format(xn)
+        self._line(attrs, *pos, **kw)
+    
+    def vline(self, a=None, b=None, x=None, *pos, **kw):
+        attrs = dict()
+        if x is not None:
+            x = format(x)
+            attrs.update(x1=x, x2=x)
+        for (n, yn) in enumerate((a, b), 1):
+            if yn is not None:
+                attrs["y{}".format(n)] = format(yn * self.flip[1])
+        self._line(attrs, *pos, **kw)
+    
+    def _line(self, attrs, *, width=None):
         if width is not None:
             attrs["style"] = "stroke-width: {}".format(width)
         self.emptyelement("line", attrs)
