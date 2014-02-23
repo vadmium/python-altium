@@ -120,6 +120,13 @@ class Renderer(base.Renderer):
         self.xml.endElement("svg")
     
     @contextmanager
+    def offset(self, offset):
+        (x, y) = offset
+        translate = "translate({}, {})".format(x, y * self.flip[-1])
+        with self.element("g", dict(transform=translate)):
+            yield self
+    
+    @contextmanager
     def element(self, name, *pos, **kw):
         self.xml.startElement(name, *pos, **kw)
         yield

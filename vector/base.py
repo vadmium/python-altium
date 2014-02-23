@@ -1,4 +1,5 @@
 import operator
+from contextlib import contextmanager
 
 class Renderer:
     def hline(self, a=None, b=None, y=None, *pos, **kw):
@@ -17,7 +18,12 @@ class Renderer:
         pass
     
     def draw(self, object, offset=None):
-        object.draw(OffsetRenderer(self, offset))
+        with self.offset(offset) as offset:
+            object.draw(offset)
+    
+    @contextmanager
+    def offset(self, offset):
+        yield OffsetRenderer(self, offset)
 
 class OffsetRenderer:
     def __init__(self, renderer, offset):

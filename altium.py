@@ -104,7 +104,6 @@ from textwrap import TextWrapper
 import os
 import os.path
 from datetime import date
-from vector import OffsetRenderer
 
 def main(filename):
     """Convert an Altium *.SchDoc schematic file into an SVG file
@@ -182,7 +181,8 @@ def main(filename):
     @symbols.append
     def arrow(renderer):
         renderer.hline(b=5)
-        basearrow(OffsetRenderer(renderer, (5, 0)))
+        with renderer.offset((5, 0)) as offset:
+            basearrow(offset)
     @symbols.append
     def dchevron(renderer):
         renderer.hline(b=5)
@@ -194,9 +194,8 @@ def main(filename):
         renderer.line((-3, +3), (+3, -3), width=0.6)
     renderer.addobjects(symbols)
     
-    translate = "translate(0, {})".format(-size[1])
-    with renderer.element("g", {"transform": translate}):
-        renderer.tree(
+    with renderer.offset((0, size[1])) as base:
+        base.tree(
             ("rect", {"class": "outline", "style": "stroke-width: 0.6", "width": format(size[0]), "height": format(size[1])}, ()),
             ("rect", {"class": "outline", "style": "stroke-width: 0.6", "x": "20", "y": "20", "width": format(size[0] - 2 * 20), "height": format(size[1] - 2 * 20)}, ()),
         )
@@ -208,12 +207,13 @@ def main(filename):
                     translate[axis ^ 1] = 10
                     if side:
                         translate[axis ^ 1] += size[axis ^ 1] - 20
-                    with renderer.element("g", dict(transform="translate({})".format(", ".join(map(format, translate))))):
+                    translate[1] *= -1
+                    with base.offset(translate) as ref:
                         label = chr(ord("1A"[axis]) + n)
-                        renderer.tree(("text", {"style": "dominant-baseline: middle; text-anchor: middle"}, (label,)))
+                        ref.tree(("text", {"style": "dominant-baseline: middle; text-anchor: middle"}, (label,)))
                         if n + 1 < 4:
                             x = format(size[axis] / 4 / 2)
-                            renderer.emptyelement("line", dict(style="stroke-width: 0.6", x1=x, y1="-10", x2=x, y2="+10", transform="rotate({})".format(axis * 90)))
+                            ref.emptyelement("line", dict(style="stroke-width: 0.6", x1=x, y1="-10", x2=x, y2="+10", transform="rotate({})".format(axis * 90)))
         
         if "TITLEBLOCKON" in sheet:
             if not os.path.isabs(filename):
@@ -222,17 +222,17 @@ def main(filename):
                 if os.path.samefile(pwd, cwd):
                     cwd = pwd
                 filename = os.path.join(pwd, filename)
-            with renderer.element("g", {"transform": "translate({})".format(", ".join(map(format, (s - 20 for s in size))))}):
+            with base.offset((size[0] - 20, 20 - size[1])) as block:
                 points = ((-350, 0), (-350, 80), (-0, 80))
-                renderer.polyline(points, width=0.6)
-                renderer.hline(a=-350, y=50, width=0.6)
-                renderer.vline(50, 20, -300, width=0.6)
-                renderer.vline(50, 20, -100, width=0.6)
-                renderer.hline(a=-350, y=20, width=0.6)
-                renderer.hline(a=-350, y=10, width=0.6)
-                renderer.vline(a=20, x=-150, width=0.6)
+                block.polyline(points, width=0.6)
+                block.hline(a=-350, y=50, width=0.6)
+                block.vline(50, 20, -300, width=0.6)
+                block.vline(50, 20, -100, width=0.6)
+                block.hline(a=-350, y=20, width=0.6)
+                block.hline(a=-350, y=10, width=0.6)
+                block.vline(a=20, x=-150, width=0.6)
                 
-                renderer.tree(
+                block.tree(
                     ("text", dict(x="-345", y="-70"), ("Title",)),
                     ("text", dict(x="-345", y="-40"), ("Size",)),
                     ("text", dict(x="-340", y="-30", style="dominant-baseline: middle"), (sheetstyle,)),
@@ -261,7 +261,6 @@ def main(filename):
         
         elif (obj.keys() - {"INDEXINSHEET", "IOTYPE", "ALIGNMENT"} == {"RECORD", "OWNERPARTID", "STYLE", "WIDTH", "LOCATION.X", "LOCATION.Y", "COLOR", "AREACOLOR", "TEXTCOLOR", "NAME", "UNIQUEID"} and
         obj["RECORD"] == Record.PORT and obj["OWNERPARTID"] == b"-1"):
-            translate = ", ".join(format(int(obj["LOCATION." + "XY"[x]]) * (1, -1)[x]) for x in range(2))
             width = int(obj["WIDTH"])
             if "IOTYPE" in obj:
                 points = "0,0 5,-5 {xx},-5 {x},0 {xx},+5 5,+5".format(x=width, xx=width - 5)
@@ -284,10 +283,12 @@ def main(filename):
                 shapeattrs.update(transform="rotate(90) translate({})".format(-width))
                 labelattrs.update(transform="rotate(-90)")
             labelattrs.update(style="dominant-baseline: middle; text-anchor: {}".format(anchor))
-            renderer.tree(("g", dict(transform="translate({})".format(translate)), (
-                ("polygon", shapeattrs, ()),
-                ("text", labelattrs, overline(obj["NAME"])),
-            )))
+            offset = (int(obj["LOCATION." + x]) for x in "XY")
+            with renderer.offset(offset) as offset:
+                offset.tree(
+                    ("polygon", shapeattrs, ()),
+                    ("text", labelattrs, overline(obj["NAME"])),
+                )
         
         elif (obj.keys() - {"INDEXINSHEET"} >= {"RECORD", "OWNERPARTID", "LINEWIDTH", "COLOR", "LOCATIONCOUNT", "X1", "Y1", "X2", "Y2"} and
         obj["RECORD"] == Record.WIRE and obj["OWNERPARTID"] == b"-1" and obj["LINEWIDTH"] == b"1"):
