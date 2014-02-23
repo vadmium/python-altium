@@ -16,9 +16,10 @@ class Renderer(base.Renderer):
         )
         self.canvas.pack(fill=tkinter.BOTH, expand=True)
     
-    def line(self, a=(0, 0), b=(0, 0)):
+    def line(self, a=(0, 0), b=(0, 0), width=None):
         points = (x * self.scaling for point in (a, b) for x in point)
-        self.canvas.create_line(*points, fill=self.colour, width=self.linewidth)
+        width = width or self.linewidth
+        self.canvas.create_line(*points, fill=self.colour, width=width)
     
     def circle(self, r, centre=(0, 0)):
         coords = tuple((o - r, o + r) for o in centre)

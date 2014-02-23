@@ -40,25 +40,27 @@ class Renderer(base.Renderer):
             css.append("{} {{\n{}}}\n".format(selector, rules))
         self.tree(("style", dict(type="text/css"), css))
     
-    def set_objects(self, objects):
+    def addobjects(self, objects):
         with self.element("defs", dict()):
             for d in objects:
-                with self.element("g", dict(id=type(d).__name__)):
-                    d.draw(self)
+                with self.element("g", dict(id=d.__name__)):
+                    d(self)
     
     def draw(self, object, offset):
-        attrs = {"xlink:href": "#{}".format(type(object).__name__)}
+        attrs = {"xlink:href": "#{}".format(object.__name__)}
         if offset:
             attrs.update(zip("xy", map(format, offset)))
         self.emptyelement("use", attrs)
     
-    def line(self, a=None, b=None):
+    def line(self, a=None, b=None, width=None):
         attrs = dict()
         for (n, p) in enumerate((a, b), 1):
             if p:
                 (x, y) = p
                 attrs["x{}".format(n)] = format(x)
                 attrs["y{}".format(n)] = format(y * self.flip[1])
+        if width is not None:
+            attrs["style"] = "stroke-width: {}".format(width)
         self.emptyelement("line", attrs)
     
     def circle(self, r, point=None):

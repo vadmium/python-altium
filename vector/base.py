@@ -1,7 +1,7 @@
 import operator
 
 class Renderer:
-    def set_objects(self, objects):
+    def addobjects(self, objects):
         pass
     
     def draw(self, object, offset=None):

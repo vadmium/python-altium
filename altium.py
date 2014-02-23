@@ -187,11 +187,14 @@ def main(filename):
                 ("polyline", dict(points="8,+4 5,0 8,-4"), ()),
                 ("polyline", dict(points="11,+4 8,0 11,-4"), ()),
             )),
-            ("g", dict(id="nc"), (
-                ("line", dict(x1="+3", y1="+3", x2="-3", y2="-3", style="stroke-width: 0.6"), ()),
-                ("line", dict(x1="-3", y1="+3", x2="+3", y2="-3", style="stroke-width: 0.6"), ()),
-            )),
         )
+    
+    symbols = list()
+    @symbols.append
+    def nc(renderer):
+        renderer.line((+3, +3), (-3, -3), width=0.6)
+        renderer.line((-3, +3), (+3, -3), width=0.6)
+    renderer.addobjects(symbols)
     
     translate = "translate(0, {})".format(-size[1])
     with renderer.element("g", {"transform": translate}):
