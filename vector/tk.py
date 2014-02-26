@@ -3,12 +3,14 @@ import tkinter
 from . import base
 
 class Renderer(base.Renderer):
-    def __init__(self, size, line=0.4, textsize=None, textbottom=False,
-    colour="black"):
-        self.colour = colour
+    def __init__(self, size, units, unitmult=1, *, margin=0,
+    down=+1,  # -1 if y axis points upwards, not implemented
+    line=1, textsize=None, textbottom=False):
+        self.colour = "black"
         
         root = Tk()
-        self.scaling = root.call("tk", "scaling") * 72 / 25.4  # pixels/mm
+        self.scaling = root.call("tk", "scaling") * 72  # pixels/in
+        self.scaling *= unitmult / {"mm": 25.4, "in": 1}[units]
         self.linewidth = line * self.scaling
         self.canvas = tkinter.Canvas(root,
             relief=tkinter.SUNKEN, borderwidth=1,
