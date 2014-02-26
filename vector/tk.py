@@ -3,7 +3,8 @@ import tkinter
 from . import base
 
 class Renderer(base.Renderer):
-    def __init__(self, size, line=0.4, colour="black"):
+    def __init__(self, size, line=0.4, textsize=None, textbottom=False,
+    colour="black"):
         self.colour = colour
         
         root = Tk()

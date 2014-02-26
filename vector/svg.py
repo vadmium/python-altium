@@ -5,7 +5,7 @@ from . import base
 class Renderer(base.Renderer):
     def __init__(self, size, units, unitmult=1, *, margin=0,
     down=+1,  # -1 if y axis points upwards
-    line=None):
+    line=None, textsize=None, textbottom=False):
         width = size[0] + 2 * margin
         height = size[1] + 2 * margin
         if down < 0:
@@ -29,9 +29,17 @@ class Renderer(base.Renderer):
         if line is not None:
             outline.append("stroke-width: {}".format(line))
         
+        text = list()
+        if textsize is not None:
+            text.append("font-size: {}px".format(textsize))
+        if textbottom:
+            text.append("dominant-baseline: text-after-edge")
+        text.append("fill: currentColor")
+        
         rulesets = (
             (".outline, path, line, polyline", outline),
             (".solid", ("fill: currentColor", "stroke: none")),
+            ("text", text),
         )
         
         css = list()
@@ -136,6 +144,23 @@ class Renderer(base.Renderer):
         if start:
             attrs.update(zip("xy", map(format, start)))
         self.emptyelement("rect", attrs)
+    
+    def text(self, text, point=None, horiz=None, vert=None, *, colour=None):
+        styles = list()
+        if vert is not None:
+            baseline = {self.CENTRE: "middle"}[vert]
+            styles.append(("dominant-baseline", baseline))
+        if horiz is not None:
+            styles.append(("text-anchor", {self.CENTRE: "middle"}[horiz]))
+        attrs = dict()
+        if styles:
+            attrs["style"] = "; ".join(map(": ".join, styles))
+        if point:
+            (x, y) = point
+            attrs["x"] = format(x)
+            attrs["y"] = format(y * self.flip[1])
+        self._colour(attrs, colour)
+        self.tree(("text", attrs, (text,)))
     
     def _colour(self, attrs, colour=None):
         if colour:

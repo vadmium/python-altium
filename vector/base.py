@@ -24,6 +24,8 @@ class Renderer:
     @contextmanager
     def offset(self, offset):
         yield OffsetRenderer(self, offset)
+    
+    CENTRE = 0
 
 class OffsetRenderer:
     def __init__(self, renderer, offset):

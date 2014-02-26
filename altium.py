@@ -121,16 +121,10 @@ def main(filename):
         size = tuple(int(sheet["CUSTOM" + "XY"[x]]) for x in range(2))
     
     # Units are 1/100" or 10 mils
-    renderer = svg.Renderer(size, "in", 1/100, margin=0.3, line=1, down=-1)
+    renderer = svg.Renderer(size, "in", 1/100,
+        margin=0.3, line=1, down=-1, textsize=8.75, textbottom=True)
     
-    style = ["""
-        text {
-            font-size: 8.75px;
-            dominant-baseline: text-after-edge;
-            fill: currentColor;
-        }
-    """]
-    
+    style = list()
     for n in range(int(sheet["FONTIDCOUNT"])):
         n = format(1 + n)
         style.append("""
@@ -208,7 +202,7 @@ def main(filename):
                     translate[1] *= -1
                     with base.offset(translate) as ref:
                         label = chr(ord("1A"[axis]) + n)
-                        ref.tree(("text", {"style": "dominant-baseline: middle; text-anchor: middle"}, (label,)))
+                        ref.text(label, horiz=ref.CENTRE, vert=ref.CENTRE)
                         if n + 1 < 4:
                             x = format(size[axis] / 4 / 2)
                             ref.emptyelement("line", dict(style="stroke-width: 0.6", x1=x, y1="-10", x2=x, y2="+10", transform="rotate({})".format(axis * 90)))
