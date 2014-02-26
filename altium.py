@@ -208,8 +208,11 @@ def main(filename, renderer="svg"):
                         label = chr(ord("1A"[axis]) + n)
                         ref.text(label, horiz=ref.CENTRE, vert=ref.CENTRE)
                         if n + 1 < 4:
-                            x = format(size[axis] / 4 / 2)
-                            ref.emptyelement("line", dict(style="stroke-width: 0.6", x1=x, y1="-10", x2=x, y2="+10", transform="rotate({})".format(axis * 90)))
+                            x = size[axis] / 4 / 2
+                            if axis:
+                                ref.hline(-10, +10, -x, width=0.6)
+                            else:
+                                ref.vline(-10, +10, x, width=0.6)
         
         if "TITLEBLOCKON" in sheet:
             if not os.path.isabs(filename):
