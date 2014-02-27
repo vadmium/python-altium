@@ -223,6 +223,7 @@ Rectangle for component symbol
 * `|COLOR`: Outline colour
 * `|AREACOLOR`: Fill colour
 * `|ISSOLID=T`: Optional.
+* `|TRANSPARENT=T`: Optional
     If not present, rectangle is not filled in, despite `|AREACOLOR`.
 
 ## `|RECORD=15` (Sheet Symbol) ##
