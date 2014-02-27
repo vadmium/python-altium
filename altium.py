@@ -294,7 +294,7 @@ def main(filename):
             )),))
         
         elif (obj.keys() - {"INDEXINSHEET"} >= {"RECORD", "OWNERPARTID", "LINEWIDTH", "COLOR", "LOCATIONCOUNT", "X1", "Y1", "X2", "Y2"} and
-        obj["RECORD"] == b"27" and obj["OWNERPARTID"] == b"-1" and obj["LINEWIDTH"] == b"1"):
+        obj["RECORD"] == Record.WIRE and obj["OWNERPARTID"] == b"-1" and obj["LINEWIDTH"] == b"1"):
             points = list()
             for location in range(int(obj["LOCATIONCOUNT"])):
                 location = format(1 + location)
@@ -368,7 +368,7 @@ def main(filename):
                 polyline(svg, obj)
         
         elif (obj.keys() - {"OWNERPARTDISPLAYMODE", "INDEXINSHEET"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "COLOR", "ISNOTACCESIBLE", "LINEWIDTH", "LOCATION.X", "LOCATION.Y", "CORNER.X", "CORNER.Y"} and
-        obj["RECORD"] == b"13" and obj["ISNOTACCESIBLE"] == b"T"):
+        obj["RECORD"] == Record.LINE and obj["ISNOTACCESIBLE"] == b"T"):
             owner = objects[1 + int(obj["OWNERINDEX"])]
             if (obj["OWNERPARTID"] == owner["CURRENTPARTID"] and
             obj.get("OWNERPARTDISPLAYMODE", b"0") == owner.get("DISPLAYMODE", b"0")):
@@ -540,11 +540,11 @@ def main(filename):
                         tree(svg, (("tspan", {"x": "0", "dy": "10", "xml:space": "preserve"}, (softline,)),))
         
         elif (obj.keys() == {"RECORD", "OWNERINDEX", "ISNOTACCESIBLE", "OWNERPARTID", "LINEWIDTH", "COLOR", "LOCATIONCOUNT", "X1", "Y1", "X2", "Y2", "X3", "Y3", "X4", "Y4"} and
-        obj["RECORD"] == b"5" and obj["ISNOTACCESIBLE"] == b"T" and obj["OWNERPARTID"] == b"1" and obj["LINEWIDTH"] == b"1" and obj["LOCATIONCOUNT"] == b"4"):
+        obj["RECORD"] == Record.BEZIER and obj["ISNOTACCESIBLE"] == b"T" and obj["OWNERPARTID"] == b"1" and obj["LINEWIDTH"] == b"1" and obj["LOCATIONCOUNT"] == b"4"):
             emptyElement(svg, "path", dict(color=colour(obj["COLOR"]), d="M{} C {} {} {}".format(*(",".join(format(int(obj["XY"[x] + format(1 + n)]) * (+1, -1)[x]) for x in range(2)) for n in range(4)))))
         
         elif (obj.keys() - {"RADIUS_FRAC", "SECONDARYRADIUS_FRAC"} == {"RECORD", "OWNERINDEX", "ISNOTACCESIBLE", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "RADIUS", "SECONDARYRADIUS", "COLOR", "AREACOLOR", "ISSOLID"} and
-        obj["RECORD"] == b"8" and obj["ISNOTACCESIBLE"] == b"T" and obj.get("RADIUS_FRAC", b"94381") == b"94381" and obj["SECONDARYRADIUS"] == obj["RADIUS"] and obj.get("SECONDARYRADIUS_FRAC", b"22993") == b"22993" and obj["ISSOLID"] == b"T"):
+        obj["RECORD"] == Record.ELLIPSE and obj["ISNOTACCESIBLE"] == b"T" and obj.get("RADIUS_FRAC", b"94381") == b"94381" and obj["SECONDARYRADIUS"] == obj["RADIUS"] and obj.get("SECONDARYRADIUS_FRAC", b"22993") == b"22993" and obj["ISSOLID"] == b"T"):
             attrs = {"stroke": colour(obj["COLOR"]), "fill": colour(obj["AREACOLOR"]), "r": obj["RADIUS"].decode("ascii"), "stroke-width": "0.6"}
             attrs.update(("c" + "xy"[x], format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x])) for x in range(2))
             emptyElement(svg, "circle", attrs)
