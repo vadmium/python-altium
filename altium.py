@@ -231,22 +231,19 @@ def main(filename, renderer="svg"):
                 block.hline(a=-350, y=10, width=0.6)
                 block.vline(a=20, x=-150, width=0.6)
                 
-                block.tree(
-                    ("text", dict(x="-345", y="-70"), ("Title",)),
-                    ("text", dict(x="-345", y="-40"), ("Size",)),
-                    ("text", dict(x="-340", y="-30", style="dominant-baseline: middle"), (sheetstyle,)),
-                    ("text", dict(x="-295", y="-40"), ("Number",)),
-                    ("text", dict(x="-95", y="-40"), ("Revision",)),
-                    ("text", dict(x="-345", y="-10"), ("Date",)),
-                    ("text", dict(x="-300", y="-10"), (format(date.fromtimestamp(stat.st_mtime), "%x"),)),
-                    ("text", dict(x="-345", y="-0"), ("File",)),
-                    ("text", dict(x="-300", y="-0"), (filename,)),
-                    ("text", dict(x="-145", y="-10"), (
-                        "Sheet",
-                        ("tspan", dict(x="-117"), ("of",)),
-                    )),
-                    ("text", dict(x="-145", y="-0"), ("Drawn By:",)),
-                )
+                block.text("Title", (-345, 70))
+                block.text("Size", (-345, 40))
+                block.text(sheetstyle, (-340, 30), vert=block.CENTRE)
+                block.text("Number", (-295, 40))
+                block.text("Revision", (-95, 40))
+                block.text("Date", (-345, 10))
+                d = format(date.fromtimestamp(stat.st_mtime), "%x")
+                block.text(d, (-300, 10))
+                block.text("File", (-345, 0))
+                block.text(filename, (-300, 0))
+                block.text("Sheet", (-145, 10))
+                block.text("of", (-117, 10))
+                block.text("Drawn By:", (-145, 0))
     
     for obj in objects:
         if (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR"} and
@@ -381,48 +378,47 @@ def main(filename, renderer="svg"):
             if obj["OWNERPARTID"] == objects[1 + int(obj["OWNERINDEX"])]["CURRENTPARTID"]:
                 pinlength = int(obj["PINLENGTH"])
                 pinconglomerate = int(obj["PINCONGLOMERATE"])
-                translated = list()
-                rotated = list()
-                translated.append(("g", dict(transform="rotate({})".format((pinconglomerate & 3) * -90)), rotated))
-                lineattrs = dict()
-                linestart = 0
-                if "SYMBOL_OUTEREDGE" in obj:
-                    rotated.append(("circle", {"r": "2.85", "cx": "3.15", "class": "outline", "style": "stroke-width: 0.6"}, ()))
-                    linestart += 6
-                lineattrs.update(x2=format(pinlength))
-                electrical = obj.get("ELECTRICAL", PinElectrical.INPUT)
-                marker = {PinElectrical.INPUT: "input", PinElectrical.IO: "io", PinElectrical.OUTPUT: "output", PinElectrical.PASSIVE: None, PinElectrical.POWER: None}[electrical]
-                if marker:
-                    lineattrs["marker-start"] = format("url(#{})".format(marker))
-                    if electrical in {PinElectrical.INPUT, PinElectrical.IO}:
-                        linestart += 5
-                if linestart:
-                    lineattrs["x1"] = format(linestart)
-                rotated.append(("line", lineattrs, ()))
-                
-                dir = ((+1, 0), (0, -1), (-1, 0), (0, +1))[pinconglomerate & 0x03]  # SVG co-ordinates, not Altium coordinates
-                
-                if pinconglomerate & 1:
-                    rotate = ("rotate(-90)",)
-                else:
-                    rotate = ()
-                
-                if pinconglomerate & 8 and "NAME" in obj:
-                    attrs = dict(style="dominant-baseline: middle; text-anchor: " + ("end", "start")[pinconglomerate >> 1 & 1])
-                    tspans = overline(obj["NAME"])
-                    transforms = ["translate({})".format(", ".join(format(-7 * dir[x]) for x in range(2)))]
-                    transforms.extend(rotate)
-                    attrs.update(transform=" ".join(transforms))
-                    translated.append(("text", attrs, tspans))
-                
-                if pinconglomerate & 16:
-                    attrs = dict(style="text-anchor: " + ("start", "end")[pinconglomerate >> 1 & 1])
-                    transforms = ["translate({})".format(", ".join(format(+9 * dir[x]) for x in range(2)))]
-                    transforms.extend(rotate)
-                    attrs.update(transform=" ".join(transforms))
-                    translated.append(("text", attrs, (obj["DESIGNATOR"].decode("ascii"),)))
-                
-                renderer.tree(("g", dict(transform="translate({})".format(", ".join(format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x]) for x in range(2)))), translated))
+                offset = (int(obj["LOCATION." + x]) for x in "XY")
+                with renderer.offset(offset) as translated:
+                    with translated.element("g", dict(transform="rotate({})".format((pinconglomerate & 3) * -90))):
+                        lineattrs = dict()
+                        linestart = 0
+                        if "SYMBOL_OUTEREDGE" in obj:
+                            translated.emptyelement("circle", {"r": "2.85", "cx": "3.15", "class": "outline", "style": "stroke-width: 0.6"})
+                            linestart += 6
+                        lineattrs.update(x2=format(pinlength))
+                        electrical = obj.get("ELECTRICAL", PinElectrical.INPUT)
+                        marker = {PinElectrical.INPUT: "input", PinElectrical.IO: "io", PinElectrical.OUTPUT: "output", PinElectrical.PASSIVE: None, PinElectrical.POWER: None}[electrical]
+                        if marker:
+                            lineattrs["marker-start"] = format("url(#{})".format(marker))
+                            if electrical in {PinElectrical.INPUT, PinElectrical.IO}:
+                                linestart += 5
+                        if linestart:
+                            lineattrs["x1"] = format(linestart)
+                        translated.emptyelement("line", lineattrs)
+                    
+                    dir = ((+1, 0), (0, -1), (-1, 0), (0, +1))[pinconglomerate & 0x03]  # SVG co-ordinates, not Altium coordinates
+                    
+                    if pinconglomerate & 1:
+                        rotate = ("rotate(-90)",)
+                    else:
+                        rotate = ()
+                    
+                    if pinconglomerate & 8 and "NAME" in obj:
+                        attrs = dict(style="dominant-baseline: middle; text-anchor: " + ("end", "start")[pinconglomerate >> 1 & 1])
+                        tspans = overline(obj["NAME"])
+                        transforms = ["translate({})".format(", ".join(format(-7 * dir[x]) for x in range(2)))]
+                        transforms.extend(rotate)
+                        attrs.update(transform=" ".join(transforms))
+                        translated.tree(("text", attrs, tspans))
+                    
+                    if pinconglomerate & 16:
+                        attrs = dict(style="text-anchor: " + ("start", "end")[pinconglomerate >> 1 & 1])
+                        transforms = ["translate({})".format(", ".join(format(+9 * dir[x]) for x in range(2)))]
+                        transforms.extend(rotate)
+                        attrs.update(transform=" ".join(transforms))
+                        designator = obj["DESIGNATOR"].decode("ascii")
+                        translated.tree(("text", attrs, (designator,)))
         
         elif (obj.keys() - {"INDEXINSHEET", "ORIENTATION", "STYLE", "ISCROSSSHEETCONNECTOR"} == {"RECORD", "OWNERPARTID", "COLOR", "LOCATION.X", "LOCATION.Y", "SHOWNETNAME", "TEXT"} and
         obj["RECORD"] == Record.POWER_OBJECT and obj["OWNERPARTID"] == b"-1"):
@@ -590,11 +586,12 @@ def main(filename, renderer="svg"):
         
         elif (obj.keys() == {"RECORD", "OWNERINDEX", "INDEXINSHEET", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "CORNER.X", "CORNER.Y", "EMBEDIMAGE", "FILENAME"} and
         obj["RECORD"] == Record.IMAGE and obj["OWNERINDEX"] == b"1" and obj["OWNERPARTID"] == b"-1" and obj["EMBEDIMAGE"] == b"T" and obj["FILENAME"] == b"newAltmLogo.bmp"):
-            topleft = tuple(int(obj[("LOCATION.X", "CORNER.Y")[x]]) * (+1, -1)[x] for x in range(2))
-            attrs = {"style": "stroke-width: 0.6", "class": "outline"}
-            attrs.update(("xy"[x], format(topleft[x])) for x in range(2))
-            attrs.update((("width", "height")[x], format(int(obj[("CORNER.X", "LOCATION.Y")[x]]) * (+1, -1)[x] - topleft[x])) for x in range(2))
-            renderer.emptyelement("rect", attrs)
+            start = list()
+            dim = list()
+            for x in "XY":
+                start.append(int(obj["LOCATION." + x]))
+                dim.append(int(obj["CORNER." + x]) - start[-1])
+            renderer.box(dim, start, width=0.6)
         
         else:
             print("".join("|{}={!r}".format(p, v) for (p, v) in sorted(obj.items())), file=stderr)
