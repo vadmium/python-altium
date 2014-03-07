@@ -440,16 +440,16 @@ def main(filename, renderer="svg"):
                 renderer.emptyelement("use", attrs)
                 
                 if obj["SHOWNETNAME"] != b"F":
-                    style = {
-                        b"2": "text-anchor: end; dominant-baseline: middle",
-                        b"3": "text-anchor: middle; dominant-baseline: text-before-edge",
-                        None: "text-anchor: start; dominant-baseline: middle",
-                        b"1": "text-anchor: middle; dominant-baseline: text-after-edge",
-                    }.get(orient, "text-anchor: middle; dominant-baseline: middle")
-                    attrs = dict(style=style)
-                    attrs.update(("xy"[x], format({b"2": (-1, 0), b"3": (0, -1), None: (+1, 0), b"1": (0, +1)}[orient][x] * offset * (+1, -1)[x])) for x in range(2))
+                    orients = {
+                        b"2": (renderer.RIGHT, renderer.CENTRE, (-1, 0)),
+                        b"3": (renderer.CENTRE, renderer.TOP, (0, -1)),
+                        None: (renderer.LEFT, renderer.CENTRE, (+1, 0)),
+                        b"1": (renderer.CENTRE, renderer.BOTTOM, (0, +1)),
+                    }
+                    (horiz, vert, pos) = orients[orient]
                     t = obj["TEXT"].decode("ascii")
-                    renderer.tree(("text", attrs, (t,)))
+                    pos = (p * offset for p in pos)
+                    renderer.text(t, pos, horiz=horiz, vert=vert)
         
         elif (obj.keys() - {"INDEXINSHEET", "OWNERPARTDISPLAYMODE", "ISSOLID", "LINEWIDTH", "CORNERXRADIUS", "CORNERYRADIUS"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "AREACOLOR", "COLOR", "CORNER.X", "CORNER.Y", "ISNOTACCESIBLE", "LOCATION.X", "LOCATION.Y"} and
         obj["RECORD"] in {Record.RECTANGLE, Record.ROUND_RECTANGLE} and obj["ISNOTACCESIBLE"] == b"T" and obj.get("ISSOLID", b"T") == b"T"):

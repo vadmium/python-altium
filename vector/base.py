@@ -26,6 +26,10 @@ class Renderer:
         yield OffsetRenderer(self, offset)
     
     CENTRE = 0
+    LEFT = -1
+    RIGHT = +1
+    TOP = -1
+    BOTTOM = +1
 
 class OffsetRenderer:
     def __init__(self, renderer, offset):

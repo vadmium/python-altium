@@ -148,10 +148,19 @@ class Renderer(base.Renderer):
     def text(self, text, point=None, horiz=None, vert=None, *, colour=None):
         styles = list()
         if vert is not None:
-            baseline = {self.CENTRE: "middle"}[vert]
-            styles.append(("dominant-baseline", baseline))
+            baselines = {
+                self.CENTRE: "middle",
+                self.TOP: "text-before-edge",
+                self.BOTTOM: "text-after-edge",
+            }
+            styles.append(("dominant-baseline", baselines[vert]))
         if horiz is not None:
-            styles.append(("text-anchor", {self.CENTRE: "middle"}[horiz]))
+            anchors = {
+                self.CENTRE: "middle",
+                self.LEFT: "start",
+                self.RIGHT: "end",
+            }
+            styles.append(("text-anchor", anchors[horiz]))
         attrs = dict()
         if styles:
             attrs["style"] = "; ".join(map(": ".join, styles))
