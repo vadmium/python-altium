@@ -42,6 +42,17 @@ class Renderer(base.Renderer):
             ("text", text),
         ]
     
+    def addfont(self, id, size, family, italic=None, bold=None):
+        props = [
+            "font-size: {}px".format(size),
+            "font-family: {}".format(family),
+        ]
+        if italic:
+            props.append("font-style: italic")
+        if bold:
+            props.append("font-weight: bold")
+        self.rulesets.append(("." + id, props))
+    
     def start(self):
         css = list()
         for (selector, rules) in self.rulesets:
@@ -146,7 +157,8 @@ class Renderer(base.Renderer):
             attrs.update(zip("xy", map(format, start)))
         self.emptyelement("rect", attrs)
     
-    def text(self, text, point=None, horiz=None, vert=None, *, colour=None):
+    def text(self, text, point=None, horiz=None, vert=None, *,
+    font=None, colour=None):
         styles = list()
         if vert is not None:
             baselines = {
@@ -169,6 +181,8 @@ class Renderer(base.Renderer):
             (x, y) = point
             attrs["x"] = format(x)
             attrs["y"] = format(y * self.flip[1])
+        if font is not None:
+            attrs["class"] = font
         self._colour(attrs, colour)
         self.tree(("text", attrs, (text,)))
     

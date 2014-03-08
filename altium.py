@@ -130,17 +130,16 @@ def main(filename, renderer="svg"):
     
     for n in range(int(sheet["FONTIDCOUNT"])):
         n = format(1 + n)
-        props = [
-            "font-size: {}px".format(int(sheet["SIZE" + n]) * 0.875),
-            "font-family: {}".format(sheet["FONTNAME" + n].decode("ascii")),
-        ]
+        fontsize = int(sheet["SIZE" + n]) * 0.875
+        family = sheet["FONTNAME" + n].decode("ascii")
+        kw = dict()
         italic = sheet.get("ITALIC" + n)
         if italic:
-            props.append("font-style: italic")
+            kw.update(italic=True)
         bold = sheet.get("BOLD" + n)
         if bold:
-            props.append("font-weight: bold")
-        renderer.rulesets.append((".font" + n, props))
+            kw.update(bold=True)
+        renderer.addfont("font" + n, fontsize, family, **kw)
     renderer.start()
     
     def basearrow(renderer):
@@ -339,11 +338,10 @@ def main(filename, renderer="svg"):
             owner = objects[1 + int(obj["OWNERINDEX"])]
             if int(owner["PARTCOUNT"]) > 2:
                 desig += chr(ord("A") + int(owner["CURRENTPARTID"]) - 1)
-            attrs = dict()
-            renderer._colour(attrs, colour(obj["COLOR"]))
-            attrs["class"] = "font" + obj["FONTID"].decode()
-            attrs.update(("xy"[x], format(int(obj["LOCATION." + "XY"[x]]) * (1, -1)[x])) for x in range(2))
-            renderer.tree(("text", attrs, (desig,)))
+            renderer.text(desig, (int(obj["LOCATION." + x]) for x in "XY"),
+                colour=colour(obj["COLOR"]),
+                font="font" + obj["FONTID"].decode(),
+            )
         
         elif (obj.keys() >= {"RECORD", "OWNERPARTID", "OWNERINDEX", "LOCATIONCOUNT", "X1", "X2", "Y1", "Y2"} and
         obj["RECORD"] == Record.POLYLINE and obj.get("ISNOTACCESIBLE", b"T") == b"T" and obj.get("LINEWIDTH", b"1") == b"1"):

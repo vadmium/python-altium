@@ -1,6 +1,7 @@
 from tkinter import Tk
 import tkinter
 from . import base
+from tkinter.font import Font
 
 class Renderer(base.Renderer):
     def __init__(self, size, units, unitmult=1, *, margin=0,
@@ -18,6 +19,15 @@ class Renderer(base.Renderer):
             height=size[1] * self.scaling, width=size[0] * self.scaling,
         )
         self.canvas.pack(fill=tkinter.BOTH, expand=True)
+        self.fonts = dict()
+    
+    def addfont(self, id, size, family, italic=None, bold=None):
+        kw = dict()
+        if italic:
+            kw.update(slant="italic")
+        if bold:
+            kw.update(weight="bold")
+        self.fonts[id] = Font(name=id, family=family, size=-size, **kw)
     
     def line(self, a=(0, 0), b=(0, 0), *pos, **kw):
         self.polyline(a, b, *pos, **kw)
