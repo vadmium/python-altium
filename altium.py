@@ -128,22 +128,20 @@ def main(filename, renderer="svg"):
     renderer = svg.Renderer(size, "in", 1/100,
         margin=0.3, line=1, down=-1, textsize=8.75, textbottom=True)
     
-    style = list()
     for n in range(int(sheet["FONTIDCOUNT"])):
         n = format(1 + n)
-        style.append("""
-            .font{} {{
-                font-size: {}px;
-                font-family: {};
-        """.format(n, int(sheet["SIZE" + n]) * 0.875, sheet["FONTNAME" + n].decode("ascii")))
+        props = [
+            "font-size: {}px".format(int(sheet["SIZE" + n]) * 0.875),
+            "font-family: {}".format(sheet["FONTNAME" + n].decode("ascii")),
+        ]
         italic = sheet.get("ITALIC" + n)
         if italic:
-            style.append("font-style: italic;")
+            props.append("font-style: italic")
         bold = sheet.get("BOLD" + n)
         if bold:
-            style.append("font-weight: bold;")
-        style.append("}")
-    renderer.tree(("style", dict(type="text/css"), style))
+            props.append("font-weight: bold")
+        renderer.rulesets.append((".font" + n, props))
+    renderer.start()
     
     def basearrow(renderer):
         renderer.polygon(((0, 0), (-2, -3), (5, 0), (-2, +3)))

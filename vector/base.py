@@ -2,6 +2,9 @@ import operator
 from contextlib import contextmanager
 
 class Renderer:
+    def start(self):
+        pass
+    
     def hline(self, a=None, b=None, y=None, *pos, **kw):
         for (name, x) in zip("ab", (a, b)):
             if x is not None or y is not None:

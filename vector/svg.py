@@ -36,14 +36,15 @@ class Renderer(base.Renderer):
             text.append("dominant-baseline: text-after-edge")
         text.append("fill: currentColor")
         
-        rulesets = (
+        self.rulesets = [
             (".outline, path, line, polyline", outline),
             (".solid", ("fill: currentColor", "stroke: none")),
             ("text", text),
-        )
-        
+        ]
+    
+    def start(self):
         css = list()
-        for (selector, rules) in rulesets:
+        for (selector, rules) in self.rulesets:
             rules = "".join(map("  {};\n".format, rules))
             css.append("{} {{\n{}}}\n".format(selector, rules))
         self.tree(("style", dict(type="text/css"), css))
