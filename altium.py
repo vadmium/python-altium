@@ -136,9 +136,6 @@ def main(filename, renderer="svg"):
                 font-size: {}px;
                 font-family: {};
         """.format(n, int(sheet["SIZE" + n]) * 0.875, sheet["FONTNAME" + n].decode("ascii")))
-        rotation = sheet.get("ROTATION" + n)
-        if rotation:
-            style.append("rotate: {};".format(rotation.decode("ascii")))
         italic = sheet.get("ITALIC" + n)
         if italic:
             style.append("font-style: italic;")
@@ -451,7 +448,7 @@ def main(filename, renderer="svg"):
                     pos = (p * offset for p in pos)
                     renderer.text(t, pos, horiz=horiz, vert=vert)
         
-        elif (obj.keys() - {"INDEXINSHEET", "OWNERPARTDISPLAYMODE", "ISSOLID", "LINEWIDTH", "CORNERXRADIUS", "CORNERYRADIUS"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "AREACOLOR", "COLOR", "CORNER.X", "CORNER.Y", "ISNOTACCESIBLE", "LOCATION.X", "LOCATION.Y"} and
+        elif (obj.keys() - {"INDEXINSHEET", "OWNERPARTDISPLAYMODE", "ISSOLID", "LINEWIDTH", "CORNERXRADIUS", "CORNERYRADIUS", "TRANSPARENT"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "AREACOLOR", "COLOR", "CORNER.X", "CORNER.Y", "ISNOTACCESIBLE", "LOCATION.X", "LOCATION.Y"} and
         obj["RECORD"] in {Record.RECTANGLE, Record.ROUND_RECTANGLE} and obj["ISNOTACCESIBLE"] == b"T" and obj.get("ISSOLID", b"T") == b"T"):
             owner = objects[1 + int(obj["OWNERINDEX"])]
             if (obj["OWNERPARTID"] == owner["CURRENTPARTID"] and
