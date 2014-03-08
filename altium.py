@@ -157,9 +157,6 @@ def main(filename):
                 font-size: {}px;
                 font-family: {};
         """.format(n, int(sheet["SIZE" + n]) * 0.875, sheet["FONTNAME" + n].decode("ascii")))
-        rotation = sheet.get("ROTATION" + n)
-        if rotation:
-            style.append("rotate: {};".format(rotation.decode("ascii")))
         italic = sheet.get("ITALIC" + n)
         if italic:
             style.append("font-style: italic;")

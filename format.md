@@ -326,7 +326,10 @@ Junction of connected pins, wires, etc, sometimes represented by a dot
 First object after the header object
 * `|FONTIDCOUNT`: Specifies the fonts referenced by `|FONTID`
     * `|SIZE`_n: Leading
-    * `|ITALIC`_n_`=T|BOLD`_n_`=T|ROTATION`_n_`=90`: Each optional
+    * `|ITALIC`_n_`=T|BOLD`_n_`=T`: Each optional
+    * `|ROTATION`_n_`=90`: Optional.
+        Seems to be associated with sideways vertical text,
+        but the text objects themselves already indicate the orientation.
     * `|FONTNAME`_n_`=Times New Roman`
 * `|USEMBCS=T|ISBOC=T|HOTSPOTGRIDON=T|HOTSPOTGRIDON=T|HOTSPOTGRIDSIZE`
 * `|SHEETSTYLE`
