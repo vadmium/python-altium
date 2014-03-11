@@ -2,6 +2,7 @@ from tkinter import Tk
 import tkinter
 from . import base
 from tkinter.font import Font
+from collections import Iterable
 
 class Renderer(base.Renderer):
     def __init__(self, size, units, unitmult=1, *, margin=0,
@@ -43,10 +44,23 @@ class Renderer(base.Renderer):
         points = (x[i] * self.scaling for i in range(2) for x in coords)
         self.canvas.create_rectangle(*points, outline=self.colour)
     
-    def circle(self, r, centre=(0, 0), *, colour=None):
+    def circle(self, r, centre=(0, 0), *,
+    outline=None, fill=None, width=None):
         coords = tuple((o - r, o + r) for o in centre)
         points = (x[i] * self.scaling for i in range(2) for x in coords)
-        self.canvas.create_oval(*points, fill=self._colour(colour), width=0)
+        kw = dict()
+        if fill:
+            if isinstance(fill, Iterable):
+                kw.update(fill=self._colour(fill))
+            else:
+                kw.update(fill=self.colour)
+            if outline:
+                kw.update(width=width or self.linewidth)
+            else:
+                kw.update(width=0)
+        if isinstance(outline, Iterable):
+            kw.update(outline=self._colour(outline))
+        self.canvas.create_oval(*points, **kw)
     
     def polygon(self, points, *, colour=None):
         points = tuple(x * self.scaling for point in points for x in point)

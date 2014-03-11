@@ -243,7 +243,7 @@ def main(filename, renderer="svg"):
         obj["RECORD"] == b"29" and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
             location = (int(obj["LOCATION." + x]) for x in "XY")
             col = colour(obj["COLOR"])
-            renderer.circle(2, location, colour=col)
+            renderer.circle(2, location, fill=col)
         
         elif (obj.keys() - {"INDEXINSHEET", "IOTYPE", "ALIGNMENT"} == {"RECORD", "OWNERPARTID", "STYLE", "WIDTH", "LOCATION.X", "LOCATION.Y", "COLOR", "AREACOLOR", "TEXTCOLOR", "NAME", "UNIQUEID"} and
         obj["RECORD"] == Record.PORT and obj["OWNERPARTID"] == b"-1"):
@@ -254,12 +254,11 @@ def main(filename, renderer="svg"):
                 points = "0,-5 {xx},-5 {x},0 {xx},+5 0,+5".format(x=width, xx=width - 5)
             shapeattrs = {"points": points}
             shapestyle = (("stroke-width", 0.6),)
-            renderer._colour(shapeattrs, colour(obj["COLOR"]))
-            shapeattrs["stroke"] = shapeattrs.pop("color")
-            renderer._colour(shapeattrs, colour(obj["AREACOLOR"]))
-            shapeattrs["fill"] = shapeattrs.pop("color")
-            labelattrs = dict()
-            renderer._colour(labelattrs, colour(obj["TEXTCOLOR"]))
+            stroke = renderer._colour(colour(obj["COLOR"]), "stroke")
+            shapeattrs.update(stroke)
+            fill = renderer._colour(colour(obj["AREACOLOR"]), "fill")
+            shapeattrs.update(fill)
+            labelattrs = dict(renderer._colour(colour(obj["TEXTCOLOR"])))
             if (obj.get("ALIGNMENT") == b"2") ^ (obj["STYLE"] != b"7"):
                 labelattrs["x"] = "10"
                 labelpoint = (10, 0)
@@ -387,8 +386,7 @@ def main(filename, renderer="svg"):
                         lineattrs = dict()
                         linestart = 0
                         if "SYMBOL_OUTEREDGE" in obj:
-                            translated.emptyelement("circle", {"r": "2.85", "cx": "3.15", "class": "outline"},
-                                style=(("stroke-width", 0.6),))
+                            translated.circle(2.85, (3.15, 0), width=0.6)
                             linestart += 6
                         lineattrs.update(x2=format(pinlength))
                         electrical = obj.get("ELECTRICAL", PinElectrical.INPUT)
@@ -440,8 +438,7 @@ def main(filename, renderer="svg"):
                 (marker, offset) = {PowerObjectStyle.ARROW: ("arrow", 12), PowerObjectStyle.BAR: ("rail", 12), PowerObjectStyle.GND: ("gnd", 20)}.get(obj["STYLE"], (None, 0))
             location = tuple(int(obj["LOCATION." + "XY"[x]]) for x in range(2))
             
-            a = dict()
-            renderer._colour(a, colour(obj["COLOR"]))
+            a = dict(renderer._colour(colour(obj["COLOR"])))
             a["transform"] = "translate({})".format(", ".join(format(location[x] * (+1, -1)[x]) for x in range(2)))
             with renderer.element("g", a):
                 attrs = {"xlink:href": "#{}".format(marker)}
@@ -467,12 +464,11 @@ def main(filename, renderer="svg"):
             if (obj["OWNERPARTID"] == owner["CURRENTPARTID"] and
             obj.get("OWNERPARTDISPLAYMODE", b"0") == owner.get("DISPLAYMODE", b"0")):
                 style = (("stroke-width", 0.6),)
-                attrs = dict()
-                renderer._colour(attrs, colour(obj["COLOR"]))
-                attrs["stroke"] = attrs.pop("color")
+                stroke = renderer._colour(colour(obj["COLOR"]), "stroke")
+                attrs = dict(stroke)
                 if "ISSOLID" in obj:
-                    renderer._colour(attrs, colour(obj["AREACOLOR"]))
-                    attrs["fill"] = attrs.pop("color")
+                    fill = renderer._colour(colour(obj["AREACOLOR"]), "fill")
+                    attrs.update(fill)
                 else:
                     attrs["fill"] = "none"
                 topleft = tuple(int(obj[("LOCATION.X", "CORNER.Y")[x]]) * (+1, -1)[x] for x in range(2))
@@ -486,8 +482,7 @@ def main(filename, renderer="svg"):
         
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERPARTID", "COLOR", "FONTID", "LOCATION.X", "LOCATION.Y", "TEXT"} and
         obj["RECORD"] == Record.NET_LABEL and obj["OWNERPARTID"] == b"-1"):
-            attrs = dict()
-            renderer._colour(attrs, colour(obj["COLOR"]))
+            attrs = dict(renderer._colour(colour(obj["COLOR"])))
             attrs["transform"] = "translate({})".format(", ".join(format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x]) for x in range(2)))
             attrs["class"] = "font" + obj["FONTID"].decode("ascii")
             renderer.tree(("text", attrs, overline(obj["TEXT"])))
@@ -528,7 +523,7 @@ def main(filename, renderer="svg"):
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "COLOR", "LOCATION.X", "LOCATION.Y", "OWNERPARTID"} and
         obj["RECORD"] == b"22" and obj["OWNERPARTID"] == b"-1"):
             attrs = {"xlink:href": "#nc"}
-            renderer._colour(attrs, colour(obj["COLOR"]))
+            attrs.update(renderer._colour(colour(obj["COLOR"])))
             for x in range(2):
                 location = int(obj["LOCATION." + "XY"[x]])
                 attrs["xy"[x]] = format(location * (1, -1)[x])
@@ -546,23 +541,18 @@ def main(filename, renderer="svg"):
         
         elif (obj.keys() == {"RECORD", "OWNERINDEX", "ISNOTACCESIBLE", "OWNERPARTID", "LINEWIDTH", "COLOR", "LOCATIONCOUNT", "X1", "Y1", "X2", "Y2", "X3", "Y3", "X4", "Y4"} and
         obj["RECORD"] == Record.BEZIER and obj["ISNOTACCESIBLE"] == b"T" and obj["OWNERPARTID"] == b"1" and obj["LINEWIDTH"] == b"1" and obj["LOCATIONCOUNT"] == b"4"):
-            a = dict()
-            renderer._colour(a, colour(obj["COLOR"]))
+            a = dict(renderer._colour(colour(obj["COLOR"])))
             a["d"] = "M{} C {} {} {}".format(*(",".join(format(int(obj["XY"[x] + format(1 + n)]) * (+1, -1)[x]) for x in range(2)) for n in range(4)))
             renderer.emptyelement("path", a)
         
         elif (obj.keys() - {"RADIUS_FRAC", "SECONDARYRADIUS_FRAC"} == {"RECORD", "OWNERINDEX", "ISNOTACCESIBLE", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "RADIUS", "SECONDARYRADIUS", "COLOR", "AREACOLOR", "ISSOLID"} and
         obj["RECORD"] == Record.ELLIPSE and obj["ISNOTACCESIBLE"] == b"T" and obj.get("RADIUS_FRAC", b"94381") == b"94381" and obj["SECONDARYRADIUS"] == obj["RADIUS"] and obj.get("SECONDARYRADIUS_FRAC", b"22993") == b"22993" and obj["ISSOLID"] == b"T"):
-            attrs = {
-                "r": obj["RADIUS"].decode("ascii"),
-                "stroke-width": "0.6",
-            }
-            renderer._colour(attrs, colour(obj["COLOR"]))
-            attrs["stroke"] = attrs.pop("color")
-            renderer._colour(attrs, colour(obj["AREACOLOR"]))
-            attrs["fill"] = attrs.pop("color")
-            attrs.update(("c" + "xy"[x], format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x])) for x in range(2))
-            renderer.emptyelement("circle", attrs)
+            renderer.circle(
+                r=int(obj["RADIUS"]),
+                width=0.6,
+                outline=colour(obj["COLOR"]), fill=colour(obj["AREACOLOR"]),
+                centre=(int(obj["LOCATION." + x]) for x in "XY"),
+            )
         
         elif (obj.keys() - {"INDEXINSHEET", "SYMBOLTYPE"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "XSIZE", "YSIZE", "COLOR", "AREACOLOR", "ISSOLID", "UNIQUEID"} and
         obj["RECORD"] == Record.SHEET_SYMBOL and obj["OWNERPARTID"] == b"-1" and obj["ISSOLID"] == b"T" and obj.get("SYMBOLTYPE", b"Normal") == b"Normal"):
@@ -571,10 +561,9 @@ def main(filename, renderer="svg"):
                 "height": obj["YSIZE"].decode("ascii"),
             }
             style = (("stroke-width", 0.6),)
-            renderer._colour(attrs, colour(obj["COLOR"]))
-            attrs["stroke"] = attrs.pop("color")
-            renderer._colour(attrs, colour(obj["AREACOLOR"]))
-            attrs["fill"] = attrs.pop("color")
+            attrs = dict()
+            attrs.update(renderer._colour(colour(obj["COLOR"]), "stroke"))
+            attrs.update(renderer._colour(colour(obj["AREACOLOR"]), "fill"))
             attrs.update(("xy"[x], format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x])) for x in range(2))
             renderer.emptyelement("rect", attrs, style=style)
         

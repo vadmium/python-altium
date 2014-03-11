@@ -2,6 +2,7 @@ from xml.sax.saxutils import XMLGenerator
 from contextlib import contextmanager
 from . import base
 from math import sin, cos, radians
+from collections import Iterable
 
 class Renderer(base.Renderer):
     def __init__(self, size, units, unitmult=1, *, margin=0,
@@ -96,7 +97,7 @@ class Renderer(base.Renderer):
     def _line(self, attrs, *, colour=None, **kw):
         style = list()
         self._width(style, **kw)
-        self._colour(attrs, colour)
+        attrs.update(self._colour(colour))
         self.emptyelement("line", attrs, style=style)
     
     def polyline(self, points, *, colour=None, **kw):
@@ -106,7 +107,7 @@ class Renderer(base.Renderer):
         attrs = {"points": " ".join(s)}
         style = list()
         self._width(style, **kw)
-        self._colour(attrs, colour)
+        attrs.update(self._colour(colour))
         self.emptyelement("polyline", attrs, style=style)
     
     def box(self, dim, start=None, *pos, **kw):
@@ -133,25 +134,34 @@ class Renderer(base.Renderer):
         self._width(style, *pos, **kw)
         self.emptyelement("rect", attrs, style=style)
     
-    def _width(self, style, *, width=None):
-        if width is not None:
-            style.append(("stroke-width", width))
-    
-    def circle(self, r, point=None, *, colour=None):
-        attrs = {"r": format(r), "class": "solid"}
-        if point:
-            (x, y) = point
+    def circle(self, r, centre=None, *, outline=None, fill=None, width=None):
+        attrs = {"r": format(r)}
+        style = list()
+        if fill:
+            attrs["class"] = "solid"
+            if isinstance(fill, Iterable):
+                style.extend(self._colour(fill, "fill"))
+        else:
+            attrs["class"] = "outline"
+        if isinstance(outline, Iterable):
+            style.extend(self._colour(outline, "stroke"))
+        if centre:
+            (x, y) = centre
             attrs["cx"] = format(x)
             attrs["cy"] = format(y * self.flip[1])
-        self._colour(attrs, colour)
-        self.emptyelement("circle", attrs)
+        self._width(style, width)
+        self.emptyelement("circle", attrs, style=style)
+    
+    def _width(self, style, width=None):
+        if width is not None:
+            style.append(("stroke-width", width))
     
     def polygon(self, points, *, colour=None):
         s = list()
         for (x, y) in points:
             s.append("{},{}".format(x, y * self.flip[1]))
         attrs = {"class": "solid", "points": " ".join(s)}
-        self._colour(attrs, colour)
+        attrs.update(self._colour(colour))
         self.emptyelement("polygon", attrs)
     
     def rectangle(self, dim, start=None):
@@ -168,7 +178,7 @@ class Renderer(base.Renderer):
                 (x, y) = point
                 attrs["cx"] = format(x)
                 attrs["cy"] = format(y * self.flip[1])
-            self._colour(attrs, colour)
+            attrs.update(self._colour(colour))
             renderer.emptyelement("circle", attrs)
         else:
             a = list()
@@ -180,8 +190,7 @@ class Renderer(base.Renderer):
                 a.append(format((centre[x] + da * r[x]) * self.flip[x]))
                 d.append(format((db - da) * r[x] * self.flip[x]))
             large = (end - start) % 360 > 180
-            at = dict()
-            self._colour(at, colour)
+            at = dict(self._colour(colour))
             at["d"] = "M{a} a{r} 0 {large:d},0 {d}".format(
                 a=",".join(a),
                 r=",".join(map(format, r)),
@@ -224,14 +233,16 @@ class Renderer(base.Renderer):
         
         if font is not None:
             attrs["class"] = font
-        self._colour(attrs, colour)
+        attrs.update(self._colour(colour))
         with self.element("text", attrs, style=style):
             self.xml.characters(text)
     
-    def _colour(self, attrs, colour=None):
+    def _colour(self, colour=None, attr="color"):
         if colour:
             colour = (min(int(x * 0x100), 0xFF) for x in colour)
-            attrs["color"] = "#" + "".join(map("{:02X}".format, colour))
+            return ((attr, "#" + "".join(map("{:02X}".format, colour))),)
+        else:
+            return ()
     
     def addobjects(self, objects):
         with self.element("defs", dict()):
