@@ -39,15 +39,25 @@ class Renderer(base.Renderer):
         colour = self._colour(colour)
         self.canvas.create_line(*points, fill=colour, width=width)
     
-    def box(self, dim, start=(0, 0), *, width=None):
-        coords = tuple((x, o + x) for (x, o) in zip(start, dim))
-        points = (x[i] * self.scaling for i in range(2) for x in coords)
-        self.canvas.create_rectangle(*points, outline=self.colour)
-    
     def circle(self, r, centre=(0, 0), *,
     outline=None, fill=None, width=None):
         coords = tuple((o - r, o + r) for o in centre)
         points = (x[i] * self.scaling for i in range(2) for x in coords)
+        kw = self._closed(outline, fill, width)
+        self.canvas.create_oval(*points, **kw)
+    
+    def polygon(self, points, *, colour=None):
+        points = tuple(x * self.scaling for point in points for x in point)
+        self.canvas.create_polygon(points, fill=self._colour(colour))
+    
+    def rectangle(self, dim, start=(0, 0), *,
+    outline=None, fill=None, width=None):
+        coords = tuple((x, o + x) for (x, o) in zip(start, dim))
+        points = (x[i] * self.scaling for i in range(2) for x in coords)
+        kw = self._closed(outline, fill, width)
+        self.canvas.create_rectangle(*points, **kw)
+    
+    def _closed(self, outline=None, fill=None, width=None):
         kw = dict()
         if fill:
             if isinstance(fill, Iterable):
@@ -60,16 +70,7 @@ class Renderer(base.Renderer):
                 kw.update(width=0)
         if isinstance(outline, Iterable):
             kw.update(outline=self._colour(outline))
-        self.canvas.create_oval(*points, **kw)
-    
-    def polygon(self, points, *, colour=None):
-        points = tuple(x * self.scaling for point in points for x in point)
-        self.canvas.create_polygon(points, fill=self._colour(colour))
-    
-    def rectangle(self, dim, start=(0, 0)):
-        coords = tuple((x, o + x) for (x, o) in zip(start, dim))
-        points = (x[i] * self.scaling for i in range(2) for x in coords)
-        self.canvas.create_rectangle(*points, fill=self.colour, width=0)
+        return kw
     
     def text(self, text, point=(0, 0),
     horiz=base.Renderer.LEFT, vert=base.Renderer.BOTTOM, *,

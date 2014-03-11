@@ -186,8 +186,9 @@ def main(filename, renderer="svg"):
     renderer.addobjects(symbols)
     
     with renderer.offset((0, size[1])) as base:
-        base.box(size, (0, -size[1]), width=0.6)
-        base.box((x - 2 * 20 for x in size), (20, 20 - size[1]), width=0.6)
+        base.rectangle(size, (0, -size[1]), width=0.6)  
+        dim = (x - 2 * 20 for x in size)
+        base.rectangle(dim, (20, 20 - size[1]), width=0.6)
         for axis in range(2):
             for side in range(2):
                 for n in range(4):
@@ -556,16 +557,11 @@ def main(filename, renderer="svg"):
         
         elif (obj.keys() - {"INDEXINSHEET", "SYMBOLTYPE"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "XSIZE", "YSIZE", "COLOR", "AREACOLOR", "ISSOLID", "UNIQUEID"} and
         obj["RECORD"] == Record.SHEET_SYMBOL and obj["OWNERPARTID"] == b"-1" and obj["ISSOLID"] == b"T" and obj.get("SYMBOLTYPE", b"Normal") == b"Normal"):
-            attrs = {
-                "width": obj["XSIZE"].decode("ascii"),
-                "height": obj["YSIZE"].decode("ascii"),
-            }
-            style = (("stroke-width", 0.6),)
-            attrs = dict()
-            attrs.update(renderer._colour(colour(obj["COLOR"]), "stroke"))
-            attrs.update(renderer._colour(colour(obj["AREACOLOR"]), "fill"))
-            attrs.update(("xy"[x], format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x])) for x in range(2))
-            renderer.emptyelement("rect", attrs, style=style)
+            renderer.rectangle((int(obj["XSIZE"]), int(obj["YSIZE"])),
+                width=0.6,
+                outline=colour(obj["COLOR"]), fill=colour(obj["AREACOLOR"]),
+                start=(int(obj["LOCATION." + x]) for x in "XY"),
+            )
         
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR", "FONTID", "TEXT"} and
         obj["RECORD"] in {Record.SHEET_NAME, Record.SHEET_FILE_NAME} and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
@@ -578,7 +574,7 @@ def main(filename, renderer="svg"):
             for x in "XY":
                 start.append(int(obj["LOCATION." + x]))
                 dim.append(int(obj["CORNER." + x]) - start[-1])
-            renderer.box(dim, start, width=0.6)
+            renderer.rectangle(dim, start, width=0.6)
         
         else:
             print("".join("|{}={!r}".format(p, v) for (p, v) in sorted(obj.items())), file=stderr)

@@ -60,8 +60,6 @@ class OffsetRenderer:
         self._renderer.polygon(map(self._map, points), *pos, **kw)
     def polyline(self, points, *pos, **kw):
         self._renderer.polyline(map(self._map, points), *pos, **kw)
-    def box(self, dim, start=None, *pos, **kw):
-        self._renderer.box(dim, self._map(start), *pos, **kw)
     def circle(self, r, centre=None, *pos, **kw):
         self._renderer.circle(r, self._map(centre), *pos, **kw)
     def rectangle(self, dim, start=None, *pos, **kw):

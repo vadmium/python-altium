@@ -110,12 +110,29 @@ class Renderer(base.Renderer):
         attrs.update(self._colour(colour))
         self.emptyelement("polyline", attrs, style=style)
     
-    def box(self, dim, start=None, *pos, **kw):
-        attrs = {"class": "outline"}
+    def circle(self, r, centre=None, *, outline=None, fill=None, width=None):
+        attrs = {"r": format(r)}
         style = list()
+        self._closed(attrs, style, outline, fill, width)
+        if centre:
+            (x, y) = centre
+            attrs["cx"] = format(x)
+            attrs["cy"] = format(y * self.flip[1])
+        self.emptyelement("circle", attrs, style=style)
+    
+    def polygon(self, points, *, colour=None):
+        s = list()
+        for (x, y) in points:
+            s.append("{},{}".format(x, y * self.flip[1]))
+        attrs = {"class": "solid", "points": " ".join(s)}
+        attrs.update(self._colour(colour))
+        self.emptyelement("polygon", attrs)
+    
+    def rectangle(self, dim, start=None, *,
+    outline=None, fill=None, width=None):
         (w, h) = dim
-        attrs["width"] = format(w)
-        attrs["height"] = format(h)
+        attrs = {"width": format(w), "height": format(h)}
+        style = list()
         
         if self.flip[1] < 0:
             # Compensate for SVG not allowing negative height
@@ -131,12 +148,11 @@ class Renderer(base.Renderer):
             (x, y) = start
             attrs["x"] = format(x)
             attrs["y"] = format(y * self.flip[1])
-        self._width(style, *pos, **kw)
+        
+        self._closed(attrs, style, outline, fill, width)
         self.emptyelement("rect", attrs, style=style)
     
-    def circle(self, r, centre=None, *, outline=None, fill=None, width=None):
-        attrs = {"r": format(r)}
-        style = list()
+    def _closed(self, attrs, style, outline=None, fill=None, width=None):
         if fill:
             attrs["class"] = "solid"
             if isinstance(fill, Iterable):
@@ -145,31 +161,11 @@ class Renderer(base.Renderer):
             attrs["class"] = "outline"
         if isinstance(outline, Iterable):
             style.extend(self._colour(outline, "stroke"))
-        if centre:
-            (x, y) = centre
-            attrs["cx"] = format(x)
-            attrs["cy"] = format(y * self.flip[1])
         self._width(style, width)
-        self.emptyelement("circle", attrs, style=style)
     
     def _width(self, style, width=None):
         if width is not None:
             style.append(("stroke-width", width))
-    
-    def polygon(self, points, *, colour=None):
-        s = list()
-        for (x, y) in points:
-            s.append("{},{}".format(x, y * self.flip[1]))
-        attrs = {"class": "solid", "points": " ".join(s)}
-        attrs.update(self._colour(colour))
-        self.emptyelement("polygon", attrs)
-    
-    def rectangle(self, dim, start=None):
-        attrs = {"class": "solid"}
-        attrs.update(zip(("width", "height"), map(format, dim)))
-        if start:
-            attrs.update(zip("xy", map(format, start)))
-        self.emptyelement("rect", attrs)
     
     def arc(self, r, start, end, centre=None, *, colour=None):
         if abs(end - start) >= 360:
