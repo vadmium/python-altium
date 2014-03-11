@@ -1,6 +1,7 @@
 from xml.sax.saxutils import XMLGenerator
 from contextlib import contextmanager
 from . import base
+from math import sin, cos, radians
 
 class Renderer(base.Renderer):
     def __init__(self, size, units, unitmult=1, *, margin=0,
@@ -156,6 +157,35 @@ class Renderer(base.Renderer):
         if start:
             attrs.update(zip("xy", map(format, start)))
         self.emptyelement("rect", attrs)
+    
+    def arc(self, r, start, end, centre=None, *, colour=None):
+        if abs(end - start) >= 360:
+            attrs = {"r": format(*r), "class": "outline"}
+            if point:
+                (x, y) = point
+                attrs["cx"] = format(x)
+                attrs["cy"] = format(y * self.flip[1])
+            self._colour(attrs, colour)
+            renderer.emptyelement("circle", attrs)
+        else:
+            a = list()
+            d = list()
+            for x in range(2):
+                sincos = (cos, sin)[x]
+                da = sincos(radians(start))
+                db = sincos(radians(end))
+                a.append(format((centre[x] + da * r[x]) * self.flip[x]))
+                d.append(format((db - da) * r[x] * self.flip[x]))
+            large = (end - start) % 360 > 180
+            at = dict()
+            self._colour(at, colour)
+            at["d"] = "M{a} a{r} 0 {large:d},0 {d}".format(
+                a=",".join(a),
+                r=",".join(map(format, r)),
+                large=large,
+                d=",".join(d),
+            )
+            self.emptyelement("path", at)
     
     def text(self, text, point=None, horiz=None, vert=None, *,
     angle=None, font=None, colour=None):

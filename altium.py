@@ -99,7 +99,6 @@ class SheetStyle:
 
 from vector import svg
 from sys import stderr
-from math import sin, cos, radians
 from textwrap import TextWrapper
 import os
 import os.path
@@ -495,34 +494,21 @@ def main(filename, renderer="svg"):
             if (owner["CURRENTPARTID"] == obj["OWNERPARTID"] and
             owner.get("DISPLAYMODE", b"0") == obj.get("OWNERPARTDISPLAYMODE", b"0")):
                 r = int(obj["RADIUS"])
-                endangle = float(obj["ENDANGLE"])
-                startangle = float(obj.get("STARTANGLE", 0))
-                if not startangle and endangle == 360:
-                    attrs = {"r": format(r), "class": "outline"}
-                    for x in range(2):
-                        location = int(obj["LOCATION." + "XY"[x]])
-                        attrs["c" + "xy"[x]] = format(location * (+1, -1)[x])
-                    renderer._colour(attrs, colour(obj["COLOR"]))
-                    renderer.emptyelement("circle", attrs)
-                else:
+                if obj["RECORD"] == Record.ELLIPTICAL_ARC:
                     r2 = obj.get("SECONDARYRADIUS")
-                    if r2:
-                        r = (r, int(r2))
+                    if r2 is None:
+                        r2 = 0
                     else:
-                        r = (r, r)
-                    a = list()
-                    d = list()
-                    for x in range(2):
-                        sincos = (cos, sin)[x]
-                        da = sincos(radians(startangle))
-                        db = sincos(radians(endangle))
-                        a.append(format((int(obj["LOCATION." + "XY"[x]]) + da * r[x]) * (+1, -1)[x]))
-                        d.append(format((db - da) * r[x] * (+1, -1)[x]))
-                    large = (endangle - startangle) % 360 > 180
-                    at = dict()
-                    renderer._colour(at, colour(obj["COLOR"]))
-                    at["d"] = "M{a} a{r} 0 {large:d},0 {d}".format(a=",".join(a), r=",".join(map(format, r)), large=large, d=",".join(d))
-                    renderer.emptyelement("path", at)
+                        r2 = int(r2)
+                else:
+                    r2 = r
+                
+                start = float(obj.get("STARTANGLE", 0))
+                end = float(obj["ENDANGLE"])
+                centre = (int(obj["LOCATION." + x]) for x in "XY")
+                renderer.arc((r, r2), start, end, centre,
+                    colour=colour(obj["COLOR"]),
+                )
         
         elif (obj.keys() - {"INDEXINSHEET", "LINEWIDTH"} > {"RECORD", "AREACOLOR", "COLOR", "ISNOTACCESIBLE", "ISSOLID", "LOCATIONCOUNT", "OWNERINDEX", "OWNERPARTID"} and
         obj["RECORD"] == Record.POLYGON and obj["AREACOLOR"] == b"16711680" and obj["ISNOTACCESIBLE"] == b"T" and obj["ISSOLID"] == b"T" and obj.get("LINEWIDTH", b"1") == b"1" and obj["OWNERPARTID"] == b"1"):
