@@ -57,6 +57,29 @@ class Renderer(base.Renderer):
         points = (x[i] * self.scaling for i in range(2) for x in coords)
         self.canvas.create_rectangle(*points, fill=self.colour, width=0)
     
+    def text(self, text, point=(0, 0),
+    horiz=base.Renderer.LEFT, vert=base.Renderer.BOTTOM, *,
+    font=None, colour=None):
+        kw = dict()
+        anchors = {
+            (self.TOP, self.LEFT): tkinter.NW,
+            (self.TOP, self.CENTRE): tkinter.N,
+            (self.TOP, self.RIGHT): tkinter.NE,
+            (self.CENTRE, self.LEFT): tkinter.W,
+            (self.CENTRE, self.CENTRE): tkinter.CENTER,
+            (self.CENTRE, self.RIGHT): tkinter.E,
+            (self.BOTTOM, self.LEFT): tkinter.SW,
+            (self.BOTTOM, self.CENTRE): tkinter.S,
+            (self.BOTTOM, self.RIGHT): tkinter.SE,
+        }
+        kw.update(anchor=anchors[(vert, horiz)])
+        if font is not None:
+            kw.update(font=self.fonts[font])
+        colour = self._colour(colour)
+        kw.update(fill=colour)
+        point = (x * self.scaling for x in point)
+        self.canvas.create_text(*point, text=text, **kw)
+    
     def _colour(self, colour=None):
         if colour:
             colour = (min(int(x * 0x1000), 0xFFF) for x in colour)
