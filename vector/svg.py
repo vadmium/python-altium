@@ -158,7 +158,7 @@ class Renderer(base.Renderer):
         self.emptyelement("rect", attrs)
     
     def text(self, text, point=None, horiz=None, vert=None, *,
-    font=None, colour=None):
+    angle=None, font=None, colour=None):
         styles = list()
         if vert is not None:
             baselines = {
@@ -177,10 +177,20 @@ class Renderer(base.Renderer):
         attrs = dict()
         if styles:
             attrs["style"] = "; ".join(map(": ".join, styles))
+        
         if point:
             (x, y) = point
+            y *= self.flip[1]
+        if angle is not None:
+            transform = list()
+            if point:
+                transform.append("translate({}, {})".format(x, y))
+            transform.append("rotate({})".format(angle))
+            attrs["transform"] = " ".join(transform)
+        elif point:
             attrs["x"] = format(x)
-            attrs["y"] = format(y * self.flip[1])
+            attrs["y"] = format(y)
+        
         if font is not None:
             attrs["class"] = font
         self._colour(attrs, colour)

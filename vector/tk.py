@@ -59,8 +59,10 @@ class Renderer(base.Renderer):
     
     def text(self, text, point=(0, 0),
     horiz=base.Renderer.LEFT, vert=base.Renderer.BOTTOM, *,
-    font=None, colour=None):
+    angle=None, font=None, colour=None):
         kw = dict()
+        if angle is not None:
+            kw.update(angle=angle)
         anchors = {
             (self.TOP, self.LEFT): tkinter.NW,
             (self.TOP, self.CENTRE): tkinter.N,

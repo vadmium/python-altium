@@ -265,20 +265,28 @@ def main(filename, renderer="svg"):
             renderer._colour(labelattrs, colour(obj["TEXTCOLOR"]))
             if (obj.get("ALIGNMENT") == b"2") ^ (obj["STYLE"] != b"7"):
                 labelattrs["x"] = "10"
+                labelpoint = (10, 0)
                 anchor = "start"
+                horiz = renderer.LEFT
             else:
                 labelattrs["x"] = format(width - 10)
+                labelpoint = (width - 10, 0)
                 anchor = "end"
+                horiz = renderer.RIGHT
+            labelkw = dict()
             if obj["STYLE"] == b"7":
                 shapeattrs.update(transform="rotate(90) translate({})".format(-width))
                 labelattrs.update(transform="rotate(-90)")
+                labelkw.update(angle=-90)
             labelattrs.update(style="dominant-baseline: middle; text-anchor: {}".format(anchor))
             offset = (int(obj["LOCATION." + x]) for x in "XY")
             with renderer.offset(offset) as offset:
-                offset.tree(
-                    ("polygon", shapeattrs, ()),
-                    ("text", labelattrs, overline(obj["NAME"])),
-                )
+                offset.emptyelement("polygon", shapeattrs)
+                offset.tree(("text", labelattrs, overline(obj["NAME"])))
+                #    colour=colour(obj["TEXTCOLOR"]),
+                #    point=labelpoint,
+                #    vert=offset.CENTRE, horiz=horiz,
+                #**labelkw)
         
         elif (obj.keys() - {"INDEXINSHEET"} >= {"RECORD", "OWNERPARTID", "LINEWIDTH", "COLOR", "LOCATIONCOUNT", "X1", "Y1", "X2", "Y2"} and
         obj["RECORD"] == Record.WIRE and obj["OWNERPARTID"] == b"-1" and obj["LINEWIDTH"] == b"1"):
@@ -309,10 +317,13 @@ def main(filename, renderer="svg"):
         obj["RECORD"] == Record.PARAMETER and obj["OWNERPARTID"] == b"-1"):
             if obj.get("ISHIDDEN") != b"T" and obj.keys() >= {"TEXT", "LOCATION.X", "LOCATION.Y"}:
                 orient = obj.get("ORIENTATION")
-                attrs = {"style": "dominant-baseline: {}; text-anchor: {}".format(*{None: ("text-after-edge", "start"), b"1": ("text-after-edge", "start"), b"2": ("text-before-edge", "end")}[orient])}
-                transforms = list()
+                kw = {
+                    None: dict(vert=renderer.BOTTOM, horiz=renderer.LEFT),
+                    b"1": dict(vert=renderer.BOTTOM, horiz=renderer.LEFT),
+                    b"2": dict(vert=renderer.TOP, horiz=renderer.RIGHT),
+                }[orient]
                 if orient == b"1":
-                    transforms.append("rotate(-90)")
+                    kw.update(angle=+90)
                 val = obj["TEXT"]
                 if val.startswith(b"="):
                     for o in objects:
@@ -324,13 +335,13 @@ def main(filename, renderer="svg"):
                         break
                     else:
                         raise LookupError("Parameter value for |OWNERINDEX={}|TEXT={}".format(obj["OWNERINDEX"].decode("ascii"), obj["TEXT"].decode("ascii")))
-                    renderer._colour(attrs, colour(obj["COLOR"]))
-                    transforms.insert(0, "translate({})".format(", ".join(format(int(obj["LOCATION." + "XY"[x]]) * (1, -1)[x]) for x in range(2))))
-                    attrs["transform"] = " ".join(transforms)
-                    attrs["class"] = "font" + obj["FONTID"].decode("ascii")
-                    renderer.tree(("text", attrs, (val.decode("ascii"),)))
+                    renderer.text(val.decode("ascii"),
+                        colour=colour(obj["COLOR"]),
+                        point=(int(obj["LOCATION." + x]) for x in "XY"),
+                        font="font" + obj["FONTID"].decode("ascii"),
+                    **kw)
                 else:
-                    text(renderer, obj, attrs=attrs, transforms=transforms)
+                    text(renderer, obj, **kw)
         
         elif (obj.keys() - {"INDEXINSHEET", "ISMIRRORED", "LOCATION.X_FRAC", "LOCATION.Y_FRAC"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR", "FONTID", "TEXT", "NAME", "READONLYSTATE"} and
         obj["RECORD"] == Record.DESIGNATOR and obj["OWNERPARTID"] == b"-1" and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["NAME"] == b"Designator" and obj["READONLYSTATE"] == b"1"):
@@ -390,28 +401,32 @@ def main(filename, renderer="svg"):
                             lineattrs["x1"] = format(linestart)
                         translated.emptyelement("line", lineattrs)
                     
-                    dir = ((+1, 0), (0, -1), (-1, 0), (0, +1))[pinconglomerate & 0x03]  # SVG co-ordinates, not Altium coordinates
+                    dirsvg = ((+1, 0), (0, -1), (-1, 0), (0, +1))[pinconglomerate & 0x03]  # SVG co-ordinates, not Altium coordinates
+                    dir = ((+1, 0), (0, +1), (-1, 0), (0, -1))
+                    dir = dir[pinconglomerate & 0x03]
                     
                     if pinconglomerate & 1:
-                        rotate = ("rotate(-90)",)
+                        rotatexform = ("rotate(-90)",)
+                        kw = dict(angle=-90)
                     else:
-                        rotate = ()
+                        rotatexform = ()
+                        kw = dict()
                     
                     if pinconglomerate & 8 and "NAME" in obj:
                         attrs = dict(style="dominant-baseline: middle; text-anchor: " + ("end", "start")[pinconglomerate >> 1 & 1])
                         tspans = overline(obj["NAME"])
-                        transforms = ["translate({})".format(", ".join(format(-7 * dir[x]) for x in range(2)))]
-                        transforms.extend(rotate)
+                        transforms = ["translate({})".format(", ".join(format(-7 * dirsvg[x]) for x in range(2)))]
+                        transforms.extend(rotatexform)
                         attrs.update(transform=" ".join(transforms))
                         translated.tree(("text", attrs, tspans))
                     
                     if pinconglomerate & 16:
-                        attrs = dict(style="text-anchor: " + ("start", "end")[pinconglomerate >> 1 & 1])
-                        transforms = ["translate({})".format(", ".join(format(+9 * dir[x]) for x in range(2)))]
-                        transforms.extend(rotate)
-                        attrs.update(transform=" ".join(transforms))
                         designator = obj["DESIGNATOR"].decode("ascii")
-                        translated.tree(("text", attrs, (designator,)))
+                        aligns = (translated.LEFT, translated.RIGHT)
+                        translated.text(designator,
+                            horiz=aligns[pinconglomerate >> 1 & 1],
+                            point=(+9 * x for x in dir),
+                        **kw)
         
         elif (obj.keys() - {"INDEXINSHEET", "ORIENTATION", "STYLE", "ISCROSSSHEETCONNECTOR"} == {"RECORD", "OWNERPARTID", "COLOR", "LOCATION.X", "LOCATION.Y", "SHOWNETNAME", "TEXT"} and
         obj["RECORD"] == Record.POWER_OBJECT and obj["OWNERPARTID"] == b"-1"):
@@ -594,16 +609,14 @@ def main(filename, renderer="svg"):
 def colour(c):
     return (x / 0xFF for x in int(c).to_bytes(3, "little"))
 
-def text(renderer, obj, attrs=(), transforms=()):
-    attrs = dict(attrs)
+def text(renderer, obj, **kw):
     c = obj.get("COLOR")
     if c:
-        renderer._colour(attrs, colour(c))
-    t = ["translate({})".format(", ".join(format(int(obj["LOCATION." + "XY"[x]]) * (1, -1)[x]) for x in range(2)))]
-    t.extend(transforms)
-    attrs["transform"] = " ".join(t)
-    attrs["class"] = "font" + obj["FONTID"].decode("ascii")
-    renderer.tree(("text", attrs, (obj["TEXT"].decode("ascii"),)))
+        kw["colour"] = colour(c)
+    renderer.text(obj["TEXT"].decode("ascii"),
+        point=(int(obj["LOCATION." + x]) for x in "XY"),
+        font="font" + obj["FONTID"].decode("ascii"),
+    **kw)
 
 def overline(name):
     tspans = list()
