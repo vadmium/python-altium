@@ -160,10 +160,7 @@ class Renderer(base.Renderer):
             (x, y) = a
             attrs["x"] = format(x)
             attrs["y"] = format(y * self.flip[1])
-        if offset:
-            (x, y) = offset
-            y *= self.flip[1]
-            transform.append("translate({}, {})".format(x, y))
+        transform.extend(self._offset(offset))
         
         self._closed(attrs, style, outline, fill, width)
         self.emptyelement("rect", attrs, style=style, transform=transform)
@@ -200,7 +197,7 @@ class Renderer(base.Renderer):
             sincos = (cos, sin)[x]
             da = sincos(radians(start))
             db = sincos(radians(end))
-            a.append(format((offset[x] + da * r[x]) * self.flip[x]))
+            a.append(format(da * r[x] * self.flip[x]))
             d.append(format((db - da) * r[x] * self.flip[x]))
         large = (end - start) % 360 > 180
         at = dict(self._colour(colour))
@@ -210,7 +207,7 @@ class Renderer(base.Renderer):
             large=large,
             d=",".join(d),
         )
-        self.emptyelement("path", at)
+        self.emptyelement("path", at, transform=self._offset(offset))
     
     def text(self, text, offset=None, horiz=None, vert=None, *,
     angle=None, font=None, colour=None):
@@ -232,16 +229,13 @@ class Renderer(base.Renderer):
             }
             style.append(("text-anchor", anchors[horiz]))
         
-        if offset:
-            (x, y) = offset
-            y *= self.flip[1]
         if angle is not None:
-            if offset:
-                transform.append("translate({}, {})".format(x, y))
+            transform.extend(self._offset(offset))
             transform.append("rotate({})".format(angle))
         elif offset:
+            (x, y) = offset
             attrs["x"] = format(x)
-            attrs["y"] = format(y)
+            attrs["y"] = format(y * self.flip[1])
         
         if font is not None:
             attrs["class"] = font
@@ -270,10 +264,16 @@ class Renderer(base.Renderer):
     
     @contextmanager
     def offset(self, offset):
-        (x, y) = offset
-        translate = "translate({}, {})".format(x, y * self.flip[-1])
-        with self.element("g", transforms=(translate,)):
+        with self.element("g", transform=self._offset(offset)):
             yield self
+    
+    def _offset(self, offset=None):
+        if offset:
+            (x, y) = offset
+            y *= self.flip[1]
+            return [("translate({}, {})".format(x, y))]
+        else:
+            return []
     
     @contextmanager
     def element(self, name, attrs=(), style=None, transform=None):
