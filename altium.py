@@ -186,9 +186,8 @@ def main(filename, renderer="svg"):
     renderer.addobjects(symbols)
     
     with renderer.offset((0, size[1])) as base:
-        base.rectangle(size, (0, -size[1]), width=0.6) # todo: offset=O, b=(size[0], -size[1])
-        dim = (x - 2 * 20 for x in size)
-        base.rectangle(dim, (20, 20 - size[1]), width=0.6) # offset=(20, 20), b=(size[0] - 20, 20 - size[1])
+        base.rectangle((size[0], -size[1]), width=0.6)
+        base.rectangle((20, -20), (size[0] - 20, 20 - size[1]), width=0.6)
         for axis in range(2):
             for side in range(2):
                 for n in range(4):

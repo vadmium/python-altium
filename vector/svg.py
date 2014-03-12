@@ -137,31 +137,38 @@ class Renderer(base.Renderer):
         Offset implemented independently using transform="translate(offset)"
         """
         
-        # For the moment, assuming that b >= a, both in x and y co-ordinates.
-        # However, b may be omitted, in which case a is expected to give the
-        # dimensions of the rectangle in positive co-ordinates.
-        if b:
-            (w, h) = ((b - a) for (a, b) in zip(a, b))
-        else:
-            (w, h) = a
-        attrs = {"width": format(w), "height": format(h)}
+        attrs = dict()
         style = list()
         transform = list()
-        
-        if self.flip[1] < 0:
-            # Compensate for SVG not allowing negative height
-            if b:
-                # x and y attributes will be used for a, so do translate
-                transform.append("translate(0, {})".format(h))
-            else:
-                attrs["y"] = format(h)
-        
         if b:
             (x, y) = a
             attrs["x"] = format(x)
             attrs["y"] = format(y * self.flip[1])
-        transform.extend(self._offset(offset))
+            (w, h) = ((b - a) for (a, b) in zip(a, b))
+        else:
+            (w, h) = a
+        h *= self.flip[1]
         
+        # Compensate for SVG not allowing negative dimensions
+        translate = dict()
+        if w < 0:
+            translate["x"] = w
+            w = -w
+        if h < 0:
+            translate["y"] = h
+            h = -h
+        if translate:
+            if b:
+                # x and y attributes already used for a, so use a transform
+                x = translate.get("x", 0)
+                y = translate.get("y", 0)
+                transform.append("translate({}, {})".format(x, y))
+            else:
+                attrs.update(translate)
+        attrs["width"] = format(w)
+        attrs["height"] = format(h)
+        
+        transform.extend(self._offset(offset))
         self._closed(attrs, style, outline, fill, width)
         self.emptyelement("rect", attrs, style=style, transform=transform)
     
