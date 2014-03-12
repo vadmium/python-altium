@@ -46,9 +46,10 @@ class Renderer(base.Renderer):
         kw = self._closed(outline, fill, width)
         self.canvas.create_oval(*points, **kw)
     
-    def polygon(self, points, *, colour=None):
+    def polygon(self, points, *, outline=None, fill=None, width=None):
         points = tuple(x * self.scaling for point in points for x in point)
-        self.canvas.create_polygon(points, fill=self._colour(colour))
+        kw = self._closed(outline, fill, width)
+        self.canvas.create_polygon(points, **kw)
     
     def rectangle(self, a, b=None, *, offset=(0, 0),
     outline=None, fill=None, width=None):

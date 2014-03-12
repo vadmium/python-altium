@@ -142,7 +142,7 @@ def main(filename, renderer="svg"):
     renderer.start()
     
     def basearrow(renderer):
-        renderer.polygon(((0, 0), (-2, -3), (5, 0), (-2, +3)))
+        renderer.polygon(((0, 0), (-2, -3), (5, 0), (-2, +3)), fill=True)
     
     with renderer.element("defs", dict()):
         with renderer.element("marker",
@@ -152,11 +152,12 @@ def main(filename, renderer="svg"):
         
         with renderer.element("marker",
         dict(overflow="visible", markerUnits="userSpaceOnUse", id="output")):
-            renderer.polygon(((0, +2.5), (7, 0), (0, -2.5)))
+            renderer.polygon(((0, +2.5), (7, 0), (0, -2.5)), fill=True)
         
         with renderer.element("marker",
         dict(overflow="visible", markerUnits="userSpaceOnUse", id="io")):
-            renderer.polygon(((-5, 0), (0, +2.5), (+5, 0), (0, -2.5)))
+            renderer.polygon(((-5, 0), (0, +2.5), (+5, 0), (0, -2.5)),
+                fill=True)
     
     symbols = list()
     @symbols.append
@@ -249,8 +250,12 @@ def main(filename, renderer="svg"):
         obj["RECORD"] == Record.PORT and obj["OWNERPARTID"] == b"-1"):
             width = int(obj["WIDTH"])
             if "IOTYPE" in obj:
+                points = ((0, 0), (5, -5), (width - 5, -5),
+                    (width, 0), (width - 5, +5), (5, +5))
                 points = "0,0 5,-5 {xx},-5 {x},0 {xx},+5 5,+5".format(x=width, xx=width - 5)
             else:
+                points = ((0, -5), (width - 5, -5),
+                    (width, 0), (width - 5, +5), (0, +5))
                 points = "0,-5 {xx},-5 {x},0 {xx},+5 0,+5".format(x=width, xx=width - 5)
             shapeattrs = {"points": points}
             shapestyle = (("stroke-width", 0.6),)
@@ -283,6 +288,12 @@ def main(filename, renderer="svg"):
             with renderer.offset(offset) as offset:
                 offset.emptyelement("polygon", shapeattrs,
                     style=shapestyle, transform=transform)
+                #~ offset.polygon(points,
+                    #~ width=0.6,
+                    #~ outline=colour(obj["COLOR"]),
+                    #~ fill=colour(obj["AREACOLOR"]),
+                #~ )
+                
                 with offset.element("text", labelattrs,
                 style=labelstyle, transform=labelxform):
                 #    colour=colour(obj["TEXTCOLOR"]),
@@ -523,7 +534,7 @@ def main(filename, renderer="svg"):
             for location in range(int(obj["LOCATIONCOUNT"])):
                 location = format(1 + location)
                 points.append(tuple(int(obj[x + location]) for x in "XY"))
-            renderer.polygon(colour=colour(obj["COLOR"]), points=points)
+            renderer.polygon(fill=colour(obj["COLOR"]), points=points)
         elif (obj.keys() - {"INDEXINSHEET", "ISNOTACCESIBLE", "OWNERINDEX", "ORIENTATION", "JUSTIFICATION", "COLOR"} == {"RECORD", "FONTID", "LOCATION.X", "LOCATION.Y", "OWNERPARTID", "TEXT"} and
         obj["RECORD"] == Record.LABEL):
             if obj["OWNERPARTID"] == b"-1" or obj["OWNERPARTID"] == objects[1 + int(obj["OWNERINDEX"])]["CURRENTPARTID"]:
