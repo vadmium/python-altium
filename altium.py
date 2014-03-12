@@ -147,7 +147,7 @@ def main(filename, renderer="svg"):
     with renderer.element("defs", dict()):
         with renderer.element("marker",
         dict(overflow="visible", markerUnits="userSpaceOnUse", id="input")):
-            with renderer.element("g", dict(transform="scale(-1)")):
+            with renderer.element("g", transform=("scale(-1)",)):
                 basearrow(renderer)
         
         with renderer.element("marker",
@@ -271,16 +271,21 @@ def main(filename, renderer="svg"):
                 anchor = "end"
                 horiz = renderer.RIGHT
             labelkw = dict()
+            transform = list()
             if obj["STYLE"] == b"7":
-                shapeattrs.update(transform="rotate(90) translate({})".format(-width))
-                labelattrs.update(transform="rotate(-90)")
+                transform.extend(("rotate(90)", "translate({})".format(-width)))
+                labelxform = ("rotate(-90)",)
                 labelkw.update(angle=-90)
+            else:
+                labelxform = ()
             labelstyle = [("dominant-baseline", "middle")]
             labelstyle.append(("text-anchor", anchor))
             offset = (int(obj["LOCATION." + x]) for x in "XY")
             with renderer.offset(offset) as offset:
-                offset.emptyelement("polygon", shapeattrs, style=shapestyle)
-                with offset.element("text", labelattrs, style=labelstyle):
+                offset.emptyelement("polygon", shapeattrs,
+                    style=shapestyle, transform=transform)
+                with offset.element("text", labelattrs,
+                style=labelstyle, transform=labelxform):
                 #    colour=colour(obj["TEXTCOLOR"]),
                 #    offset=labelpoint,
                 #    vert=offset.CENTRE, horiz=horiz,
@@ -383,7 +388,7 @@ def main(filename, renderer="svg"):
                 pinconglomerate = int(obj["PINCONGLOMERATE"])
                 offset = (int(obj["LOCATION." + x]) for x in "XY")
                 with renderer.offset(offset) as translated:
-                    with translated.element("g", dict(transform="rotate({})".format((pinconglomerate & 3) * -90))):
+                    with translated.element("g", transform=("rotate({})".format((pinconglomerate & 3) * -90),)):
                         lineattrs = dict()
                         linestart = 0
                         if "SYMBOL_OUTEREDGE" in obj:
@@ -416,9 +421,10 @@ def main(filename, renderer="svg"):
                         anchor = ("end", "start")[pinconglomerate >> 1 & 1]
                         style.append(("text-anchor",  anchor))
                         tspans = overline(obj["NAME"])
-                        transforms = ["translate({})".format(", ".join(format(-7 * dirsvg[x]) for x in range(2)))]
-                        transforms.extend(rotatexform)
-                        with translated.element("text", style=style):
+                        transform = ["translate({})".format(", ".join(format(-7 * dirsvg[x]) for x in range(2)))]
+                        transform.extend(rotatexform)
+                        with translated.element("text",
+                        style=style, transform=transform):
                             translated.tree(*tspans)
                     
                     if pinconglomerate & 16:
@@ -440,12 +446,13 @@ def main(filename, renderer="svg"):
             location = tuple(int(obj["LOCATION." + "XY"[x]]) for x in range(2))
             
             a = dict(renderer._colour(colour(obj["COLOR"])))
-            a["transform"] = "translate({})".format(", ".join(format(location[x] * (+1, -1)[x]) for x in range(2)))
-            with renderer.element("g", a):
+            translate = "translate({})".format(", ".join(format(location[x] * (+1, -1)[x]) for x in range(2)))
+            with renderer.element("g", a, transform=(translate,)):
                 attrs = {"xlink:href": "#{}".format(marker)}
+                transform = list()
                 if orient:
-                    attrs.update(transform="rotate({})".format({b"2": 180, b"3": 90, b"1": 270}[orient]))
-                renderer.emptyelement("use", attrs)
+                    transform.append("rotate({})".format({b"2": 180, b"3": 90, b"1": 270}[orient]))
+                renderer.emptyelement("use", attrs, transform=transform)
                 
                 if obj["SHOWNETNAME"] != b"F":
                     orients = {
@@ -484,9 +491,10 @@ def main(filename, renderer="svg"):
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERPARTID", "COLOR", "FONTID", "LOCATION.X", "LOCATION.Y", "TEXT"} and
         obj["RECORD"] == Record.NET_LABEL and obj["OWNERPARTID"] == b"-1"):
             attrs = dict(renderer._colour(colour(obj["COLOR"])))
-            attrs["transform"] = "translate({})".format(", ".join(format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x]) for x in range(2)))
+            translate = "translate({})".format(", ".join(format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x]) for x in range(2)))
             attrs["class"] = "font" + obj["FONTID"].decode("ascii")
-            renderer.tree(("text", attrs, overline(obj["TEXT"])))
+            with renderer.element("text", attrs, transform=(translate,)):
+                renderer.tree(*overline(obj["TEXT"]))
         
         elif (obj.keys() - {"INDEXINSHEET", "OWNERPARTDISPLAYMODE", "STARTANGLE", "SECONDARYRADIUS"} == {"RECORD", "OWNERPARTID", "OWNERINDEX", "COLOR", "ENDANGLE", "ISNOTACCESIBLE", "LINEWIDTH", "LOCATION.X", "LOCATION.Y", "RADIUS"} and
         obj["RECORD"] in {Record.ARC, Record.ELLIPTICAL_ARC} and obj["ISNOTACCESIBLE"] == b"T" and obj["LINEWIDTH"] == b"1" and obj.get("OWNERPARTDISPLAYMODE", b"1") == b"1"):
@@ -533,8 +541,8 @@ def main(filename, renderer="svg"):
         obj["RECORD"] == b"28" and obj["ALIGNMENT"] == b"1" and obj["AREACOLOR"] == b"16777215" and obj.get("CLIPTORECT", b"T") == b"T" and obj["ISSOLID"] == b"T" and obj["OWNERPARTID"] == b"-1" and obj["WORDWRAP"] == b"T"):
             attrs = {"class": "font" + obj["FONTID"].decode("ascii")}
             lhs = int(obj["LOCATION.X"])
-            attrs.update(transform="translate({}, {})".format(lhs, -int(obj["CORNER.Y"])))
-            with renderer.element("text", attrs):
+            translate = "translate({}, {})".format(lhs, -int(obj["CORNER.Y"]))
+            with renderer.element("text", attrs, transform=(translate,)):
                 wrapper = TextWrapper(width=(int(obj["CORNER.X"]) - lhs) / 4.375)  # Very hacky approximation of the size of each character as one en wide
                 for hardline in obj["Text"].decode("ascii").split("~1"):
                     for softline in wrapper.wrap(hardline):

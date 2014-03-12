@@ -146,13 +146,13 @@ class Renderer(base.Renderer):
             (w, h) = a
         attrs = {"width": format(w), "height": format(h)}
         style = list()
+        transform = list()
         
-        transforms = list()
         if self.flip[1] < 0:
             # Compensate for SVG not allowing negative height
             if b:
                 # x and y attributes will be used for a, so do translate
-                transforms.append("translate(0, {})".format(h))
+                transform.append("translate(0, {})".format(h))
             else:
                 attrs["y"] = format(h)
         
@@ -163,12 +163,10 @@ class Renderer(base.Renderer):
         if offset:
             (x, y) = offset
             y *= self.flip[1]
-            transforms.append("translate({}, {})".format(x, y))
-        if transforms:
-            attrs["transform"] = " ".join(transforms)
+            transform.append("translate({}, {})".format(x, y))
         
         self._closed(attrs, style, outline, fill, width)
-        self.emptyelement("rect", attrs, style=style)
+        self.emptyelement("rect", attrs, style=style, transform=transform)
     
     def _closed(self, attrs, style, outline=None, fill=None, width=None):
         if fill:
@@ -218,6 +216,7 @@ class Renderer(base.Renderer):
     angle=None, font=None, colour=None):
         attrs = dict()
         style = list()
+        transform = list()
         if vert is not None:
             baselines = {
                 self.CENTRE: "middle",
@@ -237,11 +236,9 @@ class Renderer(base.Renderer):
             (x, y) = offset
             y *= self.flip[1]
         if angle is not None:
-            transform = list()
             if offset:
                 transform.append("translate({}, {})".format(x, y))
             transform.append("rotate({})".format(angle))
-            attrs["transform"] = " ".join(transform)
         elif offset:
             attrs["x"] = format(x)
             attrs["y"] = format(y)
@@ -249,7 +246,7 @@ class Renderer(base.Renderer):
         if font is not None:
             attrs["class"] = font
         attrs.update(self._colour(colour))
-        with self.element("text", attrs, style=style):
+        with self.element("text", attrs, style=style, transform=transform):
             self.xml.characters(text)
     
     def _colour(self, colour=None, attr="color"):
@@ -275,14 +272,16 @@ class Renderer(base.Renderer):
     def offset(self, offset):
         (x, y) = offset
         translate = "translate({}, {})".format(x, y * self.flip[-1])
-        with self.element("g", dict(transform=translate)):
+        with self.element("g", transforms=(translate,)):
             yield self
     
     @contextmanager
-    def element(self, name, attrs=(), style=None):
+    def element(self, name, attrs=(), style=None, transform=None):
         attrs = dict(attrs)
         if style:
             attrs["style"] = "; ".join("{}: {}".format(*s) for s in style)
+        if transform:
+            attrs["transform"] = " ".join(transform)
         self.xml.startElement(name, attrs)
         yield
         self.xml.endElement(name)
