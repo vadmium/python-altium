@@ -130,7 +130,7 @@ class Renderer(base.Renderer):
         self.emptyelement("polygon", attrs, style=style)
     
     def rectangle(self, a, b=None, *, offset=None,
-    outline=None, fill=None, width=None):
+    outline=None, fill=None, width=None, _attrs=()):
         """
         rectangle(a) -> <rect width=a />
         rectangle(a, b) -> <rect x=a width=(b - a) />
@@ -138,14 +138,16 @@ class Renderer(base.Renderer):
         Offset implemented independently using transform="translate(offset)"
         """
         
-        attrs = dict()
+        attrs = dict(_attrs)
         style = list()
         transform = list()
         if b:
             (x, y) = a
             attrs["x"] = format(x)
             attrs["y"] = format(y * self.flip[1])
-            (w, h) = ((b - a) for (a, b) in zip(a, b))
+            (bx, by) = b
+            w = bx - x
+            h = by - y
         else:
             (w, h) = a
         h *= self.flip[1]
@@ -172,6 +174,11 @@ class Renderer(base.Renderer):
         transform.extend(self._offset(offset))
         self._closed(attrs, style, outline, fill, width)
         self.emptyelement("rect", attrs, style=style, transform=transform)
+    
+    def roundrect(self, r, *pos, **kw):
+        (x, y) = r
+        attrs = {"rx": format(x), "ry": format(y)}
+        return self.rectangle(*pos, _attrs=attrs, **kw)
     
     def _closed(self, attrs, style, outline=None, fill=None, width=None):
         if fill:

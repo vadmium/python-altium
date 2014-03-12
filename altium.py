@@ -481,22 +481,24 @@ def main(filename, renderer="svg"):
             owner = objects[1 + int(obj["OWNERINDEX"])]
             if (obj["OWNERPARTID"] == owner["CURRENTPARTID"] and
             obj.get("OWNERPARTDISPLAYMODE", b"0") == owner.get("DISPLAYMODE", b"0")):
-                style = (("stroke-width", 0.6),)
-                stroke = renderer._colour(colour(obj["COLOR"]), "stroke")
-                attrs = dict(stroke)
+                kw = dict(width=0.6, outline=colour(obj["COLOR"]))
                 if "ISSOLID" in obj:
-                    fill = renderer._colour(colour(obj["AREACOLOR"]), "fill")
-                    attrs.update(fill)
+                    kw.update(fill=colour(obj["AREACOLOR"]))
+                a = (int(obj["LOCATION." + x]) for x in "XY")
+                b = (int(obj["CORNER." + x]) for x in "XY")
+                
+                if obj["RECORD"] == Record.ROUND_RECTANGLE:
+                    r = list()
+                    for x in "XY":
+                        radius = obj.get("CORNER{}RADIUS".format(x))
+                        if radius is None:
+                            radius = 0
+                        else:
+                            radius = int(radius)
+                        r.append(int(radius))
+                    renderer.roundrect(r, a, b, **kw)
                 else:
-                    attrs["fill"] = "none"
-                topleft = tuple(int(obj[("LOCATION.X", "CORNER.Y")[x]]) * (+1, -1)[x] for x in range(2))
-                attrs.update(("xy"[x], format(topleft[x])) for x in range(2))
-                attrs.update((("width", "height")[x], format(int(obj[("CORNER.X", "LOCATION.Y")[x]]) * (+1, -1)[x] - topleft[x])) for x in range(2))
-                for x in range(2):
-                    radius = obj.get("CORNER{}RADIUS".format("XY"[x]))
-                    if radius:
-                        attrs["r" + "xy"[x]] = radius.decode("ascii")
-                renderer.emptyelement("rect", attrs, style=style)
+                    renderer.rectangle(a, b, **kw)
         
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERPARTID", "COLOR", "FONTID", "LOCATION.X", "LOCATION.Y", "TEXT"} and
         obj["RECORD"] == Record.NET_LABEL and obj["OWNERPARTID"] == b"-1"):
