@@ -187,6 +187,7 @@ class Renderer(base.Renderer):
     
     def arc(self, r, start, end, offset=None, *, colour=None):
         if abs(end - start) >= 360:
+            return self.circle(r, offset, outline=colour)
             attrs = {"r": format(*r), "class": "outline"}
             if offset:
                 (x, y) = offset
@@ -194,24 +195,24 @@ class Renderer(base.Renderer):
                 attrs["cy"] = format(y * self.flip[1])
             attrs.update(self._colour(colour))
             renderer.emptyelement("circle", attrs)
-        else:
-            a = list()
-            d = list()
-            for x in range(2):
-                sincos = (cos, sin)[x]
-                da = sincos(radians(start))
-                db = sincos(radians(end))
-                a.append(format((offset[x] + da * r[x]) * self.flip[x]))
-                d.append(format((db - da) * r[x] * self.flip[x]))
-            large = (end - start) % 360 > 180
-            at = dict(self._colour(colour))
-            at["d"] = "M{a} a{r} 0 {large:d},0 {d}".format(
-                a=",".join(a),
-                r=",".join(map(format, r)),
-                large=large,
-                d=",".join(d),
-            )
-            self.emptyelement("path", at)
+        
+        a = list()
+        d = list()
+        for x in range(2):
+            sincos = (cos, sin)[x]
+            da = sincos(radians(start))
+            db = sincos(radians(end))
+            a.append(format((offset[x] + da * r[x]) * self.flip[x]))
+            d.append(format((db - da) * r[x] * self.flip[x]))
+        large = (end - start) % 360 > 180
+        at = dict(self._colour(colour))
+        at["d"] = "M{a} a{r} 0 {large:d},0 {d}".format(
+            a=",".join(a),
+            r=",".join(map(format, r)),
+            large=large,
+            d=",".join(d),
+        )
+        self.emptyelement("path", at)
     
     def text(self, text, offset=None, horiz=None, vert=None, *,
     angle=None, font=None, colour=None):
