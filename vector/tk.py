@@ -39,9 +39,9 @@ class Renderer(base.Renderer):
         colour = self._colour(colour)
         self.canvas.create_line(*points, fill=colour, width=width)
     
-    def circle(self, r, centre=(0, 0), *,
+    def circle(self, r, offset=(0, 0), *,
     outline=None, fill=None, width=None):
-        coords = tuple((o - r, o + r) for o in centre)
+        coords = tuple((o - r, o + r) for o in offset)
         points = (x[i] * self.scaling for i in range(2) for x in coords)
         kw = self._closed(outline, fill, width)
         self.canvas.create_oval(*points, **kw)
@@ -50,10 +50,17 @@ class Renderer(base.Renderer):
         points = tuple(x * self.scaling for point in points for x in point)
         self.canvas.create_polygon(points, fill=self._colour(colour))
     
-    def rectangle(self, dim, start=(0, 0), *,
+    def rectangle(self, a, b=None, *, offset=(0, 0),
     outline=None, fill=None, width=None):
-        coords = tuple((x, o + x) for (x, o) in zip(start, dim))
-        points = (x[i] * self.scaling for i in range(2) for x in coords)
+        if not b:
+            b = a
+            a = (0, 0)
+        
+        (ox, oy) = offset
+        (ax, ay) = a
+        (bx, by) = b
+        coords = ((ox + ax, oy + ay), (ox + bx, oy + by))
+        points = (x * self.scaling for p in coords for x in p)
         kw = self._closed(outline, fill, width)
         self.canvas.create_rectangle(*points, **kw)
     
@@ -72,7 +79,7 @@ class Renderer(base.Renderer):
             kw.update(outline=self._colour(outline))
         return kw
     
-    def text(self, text, point=(0, 0),
+    def text(self, text, offset=(0, 0),
     horiz=base.Renderer.LEFT, vert=base.Renderer.BOTTOM, *,
     angle=None, font=None, colour=None):
         kw = dict()
@@ -94,8 +101,8 @@ class Renderer(base.Renderer):
             kw.update(font=self.fonts[font])
         colour = self._colour(colour)
         kw.update(fill=colour)
-        point = (x * self.scaling for x in point)
-        self.canvas.create_text(*point, text=text, **kw)
+        offset = (x * self.scaling for x in offset)
+        self.canvas.create_text(*offset, text=text, **kw)
     
     def _colour(self, colour=None):
         if colour:

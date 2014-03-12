@@ -60,10 +60,10 @@ class OffsetRenderer:
         self._renderer.polygon(map(self._map, points), *pos, **kw)
     def polyline(self, points, *pos, **kw):
         self._renderer.polyline(map(self._map, points), *pos, **kw)
-    def circle(self, r, centre=None, *pos, **kw):
-        self._renderer.circle(r, self._map(centre), *pos, **kw)
-    def rectangle(self, dim, start=None, *pos, **kw):
-        self._renderer.rectangle(dim, self._map(start), *pos, **kw)
+    def circle(self, r, offset=None, *pos, **kw):
+        self._renderer.circle(r, self._map(offset), *pos, **kw)
+    def rectangle(self, *pos, offset=None, **kw):
+        self._renderer.rectangle(*pos, offset=self._map(offset), **kw)
     
     def _map(self, point):
         if not self._offset:

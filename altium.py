@@ -186,9 +186,9 @@ def main(filename, renderer="svg"):
     renderer.addobjects(symbols)
     
     with renderer.offset((0, size[1])) as base:
-        base.rectangle(size, (0, -size[1]), width=0.6)  
+        base.rectangle(size, (0, -size[1]), width=0.6) # todo: offset=O, b=(size[0], -size[1])
         dim = (x - 2 * 20 for x in size)
-        base.rectangle(dim, (20, 20 - size[1]), width=0.6)
+        base.rectangle(dim, (20, 20 - size[1]), width=0.6) # offset=(20, 20), b=(size[0] - 20, 20 - size[1])
         for axis in range(2):
             for side in range(2):
                 for n in range(4):
@@ -282,7 +282,7 @@ def main(filename, renderer="svg"):
                 offset.emptyelement("polygon", shapeattrs, style=shapestyle)
                 with offset.element("text", labelattrs, style=labelstyle):
                 #    colour=colour(obj["TEXTCOLOR"]),
-                #    point=labelpoint,
+                #    offset=labelpoint,
                 #    vert=offset.CENTRE, horiz=horiz,
                 #**labelkw)
                     offset.tree(*overline(obj["NAME"]))
@@ -336,7 +336,7 @@ def main(filename, renderer="svg"):
                         raise LookupError("Parameter value for |OWNERINDEX={}|TEXT={}".format(obj["OWNERINDEX"].decode("ascii"), obj["TEXT"].decode("ascii")))
                     renderer.text(val.decode("ascii"),
                         colour=colour(obj["COLOR"]),
-                        point=(int(obj["LOCATION." + x]) for x in "XY"),
+                        offset=(int(obj["LOCATION." + x]) for x in "XY"),
                         font="font" + obj["FONTID"].decode("ascii"),
                     **kw)
                 else:
@@ -426,7 +426,7 @@ def main(filename, renderer="svg"):
                         aligns = (translated.LEFT, translated.RIGHT)
                         translated.text(designator,
                             horiz=aligns[pinconglomerate >> 1 & 1],
-                            point=(+9 * x for x in dir),
+                            offset=(+9 * x for x in dir),
                         **kw)
         
         elif (obj.keys() - {"INDEXINSHEET", "ORIENTATION", "STYLE", "ISCROSSSHEETCONNECTOR"} == {"RECORD", "OWNERPARTID", "COLOR", "LOCATION.X", "LOCATION.Y", "SHOWNETNAME", "TEXT"} and
@@ -552,7 +552,7 @@ def main(filename, renderer="svg"):
                 r=int(obj["RADIUS"]),
                 width=0.6,
                 outline=colour(obj["COLOR"]), fill=colour(obj["AREACOLOR"]),
-                centre=(int(obj["LOCATION." + x]) for x in "XY"),
+                offset=(int(obj["LOCATION." + x]) for x in "XY"),
             )
         
         elif (obj.keys() - {"INDEXINSHEET", "SYMBOLTYPE"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "XSIZE", "YSIZE", "COLOR", "AREACOLOR", "ISSOLID", "UNIQUEID"} and
@@ -560,7 +560,7 @@ def main(filename, renderer="svg"):
             renderer.rectangle((int(obj["XSIZE"]), int(obj["YSIZE"])),
                 width=0.6,
                 outline=colour(obj["COLOR"]), fill=colour(obj["AREACOLOR"]),
-                start=(int(obj["LOCATION." + x]) for x in "XY"),
+                offset=(int(obj["LOCATION." + x]) for x in "XY"),
             )
         
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR", "FONTID", "TEXT"} and
@@ -569,12 +569,12 @@ def main(filename, renderer="svg"):
         
         elif (obj.keys() == {"RECORD", "OWNERINDEX", "INDEXINSHEET", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "CORNER.X", "CORNER.Y", "EMBEDIMAGE", "FILENAME"} and
         obj["RECORD"] == Record.IMAGE and obj["OWNERINDEX"] == b"1" and obj["OWNERPARTID"] == b"-1" and obj["EMBEDIMAGE"] == b"T" and obj["FILENAME"] == b"newAltmLogo.bmp"):
-            start = list()
-            dim = list()
+            location = list()
+            corner = list()
             for x in "XY":
-                start.append(int(obj["LOCATION." + x]))
-                dim.append(int(obj["CORNER." + x]) - start[-1])
-            renderer.rectangle(dim, start, width=0.6)
+                location.append(int(obj["LOCATION." + x]))
+                corner.append(int(obj["CORNER." + x]))
+            renderer.rectangle(location, corner, width=0.6)
         
         else:
             print("".join("|{}={!r}".format(p, v) for (p, v) in sorted(obj.items())), file=stderr)
@@ -589,7 +589,7 @@ def text(renderer, obj, **kw):
     if c:
         kw["colour"] = colour(c)
     renderer.text(obj["TEXT"].decode("ascii"),
-        point=(int(obj["LOCATION." + x]) for x in "XY"),
+        offset=(int(obj["LOCATION." + x]) for x in "XY"),
         font="font" + obj["FONTID"].decode("ascii"),
     **kw)
 

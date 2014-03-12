@@ -110,12 +110,12 @@ class Renderer(base.Renderer):
         attrs.update(self._colour(colour))
         self.emptyelement("polyline", attrs, style=style)
     
-    def circle(self, r, centre=None, *, outline=None, fill=None, width=None):
+    def circle(self, r, offset=None, *, outline=None, fill=None, width=None):
         attrs = {"r": format(r)}
         style = list()
         self._closed(attrs, style, outline, fill, width)
-        if centre:
-            (x, y) = centre
+        if offset:
+            (x, y) = offset
             attrs["cx"] = format(x)
             attrs["cy"] = format(y * self.flip[1])
         self.emptyelement("circle", attrs, style=style)
@@ -128,26 +128,44 @@ class Renderer(base.Renderer):
         attrs.update(self._colour(colour))
         self.emptyelement("polygon", attrs)
     
-    def rectangle(self, dim, start=None, *,
+    def rectangle(self, a, b=None, *, offset=None,
     outline=None, fill=None, width=None):
-        (w, h) = dim
+        """
+        rectangle(a) -> <rect width=a />
+        rectangle(a, b) -> <rect x=a width=(b - a) />
+        
+        Offset implemented independently using transform="translate(offset)"
+        """
+        
+        # For the moment, assuming that b >= a, both in x and y co-ordinates.
+        # However, b may be omitted, in which case a is expected to give the
+        # dimensions of the rectangle in positive co-ordinates.
+        if b:
+            (w, h) = ((b - a) for (a, b) in zip(a, b))
+        else:
+            (w, h) = a
         attrs = {"width": format(w), "height": format(h)}
         style = list()
         
+        transforms = list()
         if self.flip[1] < 0:
             # Compensate for SVG not allowing negative height
-            if start:
-                (x, y) = start
+            if b:
+                # x and y attributes will be used for a, so do translate
+                transforms.append("translate(0, {})".format(h))
             else:
-                x = 0
-                y = 0
-            y += h
-            start = (x, y)
+                attrs["y"] = format(h)
         
-        if start:
-            (x, y) = start
+        if b:
+            (x, y) = a
             attrs["x"] = format(x)
             attrs["y"] = format(y * self.flip[1])
+        if offset:
+            (x, y) = offset
+            y *= self.flip[1]
+            transforms.append("translate({}, {})".format(x, y))
+        if transforms:
+            attrs["transform"] = " ".join(transforms)
         
         self._closed(attrs, style, outline, fill, width)
         self.emptyelement("rect", attrs, style=style)
@@ -167,11 +185,11 @@ class Renderer(base.Renderer):
         if width is not None:
             style.append(("stroke-width", width))
     
-    def arc(self, r, start, end, centre=None, *, colour=None):
+    def arc(self, r, start, end, offset=None, *, colour=None):
         if abs(end - start) >= 360:
             attrs = {"r": format(*r), "class": "outline"}
-            if point:
-                (x, y) = point
+            if offset:
+                (x, y) = offset
                 attrs["cx"] = format(x)
                 attrs["cy"] = format(y * self.flip[1])
             attrs.update(self._colour(colour))
@@ -183,7 +201,7 @@ class Renderer(base.Renderer):
                 sincos = (cos, sin)[x]
                 da = sincos(radians(start))
                 db = sincos(radians(end))
-                a.append(format((centre[x] + da * r[x]) * self.flip[x]))
+                a.append(format((offset[x] + da * r[x]) * self.flip[x]))
                 d.append(format((db - da) * r[x] * self.flip[x]))
             large = (end - start) % 360 > 180
             at = dict(self._colour(colour))
@@ -195,7 +213,7 @@ class Renderer(base.Renderer):
             )
             self.emptyelement("path", at)
     
-    def text(self, text, point=None, horiz=None, vert=None, *,
+    def text(self, text, offset=None, horiz=None, vert=None, *,
     angle=None, font=None, colour=None):
         attrs = dict()
         style = list()
@@ -214,16 +232,16 @@ class Renderer(base.Renderer):
             }
             style.append(("text-anchor", anchors[horiz]))
         
-        if point:
-            (x, y) = point
+        if offset:
+            (x, y) = offset
             y *= self.flip[1]
         if angle is not None:
             transform = list()
-            if point:
+            if offset:
                 transform.append("translate({}, {})".format(x, y))
             transform.append("rotate({})".format(angle))
             attrs["transform"] = " ".join(transform)
-        elif point:
+        elif offset:
             attrs["x"] = format(x)
             attrs["y"] = format(y)
         
