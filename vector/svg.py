@@ -94,21 +94,24 @@ class Renderer(base.Renderer):
         self._line(attrs, *pos, **kw)
     
     def _line(self, attrs, *, colour=None, **kw):
-        self._width(attrs, **kw)
+        style = list()
+        self._width(style, **kw)
         self._colour(attrs, colour)
-        self.emptyelement("line", attrs)
+        self.emptyelement("line", attrs, style=style)
     
     def polyline(self, points, *, colour=None, **kw):
         s = list()
         for (x, y) in points:
             s.append("{},{}".format(x, y * self.flip[1]))
         attrs = {"points": " ".join(s)}
-        self._width(attrs, **kw)
+        style = list()
+        self._width(style, **kw)
         self._colour(attrs, colour)
-        self.emptyelement("polyline", attrs)
+        self.emptyelement("polyline", attrs, style=style)
     
     def box(self, dim, start=None, *pos, **kw):
         attrs = {"class": "outline"}
+        style = list()
         (w, h) = dim
         attrs["width"] = format(w)
         attrs["height"] = format(h)
@@ -127,12 +130,12 @@ class Renderer(base.Renderer):
             (x, y) = start
             attrs["x"] = format(x)
             attrs["y"] = format(y * self.flip[1])
-        self._width(attrs, *pos, **kw)
-        self.emptyelement("rect", attrs)
+        self._width(style, *pos, **kw)
+        self.emptyelement("rect", attrs, style=style)
     
-    def _width(self, attrs, *, width=None):
+    def _width(self, style, *, width=None):
         if width is not None:
-            attrs["style"] = "stroke-width: {}".format(width)
+            style.append(("stroke-width", width))
     
     def circle(self, r, point=None, *, colour=None):
         attrs = {"r": format(r), "class": "solid"}
@@ -189,24 +192,22 @@ class Renderer(base.Renderer):
     
     def text(self, text, point=None, horiz=None, vert=None, *,
     angle=None, font=None, colour=None):
-        styles = list()
+        attrs = dict()
+        style = list()
         if vert is not None:
             baselines = {
                 self.CENTRE: "middle",
                 self.TOP: "text-before-edge",
                 self.BOTTOM: "text-after-edge",
             }
-            styles.append(("dominant-baseline", baselines[vert]))
+            style.append(("dominant-baseline", baselines[vert]))
         if horiz is not None:
             anchors = {
                 self.CENTRE: "middle",
                 self.LEFT: "start",
                 self.RIGHT: "end",
             }
-            styles.append(("text-anchor", anchors[horiz]))
-        attrs = dict()
-        if styles:
-            attrs["style"] = "; ".join(map(": ".join, styles))
+            style.append(("text-anchor", anchors[horiz]))
         
         if point:
             (x, y) = point
@@ -224,7 +225,8 @@ class Renderer(base.Renderer):
         if font is not None:
             attrs["class"] = font
         self._colour(attrs, colour)
-        self.tree(("text", attrs, (text,)))
+        with self.element("text", attrs, style=style):
+            self.xml.characters(text)
     
     def _colour(self, attrs, colour=None):
         if colour:
@@ -251,8 +253,11 @@ class Renderer(base.Renderer):
             yield self
     
     @contextmanager
-    def element(self, name, *pos, **kw):
-        self.xml.startElement(name, *pos, **kw)
+    def element(self, name, attrs=(), style=None):
+        attrs = dict(attrs)
+        if style:
+            attrs["style"] = "; ".join("{}: {}".format(*s) for s in style)
+        self.xml.startElement(name, attrs)
         yield
         self.xml.endElement(name)
     

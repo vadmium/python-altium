@@ -252,10 +252,8 @@ def main(filename, renderer="svg"):
                 points = "0,0 5,-5 {xx},-5 {x},0 {xx},+5 5,+5".format(x=width, xx=width - 5)
             else:
                 points = "0,-5 {xx},-5 {x},0 {xx},+5 0,+5".format(x=width, xx=width - 5)
-            shapeattrs = {
-                "style": "stroke-width: 0.6",
-                "points": points,
-            }
+            shapeattrs = {"points": points}
+            shapestyle = (("stroke-width", 0.6),)
             renderer._colour(shapeattrs, colour(obj["COLOR"]))
             shapeattrs["stroke"] = shapeattrs.pop("color")
             renderer._colour(shapeattrs, colour(obj["AREACOLOR"]))
@@ -277,15 +275,17 @@ def main(filename, renderer="svg"):
                 shapeattrs.update(transform="rotate(90) translate({})".format(-width))
                 labelattrs.update(transform="rotate(-90)")
                 labelkw.update(angle=-90)
-            labelattrs.update(style="dominant-baseline: middle; text-anchor: {}".format(anchor))
+            labelstyle = [("dominant-baseline", "middle")]
+            labelstyle.append(("text-anchor", anchor))
             offset = (int(obj["LOCATION." + x]) for x in "XY")
             with renderer.offset(offset) as offset:
-                offset.emptyelement("polygon", shapeattrs)
-                offset.tree(("text", labelattrs, overline(obj["NAME"])))
+                offset.emptyelement("polygon", shapeattrs, style=shapestyle)
+                with offset.element("text", labelattrs, style=labelstyle):
                 #    colour=colour(obj["TEXTCOLOR"]),
                 #    point=labelpoint,
                 #    vert=offset.CENTRE, horiz=horiz,
                 #**labelkw)
+                    offset.tree(*overline(obj["NAME"]))
         
         elif (obj.keys() - {"INDEXINSHEET"} >= {"RECORD", "OWNERPARTID", "LINEWIDTH", "COLOR", "LOCATIONCOUNT", "X1", "Y1", "X2", "Y2"} and
         obj["RECORD"] == Record.WIRE and obj["OWNERPARTID"] == b"-1" and obj["LINEWIDTH"] == b"1"):
@@ -387,7 +387,8 @@ def main(filename, renderer="svg"):
                         lineattrs = dict()
                         linestart = 0
                         if "SYMBOL_OUTEREDGE" in obj:
-                            translated.emptyelement("circle", {"r": "2.85", "cx": "3.15", "class": "outline", "style": "stroke-width: 0.6"})
+                            translated.emptyelement("circle", {"r": "2.85", "cx": "3.15", "class": "outline"},
+                                style=(("stroke-width", 0.6),))
                             linestart += 6
                         lineattrs.update(x2=format(pinlength))
                         electrical = obj.get("ELECTRICAL", PinElectrical.INPUT)
@@ -412,12 +413,14 @@ def main(filename, renderer="svg"):
                         kw = dict()
                     
                     if pinconglomerate & 8 and "NAME" in obj:
-                        attrs = dict(style="dominant-baseline: middle; text-anchor: " + ("end", "start")[pinconglomerate >> 1 & 1])
+                        style = [("dominant-baseline", "middle")]
+                        anchor = ("end", "start")[pinconglomerate >> 1 & 1]
+                        style.append(("text-anchor",  anchor))
                         tspans = overline(obj["NAME"])
                         transforms = ["translate({})".format(", ".join(format(-7 * dirsvg[x]) for x in range(2)))]
                         transforms.extend(rotatexform)
-                        attrs.update(transform=" ".join(transforms))
-                        translated.tree(("text", attrs, tspans))
+                        with translated.element("text", style=style):
+                            translated.tree(*tspans)
                     
                     if pinconglomerate & 16:
                         designator = obj["DESIGNATOR"].decode("ascii")
@@ -463,7 +466,8 @@ def main(filename, renderer="svg"):
             owner = objects[1 + int(obj["OWNERINDEX"])]
             if (obj["OWNERPARTID"] == owner["CURRENTPARTID"] and
             obj.get("OWNERPARTDISPLAYMODE", b"0") == owner.get("DISPLAYMODE", b"0")):
-                attrs = {"style": "stroke-width: 0.6"}
+                style = (("stroke-width", 0.6),)
+                attrs = dict()
                 renderer._colour(attrs, colour(obj["COLOR"]))
                 attrs["stroke"] = attrs.pop("color")
                 if "ISSOLID" in obj:
@@ -478,7 +482,7 @@ def main(filename, renderer="svg"):
                     radius = obj.get("CORNER{}RADIUS".format("XY"[x]))
                     if radius:
                         attrs["r" + "xy"[x]] = radius.decode("ascii")
-                renderer.emptyelement("rect", attrs)
+                renderer.emptyelement("rect", attrs, style=style)
         
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERPARTID", "COLOR", "FONTID", "LOCATION.X", "LOCATION.Y", "TEXT"} and
         obj["RECORD"] == Record.NET_LABEL and obj["OWNERPARTID"] == b"-1"):
@@ -565,14 +569,14 @@ def main(filename, renderer="svg"):
             attrs = {
                 "width": obj["XSIZE"].decode("ascii"),
                 "height": obj["YSIZE"].decode("ascii"),
-                "style": "stroke-width: 0.6",
             }
+            style = (("stroke-width", 0.6),)
             renderer._colour(attrs, colour(obj["COLOR"]))
             attrs["stroke"] = attrs.pop("color")
             renderer._colour(attrs, colour(obj["AREACOLOR"]))
             attrs["fill"] = attrs.pop("color")
             attrs.update(("xy"[x], format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x])) for x in range(2))
-            renderer.emptyelement("rect", attrs)
+            renderer.emptyelement("rect", attrs, style=style)
         
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR", "FONTID", "TEXT"} and
         obj["RECORD"] in {Record.SHEET_NAME, Record.SHEET_FILE_NAME} and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
