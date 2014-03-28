@@ -90,8 +90,8 @@ class OffsetRenderer:
         self._renderer.hline(*pos, offset=self._map(offset), **kw)
     def vline(self, *pos, offset=None, **kw):
         self._renderer.vline(*pos, offset=self._map(offset), **kw)
-    def polygon(self, points, *pos, **kw):
-        self._renderer.polygon(map(self._map, points), *pos, **kw)
+    def polygon(self, *pos, offset=None, **kw):
+        self._renderer.polygon(*pos, offset=self._map(offset), **kw)
     def polyline(self, points, *pos, **kw):
         self._renderer.polyline(map(self._map, points), *pos, **kw)
     def circle(self, r, offset=None, *pos, **kw):

@@ -253,17 +253,9 @@ def main(filename, renderer="svg"):
             if "IOTYPE" in obj:
                 points = ((0, 0), (5, -5), (width - 5, -5),
                     (width, 0), (width - 5, +5), (5, +5))
-                points = "0,0 5,-5 {xx},-5 {x},0 {xx},+5 5,+5".format(x=width, xx=width - 5)
             else:
                 points = ((0, -5), (width - 5, -5),
                     (width, 0), (width - 5, +5), (0, +5))
-                points = "0,-5 {xx},-5 {x},0 {xx},+5 0,+5".format(x=width, xx=width - 5)
-            shapeattrs = {"points": points}
-            shapestyle = (("stroke-width", 0.6),)
-            stroke = renderer._colour(colour(obj["COLOR"]), "stroke")
-            shapeattrs.update(stroke)
-            fill = renderer._colour(colour(obj["AREACOLOR"]), "fill")
-            shapeattrs.update(fill)
             labelattrs = dict(renderer._colour(colour(obj["TEXTCOLOR"])))
             if (obj.get("ALIGNMENT") == b"2") ^ (obj["STYLE"] != b"7"):
                 labelattrs["x"] = "10"
@@ -276,24 +268,22 @@ def main(filename, renderer="svg"):
                 anchor = "end"
                 horiz = renderer.RIGHT
             labelkw = dict()
-            transform = list()
             if obj["STYLE"] == b"7":
-                transform.extend(("rotate(90)", "translate({})".format(-width)))
+                shapekw = dict(rotate=+90, offset=(0, +width))
                 labelxform = ("rotate(-90)",)
                 labelkw.update(angle=-90)
             else:
+                shapekw = dict()
                 labelxform = ()
             labelstyle = [("dominant-baseline", "middle")]
             labelstyle.append(("text-anchor", anchor))
             offset = (int(obj["LOCATION." + x]) for x in "XY")
             with renderer.offset(offset) as offset:
-                offset.emptyelement("polygon", shapeattrs,
-                    style=shapestyle, transform=transform)
-                #~ offset.polygon(points,
-                    #~ width=0.6,
-                    #~ outline=colour(obj["COLOR"]),
-                    #~ fill=colour(obj["AREACOLOR"]),
-                #~ )
+                offset.polygon(points,
+                    width=0.6,
+                    outline=colour(obj["COLOR"]),
+                    fill=colour(obj["AREACOLOR"]),
+                **shapekw)
                 
                 with offset.element("text", labelattrs,
                 style=labelstyle, transform=labelxform):

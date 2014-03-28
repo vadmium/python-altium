@@ -120,14 +120,18 @@ class Renderer(base.Renderer):
             attrs["cy"] = format(y * self.flip[1])
         self.emptyelement("circle", attrs, style=style)
     
-    def polygon(self, points, *, outline=None, fill=None, width=None):
+    def polygon(self, points, *,
+    offset=None, rotate=None, outline=None, fill=None, width=None):
         s = list()
         for (x, y) in points:
             s.append("{},{}".format(x, y * self.flip[1]))
         attrs = {"points": " ".join(s)}
         style = list()
+        transform = self._offset(offset)
+        if rotate is not None:
+            transform.append("rotate({})".format(rotate))
         self._closed(attrs, style, outline, fill, width)
-        self.emptyelement("polygon", attrs, style=style)
+        self.emptyelement("polygon", attrs, style=style, transform=transform)
     
     def rectangle(self, a, b=None, *, offset=None,
     outline=None, fill=None, width=None, _attrs=()):

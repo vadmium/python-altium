@@ -3,6 +3,7 @@ import tkinter
 from . import base
 from tkinter.font import Font
 from collections import Iterable
+from math import sin, cos, radians
 
 class Renderer(base.Renderer):
     def __init__(self, size, units, unitmult=1, *, margin=0,
@@ -54,7 +55,17 @@ class Renderer(base.Renderer):
         kw = self._closed(outline, fill, width)
         self.canvas.create_oval(*points, **kw)
     
-    def polygon(self, points, *, outline=None, fill=None, width=None):
+    def polygon(self, points, *,
+    offset=None, rotate=None, outline=None, fill=None, width=None):
+        if rotate:
+            th = radians(rotate)
+            sinth = sin(th)
+            costh = cos(th)
+            points = ((x * costh - y * sinth, x * sinth + y * costh) for
+                (x, y) in points)
+        if offset:
+            (ox, oy) = offset
+            points = ((ox + x, oy + y) for (x, y) in points)
         points = tuple(x * self.scaling for point in points for x in point)
         kw = self._closed(outline, fill, width)
         self.canvas.create_polygon(points, **kw)
