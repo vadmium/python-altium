@@ -65,40 +65,40 @@ class Renderer(base.Renderer):
     def finish(self):
         self.xml.endElement("svg")
     
-    def line(self, a=None, b=None, *pos, **kw):
+    def line(self, a, b=None, *pos, **kw):
+        if b:
+            points = (a, b)
+        else:
+            points = (a,)
         attrs = dict()
-        for (n, p) in enumerate((a, b), 1):
-            if p:
-                (x, y) = p
-                attrs["x{}".format(n)] = format(x)
-                attrs["y{}".format(n)] = format(y * self.flip[1])
+        for (n, p) in enumerate(points, 1 + 2 - len(points)):
+            (x, y) = p
+            attrs["x{}".format(n)] = format(x)
+            attrs["y{}".format(n)] = format(y * self.flip[1])
         self._line(attrs, *pos, **kw)
     
-    def hline(self, a=None, b=None, y=None, *pos, **kw):
-        attrs = dict()
-        if y is not None:
-            y = format(y * self.flip[1])
-            attrs.update(y1=y, y2=y)
-        for (n, xn) in enumerate((a, b), 1):
-            if xn is not None:
-                attrs["x{}".format(n)] = format(xn)
+    def hline(self, a, b=None, *pos, **kw):
+        a = format(a)
+        if b is None:
+            attrs = {"x2": a}
+        else:
+            attrs = {"x1": a, "x2": format(b)}
         self._line(attrs, *pos, **kw)
     
-    def vline(self, a=None, b=None, x=None, *pos, **kw):
-        attrs = dict()
-        if x is not None:
-            x = format(x)
-            attrs.update(x1=x, x2=x)
-        for (n, yn) in enumerate((a, b), 1):
-            if yn is not None:
-                attrs["y{}".format(n)] = format(yn * self.flip[1])
+    def vline(self, a, b=None, *pos, **kw):
+        a = format(a * self.flip[1])
+        if b is None:
+            attrs = {"y2": a}
+        else:
+            attrs = {"y1": a, "y2": format(b * self.flip[1])}
         self._line(attrs, *pos, **kw)
     
-    def _line(self, attrs, *, colour=None, **kw):
+    def _line(self, attrs, *, offset=None, width=None, colour=None):
         style = list()
-        self._width(style, **kw)
+        self._width(style, width)
         attrs.update(self._colour(colour))
-        self.emptyelement("line", attrs, style=style)
+        transform = self._offset(offset)
+        self.emptyelement("line", attrs, style=style, transform=transform)
     
     def polyline(self, points, *, colour=None, **kw):
         s = list()

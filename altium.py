@@ -162,22 +162,22 @@ def main(filename, renderer="svg"):
     symbols = list()
     @symbols.append
     def gnd(renderer):
-        renderer.hline(b=10)
-        renderer.vline(-7, +7, 10, width=1.5)
-        renderer.vline(-4, +4, 13, width=1.5)
-        renderer.vline(-1, +1, 16, width=1.5)
+        renderer.hline(10)
+        renderer.vline(-7, +7, offset=(10, 0), width=1.5)
+        renderer.vline(-4, +4, offset=(13, 0), width=1.5)
+        renderer.vline(-1, +1, offset=(16, 0), width=1.5)
     @symbols.append
     def rail(renderer):
-        renderer.hline(b=10)
-        renderer.vline(-7, +7, 10, width=1.5)
+        renderer.hline(10)
+        renderer.vline(-7, +7, offset=(10, 0), width=1.5)
     @symbols.append
     def arrow(renderer):
-        renderer.hline(b=5)
+        renderer.hline(5)
         with renderer.offset((5, 0)) as offset:
             basearrow(offset)
     @symbols.append
     def dchevron(renderer):
-        renderer.hline(b=5)
+        renderer.hline(5)
         renderer.polyline(((8, +4), (5, 0), (8, -4)))
         renderer.polyline(((11, +4), (8, 0), (11, -4)))
     @symbols.append
@@ -204,9 +204,10 @@ def main(filename, renderer="svg"):
                         if n + 1 < 4:
                             x = size[axis] / 4 / 2
                             if axis:
-                                ref.hline(-10, +10, -x, width=0.6)
+                                ref.hline(-10, +10, offset=(0, -x),
+                                    width=0.6)
                             else:
-                                ref.vline(-10, +10, x, width=0.6)
+                                ref.vline(-10, +10, offset=(x, 0), width=0.6)
         
         if "TITLEBLOCKON" in sheet:
             if not os.path.isabs(filename):
@@ -218,12 +219,12 @@ def main(filename, renderer="svg"):
             with base.offset((size[0] - 20, 20 - size[1])) as block:
                 points = ((-350, 0), (-350, 80), (-0, 80))
                 block.polyline(points, width=0.6)
-                block.hline(a=-350, y=50, width=0.6)
-                block.vline(50, 20, -300, width=0.6)
-                block.vline(50, 20, -100, width=0.6)
-                block.hline(a=-350, y=20, width=0.6)
-                block.hline(a=-350, y=10, width=0.6)
-                block.vline(a=20, x=-150, width=0.6)
+                block.hline(-350, 0, offset=(0, 50), width=0.6)
+                block.vline(-30, offset=(-300, 50), width=0.6)
+                block.vline(-30, offset=(-100, 50), width=0.6)
+                block.hline(-350, 0, offset=(0, 20), width=0.6)
+                block.hline(-350, 0, offset=(0, 10), width=0.6)
+                block.vline(20, 0, offset=(-150, 0), width=0.6)
                 
                 block.text("Title", (-345, 70))
                 block.text("Size", (-345, 40))

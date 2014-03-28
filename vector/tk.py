@@ -30,8 +30,16 @@ class Renderer(base.Renderer):
             kw.update(weight="bold")
         self.fonts[id] = Font(name=id, family=family, size=-size, **kw)
     
-    def line(self, a=(0, 0), b=(0, 0), *pos, **kw):
-        self.polyline(a, b, *pos, **kw)
+    def line(self, a, b=None, *, offset=(0, 0), **kw):
+        (ox, oy) = offset
+        if b is None:
+            b = a
+            a = offset
+        else:
+            (ax, ay) = a
+            a = (ox + ax, oy + ay)
+        (bx, by) = b
+        self.polyline((a, (ox + bx, oy + by)), **kw)
     
     def polyline(self, points, *, colour=None, width=None):
         points = (x * self.scaling for point in points for x in point)
