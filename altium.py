@@ -256,27 +256,18 @@ def main(filename, renderer="svg"):
             else:
                 points = ((0, -5), (width - 5, -5),
                     (width, 0), (width - 5, +5), (0, +5))
-            labelattrs = dict(renderer._colour(colour(obj["TEXTCOLOR"])))
             if (obj.get("ALIGNMENT") == b"2") ^ (obj["STYLE"] != b"7"):
-                labelattrs["x"] = "10"
                 labelpoint = (10, 0)
-                anchor = "start"
                 horiz = renderer.LEFT
             else:
-                labelattrs["x"] = format(width - 10)
                 labelpoint = (width - 10, 0)
-                anchor = "end"
                 horiz = renderer.RIGHT
             labelkw = dict()
             if obj["STYLE"] == b"7":
                 shapekw = dict(rotate=+90, offset=(0, +width))
-                labelxform = ("rotate(-90)",)
                 labelkw.update(angle=-90)
             else:
                 shapekw = dict()
-                labelxform = ()
-            labelstyle = [("dominant-baseline", "middle")]
-            labelstyle.append(("text-anchor", anchor))
             offset = (int(obj["LOCATION." + x]) for x in "XY")
             with renderer.offset(offset) as offset:
                 offset.polygon(points,
@@ -285,13 +276,12 @@ def main(filename, renderer="svg"):
                     fill=colour(obj["AREACOLOR"]),
                 **shapekw)
                 
-                with offset.element("text", labelattrs,
-                style=labelstyle, transform=labelxform):
-                #    colour=colour(obj["TEXTCOLOR"]),
-                #    offset=labelpoint,
-                #    vert=offset.CENTRE, horiz=horiz,
-                #**labelkw)
-                    offset.tree(*overline(obj["NAME"]))
+                offset.text(
+                    overline(obj["NAME"]),
+                    colour=colour(obj["TEXTCOLOR"]),
+                    offset=labelpoint,
+                    vert=offset.CENTRE, horiz=horiz,
+                **labelkw)
         
         elif (obj.keys() - {"INDEXINSHEET"} >= {"RECORD", "OWNERPARTID", "LINEWIDTH", "COLOR", "LOCATIONCOUNT", "X1", "Y1", "X2", "Y2"} and
         obj["RECORD"] == Record.WIRE and obj["OWNERPARTID"] == b"-1" and obj["LINEWIDTH"] == b"1"):
@@ -406,27 +396,21 @@ def main(filename, renderer="svg"):
                             lineattrs["x1"] = format(linestart)
                         translated.emptyelement("line", lineattrs)
                     
-                    dirsvg = ((+1, 0), (0, -1), (-1, 0), (0, +1))[pinconglomerate & 0x03]  # SVG co-ordinates, not Altium coordinates
                     dir = ((+1, 0), (0, +1), (-1, 0), (0, -1))
                     dir = dir[pinconglomerate & 0x03]
                     
                     if pinconglomerate & 1:
-                        rotatexform = ("rotate(-90)",)
                         kw = dict(angle=-90)
                     else:
-                        rotatexform = ()
                         kw = dict()
                     
                     if pinconglomerate & 8 and "NAME" in obj:
-                        style = [("dominant-baseline", "middle")]
-                        anchor = ("end", "start")[pinconglomerate >> 1 & 1]
-                        style.append(("text-anchor",  anchor))
-                        tspans = overline(obj["NAME"])
-                        transform = ["translate({})".format(", ".join(format(-7 * dirsvg[x]) for x in range(2)))]
-                        transform.extend(rotatexform)
-                        with translated.element("text",
-                        style=style, transform=transform):
-                            translated.tree(*tspans)
+                        anchors = (translated.RIGHT, translated.LEFT)
+                        translated.text(overline(obj["NAME"]),
+                            vert=translated.CENTRE,
+                            horiz=anchors[pinconglomerate >> 1 & 1],
+                            offset=(-7 * x for x in dir),
+                        **kw)
                     
                     if pinconglomerate & 16:
                         designator = obj["DESIGNATOR"].decode("ascii")
@@ -493,11 +477,11 @@ def main(filename, renderer="svg"):
         
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERPARTID", "COLOR", "FONTID", "LOCATION.X", "LOCATION.Y", "TEXT"} and
         obj["RECORD"] == Record.NET_LABEL and obj["OWNERPARTID"] == b"-1"):
-            attrs = dict(renderer._colour(colour(obj["COLOR"])))
-            translate = "translate({})".format(", ".join(format(int(obj["LOCATION." + "XY"[x]]) * (+1, -1)[x]) for x in range(2)))
-            attrs["class"] = "font" + obj["FONTID"].decode("ascii")
-            with renderer.element("text", attrs, transform=(translate,)):
-                renderer.tree(*overline(obj["TEXT"]))
+            renderer.text(overline(obj["TEXT"]),
+                colour=colour(obj["COLOR"]),
+                offset=(int(obj["LOCATION." + x]) for x in "XY"),
+                font="font" + obj["FONTID"].decode("ascii"),
+            )
         
         elif (obj.keys() - {"INDEXINSHEET", "OWNERPARTDISPLAYMODE", "STARTANGLE", "SECONDARYRADIUS"} == {"RECORD", "OWNERPARTID", "OWNERINDEX", "COLOR", "ENDANGLE", "ISNOTACCESIBLE", "LINEWIDTH", "LOCATION.X", "LOCATION.Y", "RADIUS"} and
         obj["RECORD"] in {Record.ARC, Record.ELLIPTICAL_ARC} and obj["ISNOTACCESIBLE"] == b"T" and obj["LINEWIDTH"] == b"1" and obj.get("OWNERPARTDISPLAYMODE", b"1") == b"1"):
@@ -605,7 +589,7 @@ def text(renderer, obj, **kw):
     **kw)
 
 def overline(name):
-    tspans = list()
+    spans = list()
     name = name.decode("ascii")
     if name.startswith("\\"):
         name = name[1:]
@@ -620,17 +604,17 @@ def overline(name):
         if plain:
             bar = name[barstart:plainstart:2]
             if bar:
-                tspans.append(("tspan", {"text-decoration": "overline"}, (bar,)))
-            tspans.append(("tspan", dict(), (plain,)))
+                spans.append(dict(text=bar, overline=True))
+            spans.append(dict(text=plain))
             barstart = backslash - 1
         plainstart = backslash + 1
     bar = name[barstart:plainstart:2]
     if bar:
-        tspans.append(("tspan", {"text-decoration": "overline"}, (bar,)))
+        spans.append(dict(text=bar, overline=True))
     plain = name[plainstart:]
     if plain:
-        tspans.append(("tspan", dict(), (plain,)))
-    return tspans
+        spans.append(dict(text=plain))
+    return spans
 
 def polyline(renderer, obj):
     points = list()

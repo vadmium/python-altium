@@ -260,7 +260,14 @@ class Renderer(base.Renderer):
             attrs["class"] = font
         attrs.update(self._colour(colour))
         with self.element("text", attrs, style=style, transform=transform):
-            self.xml.characters(text)
+            if isinstance(text, str):
+                self.xml.characters(text)
+            else:
+                for seg in text:
+                    attrs = dict()
+                    if seg.get("overline"):
+                        attrs["text-decoration"] = "overline"
+                    self.tree(("tspan", attrs, (seg["text"],)))
     
     def _colour(self, colour=None, attr="color"):
         if colour:

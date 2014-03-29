@@ -4,6 +4,7 @@ from . import base
 from tkinter.font import Font
 from collections import Iterable
 from math import sin, cos, radians
+import tkinter.font
 
 class Renderer(base.Renderer):
     def __init__(self, size, units, unitmult=1, *, margin=0,
@@ -58,9 +59,7 @@ class Renderer(base.Renderer):
     def polygon(self, points, *,
     offset=None, rotate=None, outline=None, fill=None, width=None):
         if rotate:
-            th = radians(rotate)
-            sinth = sin(th)
-            costh = cos(th)
+            (costh, sinth) = _rotation(rotate)
             points = ((x * costh - y * sinth, x * sinth + y * costh) for
                 (x, y) in points)
         if offset:
@@ -102,9 +101,6 @@ class Renderer(base.Renderer):
     def text(self, text, offset=(0, 0),
     horiz=base.Renderer.LEFT, vert=base.Renderer.BOTTOM, *,
     angle=None, font=None, colour=None):
-        kw = dict()
-        if angle is not None:
-            kw.update(angle=angle)
         anchors = {
             (self.TOP, self.LEFT): tkinter.NW,
             (self.TOP, self.CENTRE): tkinter.N,
@@ -116,13 +112,48 @@ class Renderer(base.Renderer):
             (self.BOTTOM, self.CENTRE): tkinter.S,
             (self.BOTTOM, self.RIGHT): tkinter.SE,
         }
-        kw.update(anchor=anchors[(vert, horiz)])
+        
+        kw = dict()
+        if angle is not None:
+            kw.update(angle=angle)
         if font is not None:
             kw.update(font=self.fonts[font])
         colour = self._colour(colour)
         kw.update(fill=colour)
-        offset = (x * self.scaling for x in offset)
-        self.canvas.create_text(*offset, text=text, **kw)
+        
+        if isinstance(text, str):
+            kw.update(anchor=anchors[(vert, horiz)])
+            offset = (x * self.scaling for x in offset)
+            self.canvas.create_text(*offset, text=text, **kw)
+            return
+        
+        font = kw.get("font") or tkinter.font.nametofont("TkDefaultFont")
+        length = sum(font.measure(seg["text"]) for seg in text)
+        anchor = anchors[(vert, self.LEFT)]
+        anchors = {self.LEFT: 0, self.CENTRE: 0.5, self.RIGHT: 1}
+        pos = -length * anchors[horiz]
+        (ox, oy) = offset
+        ox *= self.scaling
+        oy *= self.scaling
+        (cos, sin) = _rotation(angle or 0)
+        for seg in text:
+            x = ox + pos * cos
+            y = oy + pos * sin
+            text = seg["text"]
+            self.canvas.create_text(x, y, text=text, anchor=anchor, **kw)
+            newpos = pos + font.measure(text)
+            
+            if seg.get("overline"):
+                linespace = font.metrics("linespace")
+                anchors = {self.TOP: 0, self.CENTRE: 0.5, self.RIGHT: 1}
+                linespace *= anchors[vert]
+                dx = +linespace * sin
+                dy = -linespace * cos
+                nx = ox + dx + newpos * cos
+                ny = oy + dy + newpos * sin
+                self.canvas.create_line(x + dx, y + dy, nx, ny, fill=colour)
+            
+            pos = newpos
     
     def _colour(self, colour=None):
         if colour:
@@ -133,3 +164,7 @@ class Renderer(base.Renderer):
     
     def finish(self):
         tkinter.mainloop()
+
+def _rotation(rotate):
+    th = radians(rotate)
+    return (cos(th), sin(th))
