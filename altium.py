@@ -103,6 +103,7 @@ from textwrap import TextWrapper
 import os
 import os.path
 from datetime import date
+import contextlib
 
 def main(filename, renderer="svg"):
     """Convert an Altium *.SchDoc schematic file
@@ -173,7 +174,7 @@ def main(filename, renderer="svg"):
     @symbols.append
     def arrow(renderer):
         renderer.hline(5)
-        with renderer.offset((5, 0)) as offset:
+        with renderer.view(offset=(5, 0)) as offset:
             basearrow(offset)
     @symbols.append
     def dchevron(renderer):
@@ -186,7 +187,7 @@ def main(filename, renderer="svg"):
         renderer.line((-3, +3), (+3, -3), width=0.6)
     renderer.addobjects(symbols)
     
-    with renderer.offset((0, size[1])) as base:
+    with renderer.view(offset=(0, size[1])) as base:
         base.rectangle((size[0], -size[1]), width=0.6)
         base.rectangle((20, -20), (size[0] - 20, 20 - size[1]), width=0.6)
         for axis in range(2):
@@ -198,7 +199,7 @@ def main(filename, renderer="svg"):
                     if side:
                         translate[axis ^ 1] += size[axis ^ 1] - 20
                     translate[1] *= -1
-                    with base.offset(translate) as ref:
+                    with base.view(offset=translate) as ref:
                         label = chr(ord("1A"[axis]) + n)
                         ref.text(label, horiz=ref.CENTRE, vert=ref.CENTRE)
                         if n + 1 < 4:
@@ -216,7 +217,7 @@ def main(filename, renderer="svg"):
                 if os.path.samefile(pwd, cwd):
                     cwd = pwd
                 filename = os.path.join(pwd, filename)
-            with base.offset((size[0] - 20, 20 - size[1])) as block:
+            with base.view(offset=(size[0] - 20, 20 - size[1])) as block:
                 points = ((-350, 0), (-350, 80), (-0, 80))
                 block.polyline(points, width=0.6)
                 block.hline(-350, 0, offset=(0, 50), width=0.6)
@@ -262,26 +263,27 @@ def main(filename, renderer="svg"):
             else:
                 labelpoint = (width - 10, 0)
                 horiz = renderer.RIGHT
-            labelkw = dict()
             if obj["STYLE"] == b"7":
                 shapekw = dict(rotate=+90, offset=(0, +width))
-                labelkw.update(angle=-90)
             else:
                 shapekw = dict()
             offset = (int(obj["LOCATION." + x]) for x in "XY")
-            with renderer.offset(offset) as offset:
-                offset.polygon(points,
+            with renderer.view(offset=offset) as view:
+                view.polygon(points,
                     width=0.6,
                     outline=colour(obj["COLOR"]),
                     fill=colour(obj["AREACOLOR"]),
                 **shapekw)
                 
-                offset.text(
-                    overline(obj["NAME"]),
-                    colour=colour(obj["TEXTCOLOR"]),
-                    offset=labelpoint,
-                    vert=offset.CENTRE, horiz=horiz,
-                **labelkw)
+                with contextlib.ExitStack() as context:
+                    if obj["STYLE"] == b"7":
+                        view = context.enter_context(view.view(rotate=+1))
+                    view.text(
+                        overline(obj["NAME"]),
+                        colour=colour(obj["TEXTCOLOR"]),
+                        offset=labelpoint,
+                        vert=view.CENTRE, horiz=horiz,
+                    )
         
         elif (obj.keys() - {"INDEXINSHEET"} >= {"RECORD", "OWNERPARTID", "LINEWIDTH", "COLOR", "LOCATIONCOUNT", "X1", "Y1", "X2", "Y2"} and
         obj["RECORD"] == Record.WIRE and obj["OWNERPARTID"] == b"-1" and obj["LINEWIDTH"] == b"1"):
@@ -378,46 +380,41 @@ def main(filename, renderer="svg"):
                 pinlength = int(obj["PINLENGTH"])
                 pinconglomerate = int(obj["PINCONGLOMERATE"])
                 offset = (int(obj["LOCATION." + x]) for x in "XY")
-                with renderer.offset(offset) as translated:
-                    with translated.element("g", transform=("rotate({})".format((pinconglomerate & 3) * -90),)):
-                        lineattrs = dict()
-                        linestart = 0
-                        if "SYMBOL_OUTEREDGE" in obj:
-                            translated.circle(2.85, (3.15, 0), width=0.6)
-                            linestart += 6
-                        lineattrs.update(x2=format(pinlength))
-                        electrical = obj.get("ELECTRICAL", PinElectrical.INPUT)
-                        marker = {PinElectrical.INPUT: "input", PinElectrical.IO: "io", PinElectrical.OUTPUT: "output", PinElectrical.PASSIVE: None, PinElectrical.POWER: None}[electrical]
-                        if marker:
-                            lineattrs["marker-start"] = format("url(#{})".format(marker))
-                            if electrical in {PinElectrical.INPUT, PinElectrical.IO}:
-                                linestart += 5
-                        if linestart:
-                            lineattrs["x1"] = format(linestart)
-                        translated.emptyelement("line", lineattrs)
+                rotate = pinconglomerate & 3
+                with renderer.view(offset=offset, rotate=rotate) as view:
+                    lineattrs = dict()
+                    linestart = 0
+                    if "SYMBOL_OUTEREDGE" in obj:
+                        view.circle(2.85, (3.15, 0), width=0.6)
+                        linestart += 6
+                    lineattrs.update(x2=format(pinlength))
+                    electrical = obj.get("ELECTRICAL", PinElectrical.INPUT)
+                    marker = {PinElectrical.INPUT: "input", PinElectrical.IO: "io", PinElectrical.OUTPUT: "output", PinElectrical.PASSIVE: None, PinElectrical.POWER: None}[electrical]
+                    if marker:
+                        lineattrs["marker-start"] = format("url(#{})".format(marker))
+                        if electrical in {PinElectrical.INPUT, PinElectrical.IO}:
+                            linestart += 5
+                    if linestart:
+                        lineattrs["x1"] = format(linestart)
+                    view.emptyelement("line", lineattrs)
                     
-                    dir = ((+1, 0), (0, +1), (-1, 0), (0, -1))
-                    dir = dir[pinconglomerate & 0x03]
-                    
-                    if pinconglomerate & 1:
-                        kw = dict(angle=-90)
+                    if pinconglomerate >> 1 & 1:
+                        invert = -1
+                        kw = dict(angle=180)
                     else:
+                        invert = +1
                         kw = dict()
-                    
                     if pinconglomerate & 8 and "NAME" in obj:
-                        anchors = (translated.RIGHT, translated.LEFT)
-                        translated.text(overline(obj["NAME"]),
-                            vert=translated.CENTRE,
-                            horiz=anchors[pinconglomerate >> 1 & 1],
-                            offset=(-7 * x for x in dir),
+                        view.text(overline(obj["NAME"]),
+                            vert=view.CENTRE,
+                            horiz=view.RIGHT * invert,
+                            offset=(-7, 0),
                         **kw)
-                    
                     if pinconglomerate & 16:
                         designator = obj["DESIGNATOR"].decode("ascii")
-                        aligns = (translated.LEFT, translated.RIGHT)
-                        translated.text(designator,
-                            horiz=aligns[pinconglomerate >> 1 & 1],
-                            offset=(+9 * x for x in dir),
+                        view.text(designator,
+                            horiz=view.LEFT * invert,
+                            offset=(+9, 0),
                         **kw)
         
         elif (obj.keys() - {"INDEXINSHEET", "ORIENTATION", "STYLE", "ISCROSSSHEETCONNECTOR"} == {"RECORD", "OWNERPARTID", "COLOR", "LOCATION.X", "LOCATION.Y", "SHOWNETNAME", "TEXT"} and

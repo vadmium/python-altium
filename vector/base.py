@@ -35,7 +35,7 @@ class Renderer:
         cbx = bx - rx
         cby = by - ry
         
-        with self.offset(offset):
+        with self.view(offset=offset):
             # TODO: circles not good enough if fill=None; need arcs
             c0 = (cax, cay)
             self.circle(r, c0, fill=fill, outline=outline, **kw)
@@ -66,42 +66,85 @@ class Renderer:
         pass
     
     def draw(self, object, offset=None):
-        with self.offset(offset) as offset:
-            object.draw(offset)
+        with self.view(offset=offset) as view:
+            object.draw(view)
     
     @contextmanager
-    def offset(self, offset):
-        yield OffsetRenderer(self, offset)
+    def view(self, **kw):
+        yield View(self, **kw)
     
+    # Values such that:
+    # * Text aligned at point (align_x, align_y) is
+    #     inside a double unit square square, aligned to adjacent edges,
+    #     and is centred between pairs of distant edges
+    # * Negating an alignment value
+    #     mirrors between left and right, and top and bottom
+    # * An alignment is considered false precisely if it is centred
     CENTRE = 0
     LEFT = -1
     RIGHT = +1
     TOP = -1
     BOTTOM = +1
 
-class OffsetRenderer:
-    def __init__(self, renderer, offset):
+class View:
+    def __init__(self, renderer, *, offset=None, rotate=None):
         self._renderer = renderer
         self._offset = offset
+        self._rotatearg = rotate
+        self._rotation = self._rotatearg or 0
     
     def line(self, *pos, offset=None, **kw):
-        self._renderer.line(*pos, offset=self._map(offset), **kw)
+        pos = map(self._rotate, pos)
+        return self._renderer.line(*pos, offset=self._map(offset), **kw)
+    
     def hline(self, *pos, offset=None, **kw):
-        self._renderer.hline(*pos, offset=self._map(offset), **kw)
+        if self._rotation & 2:
+            pos = map(operator.neg, pos)  # Rotate by 180 degrees
+        if self._rotation & 1:
+            # Rotate by 90 degrees
+            return self._renderer.vline(*pos, offset=self._map(offset), **kw)
+        else:
+            return self._renderer.hline(*pos, offset=self._map(offset), **kw)
+    
     def vline(self, *pos, offset=None, **kw):
-        self._renderer.vline(*pos, offset=self._map(offset), **kw)
-    def polygon(self, *pos, offset=None, **kw):
-        self._renderer.polygon(*pos, offset=self._map(offset), **kw)
+        if self._rotation + 1 & 2:
+            pos = map(operator.neg, pos)  # Rotate by 180 degrees
+        if self._rotation + 1 & 1:
+            return self._renderer.vline(*pos, offset=self._map(offset), **kw)
+        else:
+            # Rotate by -90 degrees
+            return self._renderer.hline(*pos, offset=self._map(offset), **kw)
+    
+    def polygon(self, *pos, offset=None, rotate=None, **kw):
+        if rotate is None:
+            rotate = self._rotatearg
+        else:
+            rotate += self._rotation
+        return self._renderer.polygon(*pos,
+            offset=self._map(offset),
+            rotate=rotate,
+        **kw)
+    
     def polyline(self, points, *pos, **kw):
-        self._renderer.polyline(map(self._map, points), *pos, **kw)
+        return self._renderer.polyline(map(self._map, points), *pos, **kw)
     def circle(self, r, offset=None, *pos, **kw):
-        self._renderer.circle(r, self._map(offset), *pos, **kw)
+        return self._renderer.circle(r, self._map(offset), *pos, **kw)
     def rectangle(self, *pos, offset=None, **kw):
-        self._renderer.rectangle(*pos, offset=self._map(offset), **kw)
+        pos = map(self._rotate, pos)
+        return self._renderer.rectangle(*pos, offset=self._map(offset), **kw)
     
     def _map(self, point):
-        if not self._offset:
-            return point
         if not point:
             return self._offset
+        point = self._rotate(point)
+        if not self._offset:
+            return point
         return map(operator.add, point, self._offset)
+    
+    def _rotate(self, point):
+        if self._rotation & 2:
+            point = map(operator.neg, point)  # Rotate by 180 degrees
+        if self._rotation & 1:
+            (x, y) = point
+            point = (-y, +x)  # Rotate by 90 degrees
+        return point

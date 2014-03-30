@@ -289,8 +289,11 @@ class Renderer(base.Renderer):
         self.emptyelement("use", attrs)
     
     @contextmanager
-    def offset(self, offset):
-        with self.element("g", transform=self._offset(offset)):
+    def view(self, *, offset=None, rotate=None):
+        transform = self._offset(offset)
+        if rotate is not None:
+            transform.append("rotate({})".format(rotate * self.flip[1] * 90))
+        with self.element("g", transform=transform):
             yield self
     
     def _offset(self, offset=None):
