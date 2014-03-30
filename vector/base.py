@@ -191,6 +191,21 @@ class Subview(View):
         pos = map(self._rotate, pos)
         self._closed(kw)
         return self._parent.rectangle(*pos, offset=self._map(offset), **kw)
+    def roundrect(self, r, *pos, offset=None, **kw):
+        pos = map(self._rotate, pos)
+        offset = self._map(offset)
+        self._closed(kw)
+        return self._parent.roundrect(r, *pos, offset=offset, **kw)
+    
+    def text(self, text, offset=None, *pos, angle=None, colour=None, **kw):
+        offset = self._map(offset)
+        if self._rotatearg is not None:
+            if angle is None:
+                angle = 0
+            angle += self._rotation * 90
+        colour = colour or self._colour
+        return self._parent.text(text, offset, *pos,
+            angle=angle, colour=colour, **kw)
     
     def _map(self, point):
         if not point:
