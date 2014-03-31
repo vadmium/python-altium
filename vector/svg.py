@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from . import base
 from math import sin, cos, radians
 from collections import Iterable
+from urllib.parse import urlunsplit, SplitResult
 
 class Renderer(base.Renderer):
     def __init__(self, size, units, unitmult=1, *, margin=0,
@@ -283,7 +284,9 @@ class Renderer(base.Renderer):
                     d(self)
     
     def draw(self, object, offset=None):
-        attrs = {"xlink:href": "#{}".format(object.__name__)}
+        url = urlunsplit(SplitResult(scheme="", netloc="", path="", query="",
+            fragment=object.__name__))
+        attrs = {"xlink:href": url}
         if offset:
             attrs.update(zip("xy", map(format, offset)))
         self.emptyelement("use", attrs)
