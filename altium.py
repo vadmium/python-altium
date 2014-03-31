@@ -142,23 +142,10 @@ def main(filename, renderer="svg"):
         renderer.addfont("font" + n, fontsize, family, **kw)
     renderer.start()
     
-    def basearrow(renderer):
-        renderer.polygon(((0, 0), (-2, -3), (5, 0), (-2, +3)), fill=True)
-    
-    with renderer.element("defs", dict()):
-        with renderer.element("marker",
-        dict(overflow="visible", markerUnits="userSpaceOnUse", id="input")):
-            with renderer.element("g", transform=("scale(-1)",)):
-                basearrow(renderer)
-        
-        with renderer.element("marker",
-        dict(overflow="visible", markerUnits="userSpaceOnUse", id="output")):
-            renderer.polygon(((0, +2.5), (7, 0), (0, -2.5)), fill=True)
-        
-        with renderer.element("marker",
-        dict(overflow="visible", markerUnits="userSpaceOnUse", id="io")):
-            renderer.polygon(((-5, 0), (0, +2.5), (+5, 0), (0, -2.5)),
-                fill=True)
+    arrowhead = dict(name="head", base=5, shoulder=7, radius=3)
+    arrowtail = dict(name="tail", base=7, shoulder=0, radius=2.5)
+    diamond = dict(name="diamond", base=10, shoulder=5, radius=2.5)
+    renderer.addobjects(arrows=(arrowhead, arrowtail, diamond))
     
     symbols = list()
     @symbols.append
@@ -172,10 +159,8 @@ def main(filename, renderer="svg"):
         renderer.hline(10)
         renderer.vline(-7, +7, offset=(10, 0), width=1.5)
     @symbols.append
-    def arrow(renderer):
-        renderer.hline(5)
-        with renderer.view(offset=(5, 0)) as offset:
-            basearrow(offset)
+    def arrowconn(renderer):
+        renderer.hline(10, endarrow=arrowhead)
     @symbols.append
     def dchevron(renderer):
         renderer.hline(5)
@@ -382,21 +367,24 @@ def main(filename, renderer="svg"):
                 offset = (int(obj["LOCATION." + x]) for x in "XY")
                 rotate = pinconglomerate & 3
                 with renderer.view(offset=offset, rotate=rotate) as view:
-                    lineattrs = dict()
-                    linestart = 0
+                    kw = dict()
+                    points = list()
                     if "SYMBOL_OUTEREDGE" in obj:
                         view.circle(2.85, (3.15, 0), width=0.6)
-                        linestart += 6
-                    lineattrs.update(x2=format(pinlength))
+                        points.append(6)
+                    points.append(pinlength)
                     electrical = obj.get("ELECTRICAL", PinElectrical.INPUT)
-                    marker = {PinElectrical.INPUT: "input", PinElectrical.IO: "io", PinElectrical.OUTPUT: "output", PinElectrical.PASSIVE: None, PinElectrical.POWER: None}[electrical]
+                    markers = {
+                        PinElectrical.INPUT: arrowhead,
+                        PinElectrical.IO: diamond,
+                        PinElectrical.OUTPUT: arrowtail,
+                        PinElectrical.PASSIVE: None,
+                        PinElectrical.POWER: None,
+                    }
+                    marker = markers[electrical]
                     if marker:
-                        lineattrs["marker-start"] = format("url(#{})".format(marker))
-                        if electrical in {PinElectrical.INPUT, PinElectrical.IO}:
-                            linestart += 5
-                    if linestart:
-                        lineattrs["x1"] = format(linestart)
-                    view.emptyelement("line", lineattrs)
+                        kw.update(startarrow=marker)
+                    view.hline(*points, **kw)
                     
                     if pinconglomerate >> 1 & 1:
                         invert = -1
@@ -424,7 +412,7 @@ def main(filename, renderer="svg"):
                 marker = "dchevron"
                 offset = 14
             else:
-                (marker, offset) = {PowerObjectStyle.ARROW: ("arrow", 12), PowerObjectStyle.BAR: ("rail", 12), PowerObjectStyle.GND: ("gnd", 20)}.get(obj["STYLE"], (None, 0))
+                (marker, offset) = {PowerObjectStyle.ARROW: ("arrowconn", 12), PowerObjectStyle.BAR: ("rail", 12), PowerObjectStyle.GND: ("gnd", 20)}.get(obj["STYLE"], (None, 0))
             location = tuple(int(obj["LOCATION." + "XY"[x]]) for x in range(2))
             
             a = dict(renderer._colour(colour(obj["COLOR"])))

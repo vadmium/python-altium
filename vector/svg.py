@@ -3,7 +3,9 @@ from contextlib import contextmanager
 from . import base
 from math import sin, cos, radians
 from collections import Iterable
-from urllib.parse import urlunsplit, SplitResult
+from urllib.parse import urlunparse, ParseResult
+import operator
+from math import copysign
 
 class Renderer(base.Renderer):
     def __init__(self, size, units, unitmult=1, *, margin=0,
@@ -31,6 +33,9 @@ class Renderer(base.Renderer):
         outline = ["stroke: currentColor", "fill: none"]
         if line is not None:
             outline.append("stroke-width: {}".format(line))
+            self.linewidth = line
+        else:
+            self.linewidth = 1
         
         text = list()
         if textsize is not None:
@@ -67,24 +72,46 @@ class Renderer(base.Renderer):
         self.xml.endElement("svg")
     
     def line(self, a, b=None, *pos, **kw):
+        attrs = dict()
         if b:
             points = (a, b)
         else:
             points = (a,)
-        attrs = dict()
         for (n, p) in enumerate(points, 1 + 2 - len(points)):
             (x, y) = p
             attrs["x{}".format(n)] = format(x)
             attrs["y{}".format(n)] = format(y * self.flip[1])
         self._line(attrs, *pos, **kw)
     
-    def hline(self, a, b=None, *pos, **kw):
-        a = format(a)
+    def hline(self, a, b=None, *pos,
+    startarrow=None, endarrow=None, width=None, **kw):
         if b is None:
-            attrs = {"x2": a}
+            b = a
+            a = None
+            reala = 0
         else:
-            attrs = {"x1": a, "x2": format(b)}
-        self._line(attrs, *pos, **kw)
+            reala = a
+        # Now a is always the start point and b is always the end point
+        
+        attrs = dict()
+        
+        dir = b - reala
+        if startarrow:
+            url = _buildurl(fragment=startarrow["name"])
+            attrs["marker-start"] = "url({})".format(url)
+            if startarrow["point"]:
+                a = reala + copysign(startarrow["point"], dir)
+            width = startarrow.get("width")
+        if endarrow:
+            url = _buildurl(fragment=endarrow["name"])
+            attrs["marker-end"] = "url({})".format(url)
+            b -= copysign(endarrow["point"], dir)
+            width = endarrow.get("width")
+        
+        if a is not None:
+            attrs["x1"] = format(a)
+        attrs["x2"] = format(b)
+        self._line(attrs, *pos, width=width, **kw)
     
     def vline(self, a, b=None, *pos, **kw):
         a = format(a * self.flip[1])
@@ -277,16 +304,62 @@ class Renderer(base.Renderer):
         else:
             return ()
     
-    def addobjects(self, objects):
-        with self.element("defs", dict()):
-            for d in objects:
+    def addobjects(self, objects=(), arrows=()):
+        """
+        Arrow shapes are defined by:
+        * point: Where the line would end without the arrow
+        * shoulder: Part laterally furthest away from the shaft
+        * base: Where the lines from the shoulders intersect
+        
+        shoulder __
+                \  ---___
+        --------+\       --
+                | >base    >point
+        --------+/    ___--
+                /__---
+        
+        Attributes of arrows:
+        * width: Of shaft; default used if omitted
+        * base: Distance from point to base
+        * shoulder: Longitudinal distance from point to shoulder
+        * radius: Lateral distance from axis to shoulder
+        
+        Types of shapes:
+        * Dart, chevron, barbed, concave arrowhead; shoulder > base:  ===>>
+        * Triangular arrowhead; shoulder = base:  ===|>
+        * Diamond, convex; 0 < shoulder < base:  ===<>
+        * Triangular tail; shoulder = 0:  ===<|
+        """
+        with self.element("defs"):
+            for a in arrows:
+                with self.element("marker", {
+                    "overflow": "visible",
+                    "markerUnits": "userSpaceOnUse",
+                    "id": a["name"],
+                }):
+                    width = a.get("width", self.linewidth)
+                    radius = a["radius"]
+                    base = a["base"]
+                    shoulder = a.get("shoulder", base)
+                    
+                    # Distance from shaft junction to point
+                    point = base + (shoulder - base) * width / 2 / radius
+                    a["point"] = point
+                    
+                    self.polygon((
+                        (0, +width / 2),
+                        (shoulder - point, +radius),
+                        (-point, 0),
+                        (shoulder - point, -radius),
+                        (0, -width / 2),
+                    ), fill=True)
+            
+            for d in objects:  # After arrows in case an object uses an arrow
                 with self.element("g", dict(id=d.__name__)):
                     d(self)
     
     def draw(self, object, offset=None):
-        url = urlunsplit(SplitResult(scheme="", netloc="", path="", query="",
-            fragment=object.__name__))
-        attrs = {"xlink:href": url}
+        attrs = {"xlink:href": _buildurl(fragment=object.__name__)}
         if offset:
             attrs.update(zip("xy", map(format, offset)))
         self.emptyelement("use", attrs)
@@ -330,3 +403,8 @@ class Renderer(base.Renderer):
                 (name, attrs, children) = e
                 with self.element(name, attrs):
                     self.tree(*children)
+
+def _buildurl(
+scheme="", netloc="", path="", params="", query="", fragment=""):
+    struct = ParseResult(scheme, netloc, path, params, query, fragment)
+    return urlunparse(struct)

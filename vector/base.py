@@ -62,7 +62,7 @@ class Renderer:
                     self.hline(cax, cbx, offset=(0, ay), colour=outline)
                     self.hline(cax, cbx, offset=(0, by), colour=outline)
     
-    def addobjects(self, objects):
+    def addobjects(self, objects=(), arrows=()):
         pass
     
     def draw(self, object, offset=None):
@@ -85,6 +85,9 @@ class Renderer:
     RIGHT = +1
     TOP = -1
     BOTTOM = +1
+    
+    START = 1 << 0
+    END = 1 << 1
 
 class View:
     def __init__(self, renderer, *, offset=None, rotate=None):

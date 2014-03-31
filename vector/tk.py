@@ -43,11 +43,31 @@ class Renderer(base.Renderer):
         (bx, by) = b
         self.polyline((a, (ox + bx, oy + by)), **kw)
     
-    def polyline(self, points, *, colour=None, width=None):
+    def polyline(self, points, *,
+    colour=None, width=None, startarrow=None, endarrow=None):
         points = (x * self.scaling for point in points for x in point)
         width = width or self.linewidth
         colour = self._colour(colour)
-        self.canvas.create_line(*points, fill=colour, width=width)
+        
+        kw = dict()
+        if startarrow:
+            kw["arrow"] = tkinter.FIRST
+            kw["arrowshape"] = (
+                startarrow["base"] * self.scaling,
+                startarrow["shoulder"] * self.scaling,
+                (startarrow["radius"] - width / 2) * self.scaling,
+            )
+        if endarrow:
+            kw["arrow"] = tkinter.LAST
+            kw["arrowshape"] = (
+                endarrow["base"] * self.scaling,
+                endarrow["shoulder"] * self.scaling,
+                (endarrow["radius"] - width / 2) * self.scaling,
+            )
+        if startarrow and endarrow:
+            kw["arrow"] = tkinter.BOTH
+        
+        self.canvas.create_line(*points, fill=colour, width=width, **kw)
     
     def circle(self, r, offset=(0, 0), *,
     outline=None, fill=None, width=None):
