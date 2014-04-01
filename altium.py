@@ -145,32 +145,40 @@ def main(filename, renderer="svg"):
     arrowhead = dict(name="head", base=5, shoulder=7, radius=3)
     arrowtail = dict(name="tail", base=7, shoulder=0, radius=2.5)
     diamond = dict(name="diamond", base=10, shoulder=5, radius=2.5)
-    renderer.addobjects(arrows=(arrowhead, arrowtail, diamond))
     
-    symbols = list()
-    @symbols.append
+    pinmarkers = {
+        PinElectrical.INPUT: arrowhead,
+        PinElectrical.IO: diamond,
+        PinElectrical.OUTPUT: arrowtail,
+        PinElectrical.PASSIVE: None,
+        PinElectrical.POWER: None,
+    }
+    
     def gnd(renderer):
         renderer.hline(10)
         renderer.vline(-7, +7, offset=(10, 0), width=1.5)
         renderer.vline(-4, +4, offset=(13, 0), width=1.5)
         renderer.vline(-1, +1, offset=(16, 0), width=1.5)
-    @symbols.append
     def rail(renderer):
         renderer.hline(10)
         renderer.vline(-7, +7, offset=(10, 0), width=1.5)
-    @symbols.append
     def arrowconn(renderer):
         renderer.hline(10, endarrow=arrowhead)
-    @symbols.append
     def dchevron(renderer):
         renderer.hline(5)
         renderer.polyline(((8, +4), (5, 0), (8, -4)))
         renderer.polyline(((11, +4), (8, 0), (11, -4)))
-    @symbols.append
+    connmarkers = {
+        PowerObjectStyle.ARROW: (arrowconn, 12),
+        PowerObjectStyle.BAR: (rail, 12),
+        PowerObjectStyle.GND: (gnd, 20),
+    }
+    
     def nc(renderer):
         renderer.line((+3, +3), (-3, -3), width=0.6)
         renderer.line((-3, +3), (+3, -3), width=0.6)
-    renderer.addobjects(symbols)
+    renderer.addobjects((gnd, rail, arrowconn, dchevron, nc),
+        arrows=(arrowhead, arrowtail, diamond))
     
     with renderer.view(offset=(0, size[1])) as base:
         base.rectangle((size[0], -size[1]), width=0.6)
@@ -374,14 +382,7 @@ def main(filename, renderer="svg"):
                         points.append(6)
                     points.append(pinlength)
                     electrical = obj.get("ELECTRICAL", PinElectrical.INPUT)
-                    markers = {
-                        PinElectrical.INPUT: arrowhead,
-                        PinElectrical.IO: diamond,
-                        PinElectrical.OUTPUT: arrowtail,
-                        PinElectrical.PASSIVE: None,
-                        PinElectrical.POWER: None,
-                    }
-                    marker = markers[electrical]
+                    marker = pinmarkers[electrical]
                     if marker:
                         kw.update(startarrow=marker)
                     view.hline(*points, **kw)
@@ -409,19 +410,18 @@ def main(filename, renderer="svg"):
         obj["RECORD"] == Record.POWER_OBJECT and obj["OWNERPARTID"] == b"-1"):
             orient = obj.get("ORIENTATION")
             if obj.get("ISCROSSSHEETCONNECTOR") == b"T":
-                marker = "dchevron"
+                marker = dchevron
                 offset = 14
             else:
-                (marker, offset) = {PowerObjectStyle.ARROW: ("arrowconn", 12), PowerObjectStyle.BAR: ("rail", 12), PowerObjectStyle.GND: ("gnd", 20)}.get(obj["STYLE"], (None, 0))
+                (marker, offset) = connmarkers.get(obj["STYLE"], (None, 0))
             
             col = colour(obj["COLOR"])
             translate = (int(obj["LOCATION." + x]) for x in "XY")
             with renderer.view(colour=col, offset=translate) as view:
-                attrs = {"xlink:href": "#{}".format(marker)}
-                transform = list()
+                kw = dict()
                 if orient:
-                    transform.append("rotate({})".format({b"2": 180, b"3": 90, b"1": 270}[orient]))
-                view.emptyelement("use", attrs, transform=transform)
+                    kw.update(rotate=int(orient))
+                view.draw(marker, **kw)
                 
                 if obj["SHOWNETNAME"] != b"F":
                     orients = {
@@ -502,12 +502,9 @@ def main(filename, renderer="svg"):
                 text(renderer, obj)
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "COLOR", "LOCATION.X", "LOCATION.Y", "OWNERPARTID"} and
         obj["RECORD"] == b"22" and obj["OWNERPARTID"] == b"-1"):
-            attrs = {"xlink:href": "#nc"}
-            attrs.update(renderer._colour(colour(obj["COLOR"])))
-            for x in range(2):
-                location = int(obj["LOCATION." + "XY"[x]])
-                attrs["xy"[x]] = format(location * (1, -1)[x])
-            renderer.emptyelement("use", attrs)
+            col = colour(obj["COLOR"])
+            location = (int(obj["LOCATION." + x]) for x in "XY")
+            renderer.draw(nc, location, colour=col)
         elif (obj.keys() - {"CLIPTORECT"} == {"RECORD", "ALIGNMENT", "AREACOLOR", "CORNER.X", "CORNER.Y", "FONTID", "ISSOLID", "LOCATION.X", "LOCATION.Y", "OWNERPARTID", "Text", "WORDWRAP"} and
         obj["RECORD"] == b"28" and obj["ALIGNMENT"] == b"1" and obj["AREACOLOR"] == b"16777215" and obj.get("CLIPTORECT", b"T") == b"T" and obj["ISSOLID"] == b"T" and obj["OWNERPARTID"] == b"-1" and obj["WORDWRAP"] == b"T"):
             attrs = {"class": "font" + obj["FONTID"].decode("ascii")}

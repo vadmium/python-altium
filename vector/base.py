@@ -66,8 +66,8 @@ class Renderer:
     def addobjects(self, objects=(), arrows=()):
         pass
     
-    def draw(self, object, offset=None):
-        with self.view(offset=offset) as view:
+    def draw(self, object, offset=None, **kw):
+        with self.view(offset=offset, **kw) as view:
             object.draw(view)
     
     @contextmanager

@@ -350,11 +350,18 @@ class Renderer(base.Renderer):
                 with self.element("g", dict(id=d.__name__)):
                     d(self)
     
-    def draw(self, object, offset=None):
+    def draw(self, object, offset=None, *, rotate=None, colour=None):
         attrs = {"xlink:href": _buildurl(fragment=object.__name__)}
-        if offset:
-            attrs.update(zip("xy", map(format, offset)))
-        self.emptyelement("use", attrs)
+        transform = None
+        if rotate is not None:
+            transform = self._offset(offset)
+            transform.append("rotate({})".format(rotate * 90 * self.flip[1]))
+        elif offset:
+            (x, y) = offset
+            attrs["x"] = format(x)
+            attrs["y"] = format(y * self.flip[1])
+        attrs.update(self._colour(colour))
+        self.emptyelement("use", attrs, transform=transform)
     
     @contextmanager
     def view(self, *, offset=None, rotate=None, colour=None):
