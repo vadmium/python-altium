@@ -22,20 +22,19 @@ class Renderer(base.Renderer):
         viewbox = "{},{} {},{}".format(-margin, top - margin, width, height)
         
         self.xml = XMLGenerator(encoding="UTF-8", short_empty_elements=True)
-        self.xml.startElement("svg", {
+        attrs = {
             "xmlns": "http://www.w3.org/2000/svg",
             "xmlns:xlink": "http://www.w3.org/1999/xlink",
             "width": "{}{}".format(width * unitmult, units),
             "height": "{}{}".format(height * unitmult, units),
             "viewBox": viewbox,
-        })
-        
-        outline = ["stroke: currentColor", "fill: none"]
-        if line is not None:
-            outline.append("stroke-width: {}".format(line))
-            self.linewidth = line
-        else:
+        }
+        if line is None:
             self.linewidth = 1
+        else:
+            attrs["stroke-width"] = format(line)
+            self.linewidth = line
+        self.xml.startElement("svg", attrs)
         
         text = list()
         if textsize is not None:
@@ -45,7 +44,8 @@ class Renderer(base.Renderer):
         text.append("fill: currentColor")
         
         self.rulesets = [
-            (".outline, path, line, polyline", outline),
+            (".outline, path, line, polyline",
+                ("stroke: currentColor", "fill: none")),
             (".solid", ("fill: currentColor", "stroke: none")),
             ("text", text),
         ]
@@ -122,21 +122,19 @@ class Renderer(base.Renderer):
         self._line(attrs, *pos, **kw)
     
     def _line(self, attrs, *, offset=None, width=None, colour=None):
-        style = list()
-        self._width(style, width)
+        self._width(attrs, width)
         attrs.update(self._colour(colour))
         transform = self._offset(offset)
-        self.emptyelement("line", attrs, style=style, transform=transform)
+        self.emptyelement("line", attrs, transform=transform)
     
     def polyline(self, points, *, colour=None, **kw):
         s = list()
         for (x, y) in points:
             s.append("{},{}".format(x, y * self.flip[1]))
         attrs = {"points": " ".join(s)}
-        style = list()
-        self._width(style, **kw)
+        self._width(attrs, **kw)
         attrs.update(self._colour(colour))
-        self.emptyelement("polyline", attrs, style=style)
+        self.emptyelement("polyline", attrs)
     
     def circle(self, r, offset=None, *, outline=None, fill=None, width=None):
         attrs = {"r": format(r)}
@@ -221,11 +219,11 @@ class Renderer(base.Renderer):
             attrs["class"] = "outline"
         if isinstance(outline, Iterable):
             style.extend(self._colour(outline, "stroke"))
-        self._width(style, width)
+        self._width(attrs, width)
     
-    def _width(self, style, width=None):
+    def _width(self, attrs, width=None):
         if width is not None:
-            style.append(("stroke-width", width))
+            attrs["stroke-width"] = format(width)
     
     def arc(self, r, start, end, offset=None, *, colour=None):
         if abs(end - start) >= 360:
