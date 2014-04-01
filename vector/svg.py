@@ -10,7 +10,7 @@ from math import copysign
 class Renderer(base.Renderer):
     def __init__(self, size, units, unitmult=1, *, margin=0,
     down=+1,  # -1 if y axis points upwards
-    line=None, textsize=None, textbottom=False):
+    line=None, textsize=None, textbottom=False, colour=None):
         width = size[0] + 2 * margin
         height = size[1] + 2 * margin
         if down < 0:
@@ -34,6 +34,7 @@ class Renderer(base.Renderer):
         else:
             attrs["stroke-width"] = format(line)
             self.linewidth = line
+        attrs.update(self._colour(colour))
         self.xml.startElement("svg", attrs)
         
         text = list()
@@ -295,13 +296,6 @@ class Renderer(base.Renderer):
                         attrs["text-decoration"] = "overline"
                     self.tree(("tspan", attrs, (seg["text"],)))
     
-    def _colour(self, colour=None, attr="color"):
-        if colour:
-            colour = (min(int(x * 0x100), 0xFF) for x in colour)
-            return ((attr, "#" + "".join(map("{:02X}".format, colour))),)
-        else:
-            return ()
-    
     def addobjects(self, objects=(), arrows=()):
         """
         Arrow shapes are defined by:
@@ -363,11 +357,12 @@ class Renderer(base.Renderer):
         self.emptyelement("use", attrs)
     
     @contextmanager
-    def view(self, *, offset=None, rotate=None):
+    def view(self, *, offset=None, rotate=None, colour=None):
         transform = self._offset(offset)
         if rotate is not None:
             transform.append("rotate({})".format(rotate * self.flip[1] * 90))
-        with self.element("g", transform=transform):
+        attrs = dict(self._colour(colour))
+        with self.element("g", attrs, transform=transform):
             yield self
     
     def _offset(self, offset=None):
@@ -377,6 +372,13 @@ class Renderer(base.Renderer):
             return [("translate({}, {})".format(x, y))]
         else:
             return []
+    
+    def _colour(self, colour=None, attr="color"):
+        if colour:
+            colour = (min(int(x * 0x100), 0xFF) for x in colour)
+            return ((attr, "#" + "".join(map("{:02X}".format, colour))),)
+        else:
+            return ()
     
     @contextmanager
     def element(self, name, attrs=(), style=None, transform=None):

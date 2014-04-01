@@ -413,16 +413,15 @@ def main(filename, renderer="svg"):
                 offset = 14
             else:
                 (marker, offset) = {PowerObjectStyle.ARROW: ("arrowconn", 12), PowerObjectStyle.BAR: ("rail", 12), PowerObjectStyle.GND: ("gnd", 20)}.get(obj["STYLE"], (None, 0))
-            location = tuple(int(obj["LOCATION." + "XY"[x]]) for x in range(2))
             
-            a = dict(renderer._colour(colour(obj["COLOR"])))
-            translate = "translate({})".format(", ".join(format(location[x] * (+1, -1)[x]) for x in range(2)))
-            with renderer.element("g", a, transform=(translate,)):
+            col = colour(obj["COLOR"])
+            translate = (int(obj["LOCATION." + x]) for x in "XY")
+            with renderer.view(colour=col, offset=translate) as view:
                 attrs = {"xlink:href": "#{}".format(marker)}
                 transform = list()
                 if orient:
                     transform.append("rotate({})".format({b"2": 180, b"3": 90, b"1": 270}[orient]))
-                renderer.emptyelement("use", attrs, transform=transform)
+                view.emptyelement("use", attrs, transform=transform)
                 
                 if obj["SHOWNETNAME"] != b"F":
                     orients = {
@@ -434,7 +433,7 @@ def main(filename, renderer="svg"):
                     (horiz, vert, pos) = orients[orient]
                     t = obj["TEXT"].decode("ascii")
                     pos = (p * offset for p in pos)
-                    renderer.text(t, pos, horiz=horiz, vert=vert)
+                    view.text(t, pos, horiz=horiz, vert=vert)
         
         elif (obj.keys() - {"INDEXINSHEET", "OWNERPARTDISPLAYMODE", "ISSOLID", "LINEWIDTH", "CORNERXRADIUS", "CORNERYRADIUS", "TRANSPARENT"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "AREACOLOR", "COLOR", "CORNER.X", "CORNER.Y", "ISNOTACCESIBLE", "LOCATION.X", "LOCATION.Y"} and
         obj["RECORD"] in {Record.RECTANGLE, Record.ROUND_RECTANGLE} and obj["ISNOTACCESIBLE"] == b"T" and obj.get("ISSOLID", b"T") == b"T"):

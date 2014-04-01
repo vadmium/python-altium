@@ -1,5 +1,6 @@
 import operator
 from contextlib import contextmanager
+from collections import Iterable
 
 class Renderer:
     def start(self):
@@ -90,35 +91,43 @@ class Renderer:
     END = 1 << 1
 
 class View:
-    def __init__(self, renderer, *, offset=None, rotate=None):
+    def __init__(self, renderer, *, offset=None, rotate=None, colour=None):
         self._renderer = renderer
         self._offset = offset
         self._rotatearg = rotate
+        self._colour = colour
         self._rotation = self._rotatearg or 0
     
-    def line(self, *pos, offset=None, **kw):
+    def line(self, *pos, offset=None, colour=None, **kw):
         pos = map(self._rotate, pos)
-        return self._renderer.line(*pos, offset=self._map(offset), **kw)
+        offset = self._map(offset)
+        colour = colour or self._colour
+        return self._renderer.line(*pos, offset=offset, colour=colour, **kw)
     
-    def hline(self, *pos, offset=None, **kw):
+    def hline(self, *pos, offset=None, colour=None, **kw):
+        offset = self._map(offset)
+        colour = colour or self._colour
         if self._rotation & 2:
             pos = map(operator.neg, pos)  # Rotate by 180 degrees
         if self._rotation & 1:
-            # Rotate by 90 degrees
-            return self._renderer.vline(*pos, offset=self._map(offset), **kw)
+            method = self._renderer.vline  # Rotate by 90 degrees
         else:
-            return self._renderer.hline(*pos, offset=self._map(offset), **kw)
+            method = self._renderer.hline
+        return method(*pos, offset=offset, colour=colour, **kw)
     
-    def vline(self, *pos, offset=None, **kw):
+    def vline(self, *pos, offset=None, colour=None, **kw):
+        offset = self._map(offset)
+        colour = colour or self._colour
         if self._rotation + 1 & 2:
             pos = map(operator.neg, pos)  # Rotate by 180 degrees
         if self._rotation + 1 & 1:
-            return self._renderer.vline(*pos, offset=self._map(offset), **kw)
+            method = self._renderer.vline
         else:
-            # Rotate by -90 degrees
-            return self._renderer.hline(*pos, offset=self._map(offset), **kw)
+            method = self._renderer.hline  # Rotate by -90 degrees
+        return method(*pos, offset=self._map(offset), colour=colour, **kw)
     
     def polygon(self, *pos, offset=None, rotate=None, **kw):
+        self._closed(kw)
         if rotate is None:
             rotate = self._rotatearg
         else:
@@ -128,12 +137,16 @@ class View:
             rotate=rotate,
         **kw)
     
-    def polyline(self, points, *pos, **kw):
-        return self._renderer.polyline(map(self._map, points), *pos, **kw)
+    def polyline(self, points, *pos, colour=None, **kw):
+        points = map(self._map, points)
+        colour = colour or self._colour
+        return self._renderer.polyline(points, *pos, colour=colour, **kw)
     def circle(self, r, offset=None, *pos, **kw):
+        self._closed(kw)
         return self._renderer.circle(r, self._map(offset), *pos, **kw)
     def rectangle(self, *pos, offset=None, **kw):
         pos = map(self._rotate, pos)
+        self._closed(kw)
         return self._renderer.rectangle(*pos, offset=self._map(offset), **kw)
     
     def _map(self, point):
@@ -151,3 +164,9 @@ class View:
             (x, y) = point
             point = (-y, +x)  # Rotate by 90 degrees
         return point
+    
+    def _closed(self, kw):
+        if self._colour:
+            for param in ("fill", "outline"):
+                if kw.get(param) and not isinstance(kw[param], Iterable):
+                    kw[param] = self._colour
