@@ -69,6 +69,17 @@ class Renderer(base.Renderer):
         
         self.canvas.create_line(*points, fill=colour, width=width, **kw)
     
+    def cubicbezier(self, a, b, c, d, *,
+    offset=(0, 0), colour=None, width=None):
+        (ox, oy) = offset
+        points = list()
+        for (x, y) in (a, b, c, d):
+            points.extend(((ox + x) * self.scaling, (oy + y) * self.scaling))
+        width = width or self.linewidth
+        colour = self._colour(colour)
+        self.canvas.create_line(*points, smooth="bezier",
+            fill=colour, width=width)
+    
     def circle(self, r, offset=(0, 0), *,
     outline=None, fill=None, width=None):
         coords = tuple((o - r, o + r) for o in offset)

@@ -141,6 +141,11 @@ class View:
         points = map(self._map, points)
         colour = colour or self._colour
         return self._renderer.polyline(points, *pos, colour=colour, **kw)
+    def cubicbezier(self, *points, offset=None, colour=None, **kw):
+        return self._renderer.cubicbezier(*map(self._rotate, points),
+            offset=self._map(offset),
+            colour=colour or self._colour,
+        **kw)
     def circle(self, r, offset=None, *pos, **kw):
         self._closed(kw)
         return self._renderer.circle(r, self._map(offset), *pos, **kw)

@@ -137,6 +137,16 @@ class Renderer(base.Renderer):
         attrs.update(self._colour(colour))
         self.emptyelement("polyline", attrs)
     
+    def cubicbezier(self, a, b, c, d, *,
+    offset=None, colour=None, width=None):
+        attrs = dict(self._colour(colour))
+        s = list()
+        for p in (a, b, c, d):
+            s.append("{},{}".format(*map(operator.mul, p, self.flip)))
+        attrs["d"] = "M{} C {} {} {}".format(*s)
+        self._width(attrs, width)
+        self.emptyelement("path", attrs, transform=self._offset(offset))
+    
     def circle(self, r, offset=None, *, outline=None, fill=None, width=None):
         attrs = {"r": format(r)}
         style = list()
