@@ -99,7 +99,6 @@ class SheetStyle:
 
 from vector import svg
 from sys import stderr
-from textwrap import TextWrapper
 import os
 import os.path
 from datetime import date
@@ -507,14 +506,13 @@ def main(filename, renderer="svg"):
             renderer.draw(nc, location, colour=col)
         elif (obj.keys() - {"CLIPTORECT"} == {"RECORD", "ALIGNMENT", "AREACOLOR", "CORNER.X", "CORNER.Y", "FONTID", "ISSOLID", "LOCATION.X", "LOCATION.Y", "OWNERPARTID", "Text", "WORDWRAP"} and
         obj["RECORD"] == b"28" and obj["ALIGNMENT"] == b"1" and obj["AREACOLOR"] == b"16777215" and obj.get("CLIPTORECT", b"T") == b"T" and obj["ISSOLID"] == b"T" and obj["OWNERPARTID"] == b"-1" and obj["WORDWRAP"] == b"T"):
-            attrs = {"class": "font" + obj["FONTID"].decode("ascii")}
             lhs = int(obj["LOCATION.X"])
-            translate = "translate({}, {})".format(lhs, -int(obj["CORNER.Y"]))
-            with renderer.element("text", attrs, transform=(translate,)):
-                wrapper = TextWrapper(width=(int(obj["CORNER.X"]) - lhs) / 4.375)  # Very hacky approximation of the size of each character as one en wide
-                for hardline in obj["Text"].decode("ascii").split("~1"):
-                    for softline in wrapper.wrap(hardline):
-                        renderer.tree(("tspan", {"x": "0", "dy": "10", "xml:space": "preserve"}, (softline,)))
+            renderer.text(
+                font="font" + obj["FONTID"].decode("ascii"),
+                offset=(lhs, int(obj["CORNER.Y"])),
+                width=int(obj["CORNER.X"]) - lhs,
+                text=obj["Text"].decode("ascii").replace("~1", "\n"),
+            )
         
         elif (obj.keys() == {"RECORD", "OWNERINDEX", "ISNOTACCESIBLE", "OWNERPARTID", "LINEWIDTH", "COLOR", "LOCATIONCOUNT", "X1", "Y1", "X2", "Y2", "X3", "Y3", "X4", "Y4"} and
         obj["RECORD"] == Record.BEZIER and obj["ISNOTACCESIBLE"] == b"T" and obj["OWNERPARTID"] == b"1" and obj["LINEWIDTH"] == b"1" and obj["LOCATIONCOUNT"] == b"4"):

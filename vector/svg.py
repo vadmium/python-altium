@@ -6,11 +6,14 @@ from collections import Iterable
 from urllib.parse import urlunparse, ParseResult
 import operator
 from math import copysign
+from textwrap import TextWrapper
+from io import StringIO
 
 class Renderer(base.Renderer):
     def __init__(self, size, units, unitmult=1, *, margin=0,
     down=+1,  # -1 if y axis points upwards
-    line=None, textsize=None, textbottom=False, colour=None):
+    line=None, textsize=10, textbottom=False, colour=None):
+        self.textsize = textsize
         width = size[0] + 2 * margin
         height = size[1] + 2 * margin
         if down < 0:
@@ -37,9 +40,7 @@ class Renderer(base.Renderer):
         attrs.update(self._colour(colour))
         self.xml.startElement("svg", attrs)
         
-        text = list()
-        if textsize is not None:
-            text.append("font-size: {}px".format(textsize))
+        text = ["font-size: {}px".format(self.textsize)]
         if textbottom:
             text.append("dominant-baseline: text-after-edge")
         text.append("fill: currentColor")
@@ -266,7 +267,7 @@ class Renderer(base.Renderer):
         self.emptyelement("path", at, transform=self._offset(offset))
     
     def text(self, text, offset=None, horiz=None, vert=None, *,
-    angle=None, font=None, colour=None):
+    angle=None, font=None, colour=None, width=None):
         attrs = dict()
         style = list()
         transform = list()
@@ -285,26 +286,45 @@ class Renderer(base.Renderer):
             }
             style.append(("text-anchor", anchors[horiz]))
         
+        transform.extend(self._offset(offset))
         if angle is not None:
-            transform.extend(self._offset(offset))
             transform.append("rotate({})".format(angle))
-        elif offset:
-            (x, y) = offset
-            attrs["x"] = format(x)
-            attrs["y"] = format(y * self.flip[1])
         
         if font is not None:
             attrs["class"] = font
         attrs.update(self._colour(colour))
         with self.element("text", attrs, style=style, transform=transform):
-            if isinstance(text, str):
-                self.xml.characters(text)
-            else:
-                for seg in text:
-                    attrs = dict()
-                    if seg.get("overline"):
-                        attrs["text-decoration"] = "overline"
-                    self.tree(("tspan", attrs, (seg["text"],)))
+            if width is None:
+                if isinstance(text, str):
+                    self.xml.characters(text)
+                else:
+                    for seg in text:
+                        attrs = dict()
+                        if seg.get("overline"):
+                            attrs["text-decoration"] = "overline"
+                        self.tree(("tspan", attrs, (seg["text"],)))
+                return
+            
+            # Very hacky approximation of the size of each character
+            # as one en wide
+            width /= self.textsize / 2
+            wrapper = TextWrapper(width=width,
+                replace_whitespace=False, drop_whitespace=False)
+            
+            lineattrs = {
+                "x": "0",
+                "dy": "{}em".format(1 / 0.875),
+                "xml:space": "preserve",
+            }
+            hardlines = text.splitlines(keepends=True)
+            if not hardlines:
+                hardlines.append("")
+            for hardline in hardlines:
+                wrapped = wrapper.wrap(hardline)
+                if not wrapped:  # Caused by empty string
+                    wrapped.append("")
+                for softline in wrapped:
+                    self.tree(("tspan", lineattrs, (softline,)))
     
     def addobjects(self, objects=(), arrows=()):
         with self.element("defs"):

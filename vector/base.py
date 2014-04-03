@@ -29,8 +29,9 @@ class Renderer:
     * Triangular tail; shoulder = 0:  ===<|
     
     Text is rendered by the text() method. The "text" argument may be:
-    * a simple plain text string
-    * a sequence of dict() objects, each specifying a formatted text segment
+    * A simple plain text string
+    * A sequence of dict() objects, each specifying a formatted text segment.
+        Not supported in combination with text wrapping.
     The default alignment is left- and bottom-aligned.
     """
     
