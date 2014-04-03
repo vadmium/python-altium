@@ -9,7 +9,7 @@ import tkinter.font
 class Renderer(base.Renderer):
     def __init__(self, size, units, unitmult=1, *, margin=0,
     down=+1,  # -1 if y axis points upwards, not implemented
-    line=1, textsize=None, textbottom=False):
+    line=1, textsize=10, textbottom=False):
         self.colour = "black"
         
         root = Tk()
@@ -131,7 +131,7 @@ class Renderer(base.Renderer):
     
     def text(self, text, offset=(0, 0),
     horiz=base.Renderer.LEFT, vert=base.Renderer.BOTTOM, *,
-    angle=None, font=None, colour=None):
+    angle=None, font=None, colour=None, width=None):
         anchors = {
             (self.TOP, self.LEFT): tkinter.NW,
             (self.TOP, self.CENTRE): tkinter.N,
@@ -155,6 +155,8 @@ class Renderer(base.Renderer):
         if isinstance(text, str):
             kw.update(anchor=anchors[(vert, horiz)])
             offset = (x * self.scaling for x in offset)
+            if width is not None:
+                kw.update(width=width * self.scaling)
             self.canvas.create_text(*offset, text=text, **kw)
             return
         
