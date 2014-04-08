@@ -97,12 +97,13 @@ class SheetStyle:
     A3 = b"1"
     A = b"5"
 
-from vector import svg
+import vector
 from sys import stderr
 import os
 import os.path
 from datetime import date
 import contextlib
+from importlib import import_module
 
 def main(filename, renderer="svg"):
     """Convert an Altium *.SchDoc schematic file
@@ -111,7 +112,9 @@ def main(filename, renderer="svg"):
     written to the standard output. It may also be rendered using TK.
     """
     
-    #~ renderer = {"svg", "tk"}[renderer]
+    if renderer not in {"svg", "tk"}:
+        raise SystemExit("Unknown renderer backend: {!r}".format(renderer))
+    renderer = import_module("." + renderer, "vector")
     
     with open(filename, "rb") as file:
         objects = read(file)
@@ -124,7 +127,7 @@ def main(filename, renderer="svg"):
         size = tuple(int(sheet["CUSTOM" + "XY"[x]]) for x in range(2))
     
     # Units are 1/100" or 10 mils
-    renderer = svg.Renderer(size, "in", 1/100,
+    renderer = renderer.Renderer(size, "in", 1/100,
         margin=0.3, line=1, down=-1, textsize=8.75, textbottom=True)
     
     for n in range(int(sheet["FONTIDCOUNT"])):
