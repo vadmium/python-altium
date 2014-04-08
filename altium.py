@@ -512,6 +512,7 @@ def main(filename, renderer="svg"):
                 offset=(lhs, int(obj["CORNER.Y"])),
                 width=int(obj["CORNER.X"]) - lhs,
                 text=obj["Text"].decode("ascii").replace("~1", "\n"),
+                vert=renderer.TOP,
             )
         
         elif (obj.keys() == {"RECORD", "OWNERINDEX", "ISNOTACCESIBLE", "OWNERPARTID", "LINEWIDTH", "COLOR", "LOCATIONCOUNT", "X1", "Y1", "X2", "Y2", "X3", "Y3", "X4", "Y4"} and

@@ -311,20 +311,22 @@ class Renderer(base.Renderer):
             wrapper = TextWrapper(width=width,
                 replace_whitespace=False, drop_whitespace=False)
             
-            lineattrs = {
-                "x": "0",
-                "dy": "{}em".format(1 / 0.875),
-                "xml:space": "preserve",
-            }
             hardlines = text.splitlines(keepends=True)
             if not hardlines:
                 hardlines.append("")
+            line = 0
             for hardline in hardlines:
                 wrapped = wrapper.wrap(hardline)
                 if not wrapped:  # Caused by empty string
                     wrapped.append("")
                 for softline in wrapped:
+                    lineattrs = {
+                        "x": "0",
+                        "y": "{}em".format(line / 0.875),
+                        "xml:space": "preserve",
+                    }
                     self.tree(("tspan", lineattrs, (softline,)))
+                    line += 1
     
     def addobjects(self, objects=(), arrows=()):
         with self.element("defs"):
