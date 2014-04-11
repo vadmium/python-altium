@@ -2,7 +2,37 @@ import operator
 from contextlib import contextmanager
 from collections import Iterable
 
-class Renderer:
+class View:
+    def draw(self, object, offset=None, **kw):
+        with self.view(offset=offset, **kw) as view:
+            object.draw(view)
+    
+    @contextmanager
+    def view(self, **kw):
+        """A context manager that returns a new view object
+        
+        The context manager should be exited
+        before making any more rendering calls on the parent view."""
+        
+        yield Subview(self, **kw)
+    
+    # Values such that:
+    # * Text aligned at point (align_x, align_y) is
+    #     inside a double unit square square, aligned to adjacent edges,
+    #     and is centred between pairs of distant edges
+    # * Negating an alignment value
+    #     mirrors between left and right, and top and bottom
+    # * An alignment is considered false precisely if it is centred
+    CENTRE = 0
+    LEFT = -1
+    RIGHT = +1
+    TOP = -1
+    BOTTOM = +1
+    
+    START = 1 << 0
+    END = 1 << 1
+
+class Renderer(View):
     """
     Arrow shapes are defined by:
     * point: Where the line would end without the arrow
@@ -97,34 +127,10 @@ class Renderer:
     
     def addobjects(self, objects=(), arrows=()):
         pass
-    
-    def draw(self, object, offset=None, **kw):
-        with self.view(offset=offset, **kw) as view:
-            object.draw(view)
-    
-    @contextmanager
-    def view(self, **kw):
-        yield View(self, **kw)
-    
-    # Values such that:
-    # * Text aligned at point (align_x, align_y) is
-    #     inside a double unit square square, aligned to adjacent edges,
-    #     and is centred between pairs of distant edges
-    # * Negating an alignment value
-    #     mirrors between left and right, and top and bottom
-    # * An alignment is considered false precisely if it is centred
-    CENTRE = 0
-    LEFT = -1
-    RIGHT = +1
-    TOP = -1
-    BOTTOM = +1
-    
-    START = 1 << 0
-    END = 1 << 1
 
-class View:
-    def __init__(self, renderer, *, offset=None, rotate=None, colour=None):
-        self._renderer = renderer
+class Subview(View):
+    def __init__(self, parent, *, offset=None, rotate=None, colour=None):
+        self._parent = parent
         self._offset = offset
         self._rotatearg = rotate
         self._colour = colour
@@ -134,7 +140,7 @@ class View:
         pos = map(self._rotate, pos)
         offset = self._map(offset)
         colour = colour or self._colour
-        return self._renderer.line(*pos, offset=offset, colour=colour, **kw)
+        return self._parent.line(*pos, offset=offset, colour=colour, **kw)
     
     def hline(self, *pos, offset=None, colour=None, **kw):
         offset = self._map(offset)
@@ -142,9 +148,9 @@ class View:
         if self._rotation & 2:
             pos = map(operator.neg, pos)  # Rotate by 180 degrees
         if self._rotation & 1:
-            method = self._renderer.vline  # Rotate by 90 degrees
+            method = self._parent.vline  # Rotate by 90 degrees
         else:
-            method = self._renderer.hline
+            method = self._parent.hline
         return method(*pos, offset=offset, colour=colour, **kw)
     
     def vline(self, *pos, offset=None, colour=None, **kw):
@@ -153,9 +159,9 @@ class View:
         if self._rotation + 1 & 2:
             pos = map(operator.neg, pos)  # Rotate by 180 degrees
         if self._rotation + 1 & 1:
-            method = self._renderer.vline
+            method = self._parent.vline
         else:
-            method = self._renderer.hline  # Rotate by -90 degrees
+            method = self._parent.hline  # Rotate by -90 degrees
         return method(*pos, offset=self._map(offset), colour=colour, **kw)
     
     def polygon(self, *pos, offset=None, rotate=None, **kw):
@@ -164,7 +170,7 @@ class View:
             rotate = self._rotatearg
         else:
             rotate += self._rotation
-        return self._renderer.polygon(*pos,
+        return self._parent.polygon(*pos,
             offset=self._map(offset),
             rotate=rotate,
         **kw)
@@ -172,19 +178,19 @@ class View:
     def polyline(self, points, *pos, colour=None, **kw):
         points = map(self._map, points)
         colour = colour or self._colour
-        return self._renderer.polyline(points, *pos, colour=colour, **kw)
+        return self._parent.polyline(points, *pos, colour=colour, **kw)
     def cubicbezier(self, *points, offset=None, colour=None, **kw):
-        return self._renderer.cubicbezier(*map(self._rotate, points),
+        return self._parent.cubicbezier(*map(self._rotate, points),
             offset=self._map(offset),
             colour=colour or self._colour,
         **kw)
     def circle(self, r, offset=None, *pos, **kw):
         self._closed(kw)
-        return self._renderer.circle(r, self._map(offset), *pos, **kw)
+        return self._parent.circle(r, self._map(offset), *pos, **kw)
     def rectangle(self, *pos, offset=None, **kw):
         pos = map(self._rotate, pos)
         self._closed(kw)
-        return self._renderer.rectangle(*pos, offset=self._map(offset), **kw)
+        return self._parent.rectangle(*pos, offset=self._map(offset), **kw)
     
     def _map(self, point):
         if not point:
