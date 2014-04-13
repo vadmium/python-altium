@@ -6,12 +6,13 @@ from collections import Iterable
 from math import sin, cos, radians
 import tkinter.font
 
-class Renderer(base.Renderer):
-    def __init__(self, size, units, unitmult=1, *, margin=0,
-    down=+1,  # -1 if y axis points upwards, not implemented
+class _RawRenderer(base.Renderer):
+    """Implements basic TK renderer except for default offsets, colour, etc
+    """
+    
+    def __init__(self, size, units, unitmult=1, *,
     line=1, textsize=10, textbottom=False):
         self.colour = "black"
-        
         root = Tk()
         self.scaling = root.call("tk", "scaling") * 72  # pixels/in
         self.scaling *= unitmult / {"mm": 25.4, "in": 1}[units]
@@ -23,15 +24,6 @@ class Renderer(base.Renderer):
         )
         self.canvas.pack(fill=tkinter.BOTH, expand=True)
         self.fonts = dict()
-    
-    def addfont(self, id, size, family, italic=None, bold=None):
-        kw = dict()
-        if italic:
-            kw.update(slant="italic")
-        if bold:
-            kw.update(weight="bold")
-        size = -round(size * self.scaling)
-        self.fonts[id] = Font(family=family, size=size, **kw)
     
     def line(self, a, b=None, *, offset=(0, 0), **kw):
         (ox, oy) = offset
@@ -197,6 +189,28 @@ class Renderer(base.Renderer):
             return "#" + "".join(map("{:03X}".format, colour))
         else:
             return self.colour
+
+class Renderer(base.Renderer, base.Subview):
+    def __init__(self, size, *pos,
+    down=+1,  # -1 if y axis points upwards
+    margin=0, **kw):
+        (xsize, ysize) = size
+        size = (xsize + 2 * margin, ysize + 2 * margin)
+        raw = _RawRenderer(size, *pos, **kw)
+        if down < 0:
+            offset = (margin, margin - ysize)
+        else:
+            offset = (margin, margin)
+        base.Subview.__init__(self, raw, offset=offset)
+    
+    def addfont(self, id, size, family, italic=None, bold=None):
+        kw = dict()
+        if italic:
+            kw.update(slant="italic")
+        if bold:
+            kw.update(weight="bold")
+        size = -round(size * self._parent.scaling)
+        self._parent.fonts[id] = Font(family=family, size=size, **kw)
     
     def finish(self):
         tkinter.mainloop()
