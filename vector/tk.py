@@ -2,7 +2,6 @@ from tkinter import Tk
 import tkinter
 from . import base
 from tkinter.font import Font
-from collections import Iterable
 from math import sin, cos, radians
 import tkinter.font
 
@@ -12,7 +11,6 @@ class _RawRenderer(base.Renderer):
     
     def __init__(self, size, units, unitmult=1, *,
     line=1, textsize=10, textbottom=False):
-        self.colour = "black"
         root = Tk()
         self.scaling = root.call("tk", "scaling") * 72  # pixels/in
         self.scaling *= unitmult / {"mm": 25.4, "in": 1}[units]
@@ -37,7 +35,7 @@ class _RawRenderer(base.Renderer):
         self.polyline((a, (ox + bx, oy + by)), **kw)
     
     def polyline(self, points, *,
-    colour=None, width=None, startarrow=None, endarrow=None):
+    colour, width=None, startarrow=None, endarrow=None):
         tkpoints = list()
         for (x, y) in points:
             tkpoints.extend((x * self.scaling, y * self.scaling))
@@ -65,7 +63,7 @@ class _RawRenderer(base.Renderer):
         self.canvas.create_line(*tkpoints, fill=colour, width=width, **kw)
     
     def cubicbezier(self, a, b, c, d, *,
-    offset=(0, 0), colour=None, width=None):
+    offset=(0, 0), colour, width=None):
         (ox, oy) = offset
         points = list()
         for (x, y) in (a, b, c, d):
@@ -112,21 +110,18 @@ class _RawRenderer(base.Renderer):
     def _closed(self, outline=None, fill=None, width=None):
         kw = dict()
         if fill:
-            if isinstance(fill, Iterable):
-                kw.update(fill=self._colour(fill))
-            else:
-                kw.update(fill=self.colour)
+            kw.update(fill=self._colour(fill))
             if outline:
                 kw.update(width=width or self.linewidth)
             else:
                 kw.update(width=0)
-        if isinstance(outline, Iterable):
+        if outline:
             kw.update(outline=self._colour(outline))
         return kw
     
     def text(self, text, offset=(0, 0),
     horiz=base.Renderer.LEFT, vert=base.Renderer.BOTTOM, *,
-    angle=None, font=None, colour=None, width=None):
+    angle=None, font=None, colour, width=None):
         anchors = {
             (self.TOP, self.LEFT): tkinter.NW,
             (self.TOP, self.CENTRE): tkinter.N,
@@ -183,12 +178,9 @@ class _RawRenderer(base.Renderer):
             
             pos = newpos
     
-    def _colour(self, colour=None):
-        if colour:
-            colour = (min(int(x * 0x1000), 0xFFF) for x in colour)
-            return "#" + "".join(map("{:03X}".format, colour))
-        else:
-            return self.colour
+    def _colour(self, colour):
+        colour = (min(int(x * 0x1000), 0xFFF) for x in colour)
+        return "#" + "".join(map("{:03X}".format, colour))
 
 class Renderer(base.Renderer, base.Subview):
     def __init__(self, size, *pos,
@@ -201,7 +193,7 @@ class Renderer(base.Renderer, base.Subview):
             offset = (margin, margin - ysize)
         else:
             offset = (margin, margin)
-        base.Subview.__init__(self, raw, offset=offset)
+        base.Subview.__init__(self, raw, offset=offset, colour=(0, 0, 0))
     
     def addfont(self, id, size, family, italic=None, bold=None):
         kw = dict()
