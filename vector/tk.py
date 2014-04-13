@@ -37,7 +37,7 @@ class Renderer(base.Renderer):
         (ox, oy) = offset
         if b is None:
             b = a
-            a = offset
+            a = (ox, oy)
         else:
             (ax, ay) = a
             a = (ox + ax, oy + ay)
@@ -46,7 +46,9 @@ class Renderer(base.Renderer):
     
     def polyline(self, points, *,
     colour=None, width=None, startarrow=None, endarrow=None):
-        points = (x * self.scaling for point in points for x in point)
+        tkpoints = list()
+        for (x, y) in points:
+            tkpoints.extend((x * self.scaling, y * self.scaling))
         width = width or self.linewidth
         colour = self._colour(colour)
         
@@ -68,7 +70,7 @@ class Renderer(base.Renderer):
         if startarrow and endarrow:
             kw["arrow"] = tkinter.BOTH
         
-        self.canvas.create_line(*points, fill=colour, width=width, **kw)
+        self.canvas.create_line(*tkpoints, fill=colour, width=width, **kw)
     
     def cubicbezier(self, a, b, c, d, *,
     offset=(0, 0), colour=None, width=None):

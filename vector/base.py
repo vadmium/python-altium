@@ -90,6 +90,8 @@ class Renderer(View):
         else:
             (ax, ay) = (0, 0)
             (bx, by) = a
+        fill = fill and tuple(fill)
+        outline = outline and tuple(outline)
         
         # Only positive dimensions are considered
         (rx, ry) = r
@@ -131,9 +133,18 @@ class Renderer(View):
 class Subview(View):
     def __init__(self, parent, *, offset=None, rotate=None, colour=None):
         self._parent = parent
-        self._offset = offset
         self._rotatearg = rotate
-        self._colour = colour
+        
+        # Copy parameters in case they are generators or mutable
+        if offset:
+            self._offset = tuple(offset)
+        else:
+            self._offset = None
+        if colour:
+            self._colour = tuple(colour)
+        else:
+            self._colour = None
+        
         self._rotation = self._rotatearg or 0
     
     def line(self, *pos, offset=None, colour=None, **kw):
