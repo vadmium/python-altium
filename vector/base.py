@@ -147,14 +147,14 @@ class Subview(View):
         
         self._rotation = self._rotatearg or 0
     
-    def line(self, *pos, offset=None, colour=None, **kw):
+    def line(self, *pos, colour=None, **kw):
         pos = map(self._rotate, pos)
-        offset = self._map(offset)
+        self._map_offset(kw)
         colour = colour or self._colour
-        return self._parent.line(*pos, offset=offset, colour=colour, **kw)
+        return self._parent.line(*pos, colour=colour, **kw)
     
-    def hline(self, *pos, offset=None, colour=None, **kw):
-        offset = self._map(offset)
+    def hline(self, *pos, colour=None, **kw):
+        self._map_offset(kw)
         colour = colour or self._colour
         if self._rotation & 2:
             pos = map(operator.neg, pos)  # Rotate by 180 degrees
@@ -162,10 +162,10 @@ class Subview(View):
             method = self._parent.vline  # Rotate by 90 degrees
         else:
             method = self._parent.hline
-        return method(*pos, offset=offset, colour=colour, **kw)
+        return method(*pos, colour=colour, **kw)
     
-    def vline(self, *pos, offset=None, colour=None, **kw):
-        offset = self._map(offset)
+    def vline(self, *pos, colour=None, **kw):
+        self._map_offset(kw)
         colour = colour or self._colour
         if self._rotation + 1 & 2:
             pos = map(operator.neg, pos)  # Rotate by 180 degrees
@@ -173,54 +173,60 @@ class Subview(View):
             method = self._parent.vline
         else:
             method = self._parent.hline  # Rotate by -90 degrees
-        return method(*pos, offset=self._map(offset), colour=colour, **kw)
+        return method(*pos, colour=colour, **kw)
     
-    def polygon(self, *pos, offset=None, rotate=None, **kw):
+    def polygon(self, *pos, rotate=None, **kw):
         self._closed(kw)
         if rotate is None:
             rotate = self._rotatearg
         else:
             rotate += self._rotation
-        return self._parent.polygon(*pos,
-            offset=self._map(offset),
-            rotate=rotate,
-        **kw)
+        return self._parent.polygon(*pos, rotate=rotate, **kw)
     
     def polyline(self, points, *pos, colour=None, **kw):
         points = map(self._map, points)
         colour = colour or self._colour
         return self._parent.polyline(points, *pos, colour=colour, **kw)
-    def cubicbezier(self, *points, offset=None, colour=None, **kw):
+    def cubicbezier(self, *points, colour=None, **kw):
+        self._map_offset(kw)
         return self._parent.cubicbezier(*map(self._rotate, points),
-            offset=self._map(offset),
             colour=colour or self._colour,
         **kw)
-    def circle(self, r, offset=None, *pos, **kw):
+    def circle(self, r, offset=None, **kw):
+        kw.update(offset=offset)
         self._closed(kw)
-        return self._parent.circle(r, self._map(offset), *pos, **kw)
-    def rectangle(self, *pos, offset=None, **kw):
+        return self._parent.circle(r, **kw)
+    def rectangle(self, *pos, **kw):
         pos = map(self._rotate, pos)
         self._closed(kw)
-        return self._parent.rectangle(*pos, offset=self._map(offset), **kw)
-    def roundrect(self, r, *pos, offset=None, **kw):
+        return self._parent.rectangle(*pos, **kw)
+    def roundrect(self, r, *pos, **kw):
         pos = map(self._rotate, pos)
-        offset = self._map(offset)
         self._closed(kw)
-        return self._parent.roundrect(r, *pos, offset=offset, **kw)
+        return self._parent.roundrect(r, *pos, **kw)
     
-    def text(self, text, offset=None, *pos, angle=None, colour=None, **kw):
-        offset = self._map(offset)
+    def text(self, text, *pos, angle=None, colour=None, **kw):
+        if pos:  # First argument is offset
+            pos = (self._map(pos[0]),) + pos[1:]
+        else:
+            self._map_offset(kw)
         if self._rotatearg is not None:
             if angle is None:
                 angle = 0
             angle += self._rotation * 90
         colour = colour or self._colour
-        return self._parent.text(text, offset, *pos,
+        return self._parent.text(text, *pos,
             angle=angle, colour=colour, **kw)
     
+    def _map_offset(self, kw):
+        offset = kw.get("offset")
+        if offset:
+            kw.update(offset=self._map(offset))
+        else:
+            if self._offset:
+                kw.update(offset=self._offset)
+    
     def _map(self, point):
-        if not point:
-            return self._offset
         point = self._rotate(point)
         if not self._offset:
             return point
@@ -239,3 +245,4 @@ class Subview(View):
             for param in ("fill", "outline"):
                 if kw.get(param) and not isinstance(kw[param], Iterable):
                     kw[param] = self._colour
+        self._map_offset(kw)
