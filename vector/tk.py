@@ -31,7 +31,7 @@ class Renderer(base.Renderer):
         if bold:
             kw.update(weight="bold")
         size = -round(size * self.scaling)
-        self.fonts[id] = Font(name=id, family=family, size=size, **kw)
+        self.fonts[id] = Font(family=family, size=size, **kw)
     
     def line(self, a, b=None, *, offset=(0, 0), **kw):
         (ox, oy) = offset
