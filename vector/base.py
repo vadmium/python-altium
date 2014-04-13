@@ -5,7 +5,7 @@ from collections import Iterable
 class View:
     def draw(self, object, offset=None, **kw):
         with self.view(offset=offset, **kw) as view:
-            object.draw(view)
+            object(view)
     
     @contextmanager
     def view(self, **kw):
