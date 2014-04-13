@@ -197,10 +197,10 @@ class Renderer(base.Renderer):
         # Compensate for SVG not allowing negative dimensions
         translate = dict()
         if w < 0:
-            translate["x"] = w
+            translate["x"] = format(w)
             w = -w
         if h < 0:
-            translate["y"] = h
+            translate["y"] = format(h)
             h = -h
         if translate:
             if b:
@@ -288,7 +288,7 @@ class Renderer(base.Renderer):
         
         transform.extend(self._offset(offset))
         if angle is not None:
-            transform.append("rotate({})".format(angle))
+            transform.append("rotate({})".format(angle * self.flip[1]))
         
         if font is not None:
             attrs["class"] = font

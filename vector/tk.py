@@ -4,21 +4,27 @@ from . import base
 from tkinter.font import Font
 from math import sin, cos, radians
 import tkinter.font
+import operator
 
 class _RawRenderer(base.Renderer):
     """Implements basic TK renderer except for default offsets, colour, etc
     """
     
     def __init__(self, size, units, unitmult=1, *,
-    line=1, textsize=10, textbottom=False):
+    down, line=1, textsize=10, textbottom=False):
         root = Tk()
-        self.scaling = root.call("tk", "scaling") * 72  # pixels/in
-        self.scaling *= unitmult / {"mm": 25.4, "in": 1}[units]
-        self.linewidth = line * self.scaling
+        scaling = root.call("tk", "scaling") * 72  # pixels/in
+        scaling *= unitmult / {"mm": 25.4, "in": 1}[units]
+        self.flip = down
+        if self.flip < 0:
+            self.scaling = (+scaling, -scaling)
+        else:
+            self.scaling = (+scaling, +scaling)
+        self.linewidth = line * scaling
         self.canvas = tkinter.Canvas(root,
             relief=tkinter.SUNKEN, borderwidth=1,
             background="white",
-            height=size[1] * self.scaling, width=size[0] * self.scaling,
+            height=size[1] * scaling, width=size[0] * scaling,
         )
         self.canvas.pack(fill=tkinter.BOTH, expand=True)
         self.fonts = dict()
@@ -38,7 +44,7 @@ class _RawRenderer(base.Renderer):
     colour, width=None, startarrow=None, endarrow=None):
         tkpoints = list()
         for (x, y) in points:
-            tkpoints.extend((x * self.scaling, y * self.scaling))
+            tkpoints.extend((x * self.scaling[0], y * self.scaling[1]))
         width = width or self.linewidth
         colour = self._colour(colour)
         
@@ -46,16 +52,16 @@ class _RawRenderer(base.Renderer):
         if startarrow:
             kw["arrow"] = tkinter.FIRST
             kw["arrowshape"] = (
-                startarrow["base"] * self.scaling,
-                startarrow["shoulder"] * self.scaling,
-                (startarrow["radius"] - width / 2) * self.scaling,
+                startarrow["base"] * self.scaling[0],
+                startarrow["shoulder"] * self.scaling[0],
+                (startarrow["radius"] - width / 2) * self.scaling[0],
             )
         if endarrow:
             kw["arrow"] = tkinter.LAST
             kw["arrowshape"] = (
-                endarrow["base"] * self.scaling,
-                endarrow["shoulder"] * self.scaling,
-                (endarrow["radius"] - width / 2) * self.scaling,
+                endarrow["base"] * self.scaling[0],
+                endarrow["shoulder"] * self.scaling[0],
+                (endarrow["radius"] - width / 2) * self.scaling[0],
             )
         if startarrow and endarrow:
             kw["arrow"] = tkinter.BOTH
@@ -67,7 +73,8 @@ class _RawRenderer(base.Renderer):
         (ox, oy) = offset
         points = list()
         for (x, y) in (a, b, c, d):
-            points.extend(((ox + x) * self.scaling, (oy + y) * self.scaling))
+            points.append((ox + x) * self.scaling[0])
+            points.append((oy + y) * self.scaling[1])
         width = width or self.linewidth
         colour = self._colour(colour)
         self.canvas.create_line(*points, smooth="bezier",
@@ -75,23 +82,30 @@ class _RawRenderer(base.Renderer):
     
     def circle(self, r, offset=(0, 0), *,
     outline=None, fill=None, width=None):
-        coords = tuple((o - r, o + r) for o in offset)
-        points = (x[i] * self.scaling for i in range(2) for x in coords)
+        (ox, oy) = offset
+        points = (
+            (ox - r) * self.scaling[0], (oy - r) * self.scaling[1],
+            (ox + r) * self.scaling[0], (oy + r) * self.scaling[1],
+        )
         kw = self._closed(outline, fill, width)
         self.canvas.create_oval(*points, **kw)
     
     def polygon(self, points, *,
     offset=None, rotate=None, outline=None, fill=None, width=None):
-        if rotate:
-            (costh, sinth) = _rotation(rotate)
-            points = ((x * costh - y * sinth, x * sinth + y * costh) for
-                (x, y) in points)
         if offset:
             (ox, oy) = offset
-            points = ((ox + x, oy + y) for (x, y) in points)
-        points = tuple(x * self.scaling for point in points for x in point)
+        if rotate:
+            (costh, sinth) = self._rotation(rotate)
+        tkpoints = list()
+        for (x, y) in points:
+            if rotate:
+                (x, y) = (x * costh - y * sinth, x * sinth + y * costh)
+            if offset:
+                x += ox
+                y += oy
+            tkpoints.extend((x * self.scaling[0], y * self.scaling[1]))
         kw = self._closed(outline, fill, width)
-        self.canvas.create_polygon(points, **kw)
+        self.canvas.create_polygon(tkpoints, **kw)
     
     def rectangle(self, a, b=None, *, offset=(0, 0),
     outline=None, fill=None, width=None):
@@ -102,8 +116,10 @@ class _RawRenderer(base.Renderer):
         (ox, oy) = offset
         (ax, ay) = a
         (bx, by) = b
-        coords = ((ox + ax, oy + ay), (ox + bx, oy + by))
-        points = (x * self.scaling for p in coords for x in p)
+        points = (
+            (ox + ax) * self.scaling[0], (oy + ay) * self.scaling[1],
+            (ox + bx) * self.scaling[0], (oy + by) * self.scaling[1],
+        )
         kw = self._closed(outline, fill, width)
         self.canvas.create_rectangle(*points, **kw)
     
@@ -142,12 +158,15 @@ class _RawRenderer(base.Renderer):
         colour = self._colour(colour)
         kw.update(fill=colour)
         
+        (ox, oy) = offset
+        ox *= self.scaling[0]
+        oy *= self.scaling[1]
+        
         if isinstance(text, str):
             kw.update(anchor=anchors[(vert, horiz)])
-            offset = (x * self.scaling for x in offset)
             if width is not None:
-                kw.update(width=width * self.scaling)
-            self.canvas.create_text(*offset, text=text, **kw)
+                kw.update(width=width * self.scaling[0])
+            self.canvas.create_text(ox, oy, text=text, **kw)
             return
         
         font = kw.get("font") or tkinter.font.nametofont("TkDefaultFont")
@@ -155,10 +174,7 @@ class _RawRenderer(base.Renderer):
         anchor = anchors[(vert, self.LEFT)]
         anchors = {self.LEFT: 0, self.CENTRE: 0.5, self.RIGHT: 1}
         pos = -length * anchors[horiz]
-        (ox, oy) = offset
-        ox *= self.scaling
-        oy *= self.scaling
-        (cos, sin) = _rotation(angle or 0)
+        (cos, sin) = self._rotation(angle or 0)
         for seg in text:
             x = ox + pos * cos
             y = oy + pos * sin
@@ -181,6 +197,10 @@ class _RawRenderer(base.Renderer):
     def _colour(self, colour):
         colour = (min(int(x * 0x1000), 0xFFF) for x in colour)
         return "#" + "".join(map("{:03X}".format, colour))
+    
+    def _rotation(self, rotate):
+        th = radians(rotate * self.flip)
+        return (cos(th), sin(th))
 
 class Renderer(base.Renderer, base.Subview):
     def __init__(self, size, *pos,
@@ -188,7 +208,7 @@ class Renderer(base.Renderer, base.Subview):
     margin=0, **kw):
         (xsize, ysize) = size
         size = (xsize + 2 * margin, ysize + 2 * margin)
-        raw = _RawRenderer(size, *pos, **kw)
+        raw = _RawRenderer(size, *pos, down=down, **kw)
         if down < 0:
             offset = (margin, margin - ysize)
         else:
@@ -201,12 +221,8 @@ class Renderer(base.Renderer, base.Subview):
             kw.update(slant="italic")
         if bold:
             kw.update(weight="bold")
-        size = -round(size * self._parent.scaling)
+        size = -round(size * self._parent.scaling[0])
         self._parent.fonts[id] = Font(family=family, size=size, **kw)
     
     def finish(self):
         tkinter.mainloop()
-
-def _rotation(rotate):
-    th = radians(rotate)
-    return (cos(th), sin(th))
