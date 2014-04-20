@@ -104,17 +104,23 @@ import os.path
 from datetime import date
 import contextlib
 from importlib import import_module
+from inspect import getdoc
+from argparse import ArgumentParser
 
-def main(filename, renderer="svg"):
-    """Convert an Altium *.SchDoc schematic file
-    
-    By default, the schematic is converted to an SVG file,
-    written to the standard output. It may also be rendered using TK.
-    """
-    
-    if renderer not in {"svg", "tk"}:
-        raise SystemExit("Unknown renderer backend: {!r}".format(renderer))
-    renderer = import_module("." + renderer, "vector")
+def main():
+    parser = ArgumentParser(description=getdoc(convert))
+    parser.add_argument("file")
+    parser.add_argument("--renderer", choices={"svg", "tk"}, default="svg",
+        help=convert.__annotations__["Renderer"])
+    args = parser.parse_args()
+    renderer = import_module("." + args.renderer, "vector")
+    convert(args.file, renderer.Renderer)
+
+def convert(filename,
+Renderer: """By default, the schematic is converted to an SVG file,
+    written to the standard output. It may also be rendered using TK.""",
+):
+    """Convert an Altium *.SchDoc schematic file"""
     
     with open(filename, "rb") as file:
         objects = read(file)
@@ -127,7 +133,7 @@ def main(filename, renderer="svg"):
         size = tuple(int(sheet["CUSTOM" + "XY"[x]]) for x in range(2))
     
     # Units are 1/100" or 10 mils
-    renderer = renderer.Renderer(size, "in", 1/100,
+    renderer = Renderer(size, "in", 1/100,
         margin=0.3, line=1, down=-1, textsize=8.75, textbottom=True)
     
     for n in range(int(sheet["FONTIDCOUNT"])):
@@ -614,5 +620,4 @@ def polyline(renderer, obj):
     renderer.polyline(**kw)
 
 if __name__ == "__main__":
-    from funcparams import command
-    command()
+    main()
