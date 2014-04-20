@@ -80,6 +80,17 @@ class _RawRenderer(base.Renderer):
         self.canvas.create_line(*points, smooth="bezier",
             fill=colour, width=width)
     
+    def arc(self, r, start, end, offset=(0, 0), *, colour):
+        (ox, oy) = offset
+        (rx, ry) = r
+        self.canvas.create_arc(
+            (ox - rx) * self.scaling[0], (oy - ry) * self.scaling[1],
+            (ox + rx) * self.scaling[0], (oy + ry) * self.scaling[1],
+            style=tkinter.ARC,
+            start=start, extent=(end - start) % 360,
+            outline=self._colour(colour),
+        )
+    
     def circle(self, r, offset=(0, 0), *,
     outline=None, fill=None, width=None):
         (ox, oy) = offset

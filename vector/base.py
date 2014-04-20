@@ -192,6 +192,14 @@ class Subview(View):
         return self._parent.cubicbezier(*map(self._rotate, points),
             colour=colour or self._colour,
         **kw)
+    def arc(self, r, start, end, offset=None, *, colour=None):
+        kw = dict(offset=offset)
+        r = self._rotate(r)
+        self._map_offset(kw)
+        start += self._rotation * 90
+        end += self._rotation * 90
+        colour = colour or self._colour
+        return self._parent.arc(r, start, end, colour=colour, **kw)
     def circle(self, r, offset=None, **kw):
         kw.update(offset=offset)
         self._closed(kw)
