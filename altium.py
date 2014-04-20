@@ -134,7 +134,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
     
     # Units are 1/100" or 10 mils
     renderer = Renderer(size, "in", 1/100,
-        margin=0.3, line=1, down=-1, textsize=8.75, textbottom=True)
+        margin=0.3, line=1, down=-1, textbottom=True)
     
     for n in range(int(sheet["FONTIDCOUNT"])):
         n = format(1 + n)
@@ -148,6 +148,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
         if bold:
             kw.update(bold=True)
         renderer.addfont("font" + n, fontsize, family, **kw)
+    renderer.setdefaultfont("font" + sheet["SYSTEMFONT"].decode("ascii"))
     renderer.start()
     
     arrowhead = dict(name="head", base=5, shoulder=7, radius=3)

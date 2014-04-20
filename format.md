@@ -336,7 +336,8 @@ First object after the header object
     * 0 (eSheetA4, default): “A4”, 1150 × 760
     * 1 (eSheetA4): “A3”, 1550 × 1150
     * 5 (eSheetA): “A”, 950 × 760
-* `|SYSTEMFONT=1|BORDERON=T`
+* `|SYSTEMFONT=1`: Presumably a font number to use as a default
+* `|BORDERON=T`
 * `|TITLEBLOCKON=T`:
     Optional. Enables the rectangle with title, etc, details.
 * `|SHEETNUMBERSPACESIZE=4`

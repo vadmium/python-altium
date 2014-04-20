@@ -40,7 +40,7 @@ class Renderer(base.Renderer):
         attrs.update(self._colour(colour))
         self.xml.startElement("svg", attrs)
         
-        text = ["font-size: {}px".format(self.textsize)]
+        text = list()
         if textbottom:
             text.append("dominant-baseline: text-after-edge")
         text.append("fill: currentColor")
@@ -51,6 +51,7 @@ class Renderer(base.Renderer):
             (".solid", ("fill: currentColor", "stroke: none")),
             ("text", text),
         ]
+        self.fonts = dict()
     
     def addfont(self, id, size, family, italic=None, bold=None):
         props = [
@@ -61,9 +62,14 @@ class Renderer(base.Renderer):
             props.append("font-style: italic")
         if bold:
             props.append("font-weight: bold")
-        self.rulesets.append(("." + id, props))
+        self.fonts["." + id] = props
+    
+    def setdefaultfont(self, id):
+        id = "." + id
+        self.fonts["text, " + id] = self.fonts.pop(id)
     
     def start(self):
+        self.rulesets.extend(self.fonts.items())
         css = list()
         for (selector, rules) in self.rulesets:
             rules = "".join(map("  {};\n".format, rules))

@@ -11,7 +11,7 @@ class _RawRenderer(base.Renderer):
     """
     
     def __init__(self, size, units, unitmult=1, *,
-    down, line=1, textsize=10, textbottom=False):
+    down, line=1, textbottom=False):
         root = Tk()
         scaling = root.call("tk", "scaling") * 72  # pixels/in
         scaling *= unitmult / {"mm": 25.4, "in": 1}[units]
@@ -153,8 +153,11 @@ class _RawRenderer(base.Renderer):
         kw = dict()
         if angle is not None:
             kw.update(angle=angle)
-        if font is not None:
-            kw.update(font=self.fonts[font])
+        if font is None:
+            font = self.defaultfont
+        else:
+            font = self.fonts[font]
+        kw.update(font=font)
         colour = self._colour(colour)
         kw.update(fill=colour)
         
@@ -169,7 +172,6 @@ class _RawRenderer(base.Renderer):
             self.canvas.create_text(ox, oy, text=text, **kw)
             return
         
-        font = kw.get("font") or tkinter.font.nametofont("TkDefaultFont")
         length = sum(font.measure(seg["text"]) for seg in text)
         anchor = anchors[(vert, self.LEFT)]
         anchors = {self.LEFT: 0, self.CENTRE: 0.5, self.RIGHT: 1}
@@ -223,6 +225,9 @@ class Renderer(base.Renderer, base.Subview):
             kw.update(weight="bold")
         size = -round(size * self._parent.scaling[0])
         self._parent.fonts[id] = Font(family=family, size=size, **kw)
+    
+    def setdefaultfont(self, id):
+        self._parent.defaultfont = self._parent.fonts[id]
     
     def finish(self):
         tkinter.mainloop()
