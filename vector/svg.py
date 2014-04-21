@@ -8,6 +8,7 @@ import operator
 from math import copysign
 from textwrap import TextWrapper
 from io import StringIO
+from contextlib import ExitStack
 
 class Renderer(base.Renderer):
     def __init__(self, size, units, unitmult=1, *, margin=0,
@@ -91,8 +92,8 @@ class Renderer(base.Renderer):
             attrs["y{}".format(n)] = format(y * self.flip[1])
         self._line(attrs, *pos, **kw)
     
-    def hline(self, a, b=None, *pos,
-    startarrow=None, endarrow=None, width=None, **kw):
+    def hline(self, a, b=None, *,
+    startarrow=None, endarrow=None, width=None, offset=None, colour=None):
         if b is None:
             b = a
             a = None
@@ -101,25 +102,48 @@ class Renderer(base.Renderer):
             reala = a
         # Now a is always the start point and b is always the end point
         
-        attrs = dict()
-        
-        dir = b - reala
-        if startarrow:
-            url = _buildurl(fragment=startarrow["name"])
-            attrs["marker-start"] = "url({})".format(url)
-            if startarrow["point"]:
-                a = reala + copysign(startarrow["point"], dir)
-            width = startarrow.get("width")
-        if endarrow:
-            url = _buildurl(fragment=endarrow["name"])
-            attrs["marker-end"] = "url({})".format(url)
-            b -= copysign(endarrow["point"], dir)
-            width = endarrow.get("width")
-        
-        if a is not None:
-            attrs["x1"] = format(a)
-        attrs["x2"] = format(b)
-        self._line(attrs, *pos, width=width, **kw)
+        with ExitStack() as stack:
+            # Not using SVG 1.1 markers
+            # because it is too hard to customise their colour and shape
+            dir = b - reala
+            if (startarrow or endarrow) and (offset or colour):
+                stack.enter_context(self.view(offset=offset, colour=colour))
+                offset = None
+                colour = None
+            if width is None:
+                linewidth = self.linewidth
+            else:
+                linewidth = width
+            a = self._arrow(startarrow, linewidth, dir, a, reala, flip=-1)
+            b = self._arrow(endarrow, linewidth, dir, b, b, flip=+1)
+            
+            attrs = dict()
+            if a is not None:
+                attrs["x1"] = format(a)
+            attrs["x2"] = format(b)
+            self._line(attrs, width=width, offset=offset, colour=colour)
+    
+    def _arrow(self, arrow, width, dir, optpt, realpt, flip):
+            if not arrow:
+                return optpt
+            
+            radius = arrow["radius"]
+            base = arrow["base"]
+            shoulder = arrow.get("shoulder", base)
+            
+            # Distance to shaft junction from point
+            shaft = base + (shoulder - base) * width / 2 / radius
+            
+            rotate = 180 if dir < 0 else None
+            self.polygon((
+                (-shaft * flip, +width / 2),
+                (-shoulder * flip, +radius),
+                (0, 0),
+                (-shoulder * flip, -radius),
+                (-shaft * flip, -width / 2),
+            ), fill=True, offset=(realpt, 0), rotate=rotate)
+            
+            return realpt - copysign(shaft, dir) * flip
     
     def vline(self, a, b=None, *pos, **kw):
         a = format(a * self.flip[1])
@@ -334,32 +358,9 @@ class Renderer(base.Renderer):
                     self.tree(("tspan", lineattrs, (softline,)))
                     line += 1
     
-    def addobjects(self, objects=(), arrows=()):
+    def addobjects(self, objects):
         with self.element("defs"):
-            for a in arrows:
-                with self.element("marker", {
-                    "overflow": "visible",
-                    "markerUnits": "userSpaceOnUse",
-                    "id": a["name"],
-                }):
-                    width = a.get("width", self.linewidth)
-                    radius = a["radius"]
-                    base = a["base"]
-                    shoulder = a.get("shoulder", base)
-                    
-                    # Distance from shaft junction to point
-                    point = base + (shoulder - base) * width / 2 / radius
-                    a["point"] = point
-                    
-                    self.polygon((
-                        (0, +width / 2),
-                        (shoulder - point, +radius),
-                        (-point, 0),
-                        (shoulder - point, -radius),
-                        (0, -width / 2),
-                    ), fill=True)
-            
-            for d in objects:  # After arrows in case an object uses an arrow
+            for d in objects:
                 with self.element("g", dict(id=d.__name__)):
                     d(self)
     

@@ -151,9 +151,9 @@ Renderer: """By default, the schematic is converted to an SVG file,
     renderer.setdefaultfont("font" + sheet["SYSTEMFONT"].decode("ascii"))
     renderer.start()
     
-    arrowhead = dict(name="head", base=5, shoulder=7, radius=3)
-    arrowtail = dict(name="tail", base=7, shoulder=0, radius=2.5)
-    diamond = dict(name="diamond", base=10, shoulder=5, radius=2.5)
+    arrowhead = dict(base=5, shoulder=7, radius=3)
+    arrowtail = dict(base=7, shoulder=0, radius=2.5)
+    diamond = dict(base=10, shoulder=5, radius=2.5)
     
     pinmarkers = {
         PinElectrical.INPUT: arrowhead,
@@ -186,8 +186,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
     def nc(renderer):
         renderer.line((+3, +3), (-3, -3), width=0.6)
         renderer.line((-3, +3), (+3, -3), width=0.6)
-    renderer.addobjects((gnd, rail, arrowconn, dchevron, nc),
-        arrows=(arrowhead, arrowtail, diamond))
+    renderer.addobjects((gnd, rail, arrowconn, dchevron, nc))
     
     with renderer.view(offset=(0, size[1])) as base:
         base.rectangle((size[0], -size[1]), width=0.6)
