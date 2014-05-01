@@ -269,7 +269,9 @@ class Renderer(base.Renderer):
     
     def arc(self, r, start, end, offset=None, *, colour=None):
         if abs(end - start) >= 360:
-            return self.circle(r, offset, outline=colour)
+            (rx, ry) = r
+            assert rx == ry
+            return self.circle(rx, offset, outline=colour)
             attrs = {"r": format(*r), "class": "outline"}
             if offset:
                 (x, y) = offset

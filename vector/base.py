@@ -95,6 +95,8 @@ class Renderer(View):
         
         # Only positive dimensions are considered
         (rx, ry) = r
+        assert rx == ry
+        r = rx
         cax = ax + rx
         cay = ay + ry
         cbx = bx - rx

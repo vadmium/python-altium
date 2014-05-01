@@ -81,13 +81,19 @@ class _RawRenderer(base.Renderer):
             fill=colour, width=width)
     
     def arc(self, r, start, end, offset=(0, 0), *, colour):
-        (ox, oy) = offset
         (rx, ry) = r
+        extent = end - start
+        if abs(extent) >= 360:
+            assert rx == ry
+            return self.circle(rx, offset, outline=colour)
+        extent %= 360
+        
+        (ox, oy) = offset
         self.canvas.create_arc(
             (ox - rx) * self.scaling[0], (oy - ry) * self.scaling[1],
             (ox + rx) * self.scaling[0], (oy + ry) * self.scaling[1],
             style=tkinter.ARC,
-            start=start, extent=(end - start) % 360,
+            start=start, extent=extent,
             outline=self._colour(colour),
         )
     
