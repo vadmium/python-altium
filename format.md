@@ -244,7 +244,7 @@ Connection to power rail, ground, etc
     * 3 (eGndPower): Ground (broken triangle)
 * `|SHOWNETNAME=T`
 * `|LOCATION.X|LOCATION.Y`: Point of connection
-* `|ORIENTATION=`_integer_: TRotateBy90: Direction the marker points:
+* `|ORIENTATION=`_integer_: TRotateBy90: Direction the marker points
 * `|COLOR`
 * `|TEXT`: Shown beyond the marker
 * `|ISCROSSSHEETCONNECTOR`: Optional.
