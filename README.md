@@ -16,6 +16,7 @@ The schematic file format has been documented somewhat in [format.md]
     <http://www.decalage.info/python/olefileio>, or version 2.4 of the Pillow
     fork, from <http://python-pillow.github.io/>. The PL fork would be
     simpler to install, but Pillow is probably more widely used.
+* TK (Only required to display schematics in a window)
 
 ## Usage ##
 
