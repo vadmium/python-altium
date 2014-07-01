@@ -1,6 +1,6 @@
 ﻿# Altium schematic reader #
 
-This is a Python script that can
+This is a Python command-line script that can
 parse Altium schematic (\*.SchDoc) files, convert them
 to SVG images, or display them in a window. It is incomplete and there are
 probably many schematic elements and settings that it does not (yet)
