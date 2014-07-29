@@ -242,6 +242,7 @@ Connection to power rail, ground, etc
     * 1 (ePowerArrow): Arrow
     * 2 (ePowerBar): Tee off rail
     * 3 (eGndPower): Ground (broken triangle)
+    * 4 (eGnd?): Ground (earth ground)
 * `|SHOWNETNAME=T`
 * `|LOCATION.X|LOCATION.Y`: Point of connection
 * `|ORIENTATION=`_integer_: TRotateBy90: Direction the marker points
