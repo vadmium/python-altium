@@ -397,6 +397,17 @@ Label, such as component value
 * `|READONLYSTATE=1` (TParameter_ReadOnlyState? = eReadOnly_Name?)
 * `|UNIQUEID|ISMIRRORED=T`: Each optional
 
+## `|RECORD=43` (Warning Sign) ##
+Warning sign for differential tracks, clock lines, ...
+* `|OWNERPARTID=-1`
+* `|LOCATION.X|LOCATION.Y`: Each optional.
+* `|NAME=-1`
+    * DIFFPAIR: a differential pair of wires
+* `|ORIENTATION`: Optional
+    * Not present: Text is aligned at the bottom-left corner
+    * 1: Bottom-left alignment, then rotated 90° anticlockwise
+    * 2: Top-right corner alignment
+
 ## `|RECORD=44` ##
 `|OWNERINDEX`
 
