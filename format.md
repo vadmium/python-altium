@@ -1,14 +1,25 @@
 ﻿# Altium schematic file format #
 
-Altium *.SchDoc files seem to use the OLE compound document format.
+Altium *.SchDoc files use the OLE compound document format.
 Inside the OLE container is a stream
 containing a sequence of schematic objects.
 Each schematic object is a collection of properties,
 encoded as ASCII or byte strings.
 
+Related references:
+
+* The Upverter universal format converter,
+    <https://github.com/upverter/schematic-file-converter>
+* Protel 99 SE PCB ASCII file format reference,
+    <http://www.eurointech.ru/products/Altium/Protel99SE_PCB_ASCII_File_Format.pdf>
+* Jacek Pluciński,
+    Protel schematic ASCII library to G EDA importer (_togedasym_),
+    <https://web.archive.org/web/20120908065943/http://jacek-tools.110mb.com/>
+
 ## OLE compound document ##
 
-The OLE root directory is called “Root Entry”, and it lists three streams:
+The OLE root directory is called “Root Entry”, and it lists three streams.
+The schematic data is in the “FileHeader” stream.
 
 * FileHeader
 * Storage
@@ -16,7 +27,12 @@ The OLE root directory is called “Root Entry”, and it lists three streams:
 
 ## FileHeader ##
 
-A sequence of object records. Record format:
+A sequence of object records.
+Pluciński calls them primitives;
+Protel calls specific PCB objects either primitives or group objects.
+Upverter calls them parts.
+
+Record format:
 
 * Length of the rest of the record (including null terminator).
     Little endian encoding, 4 bytes.
@@ -25,20 +41,21 @@ A sequence of object records. Record format:
 
 ## Property list ##
 
-Properties within a property list are separated by a pipe “`|`” character.
-The list usually starts with pipe character as well,
-except for RECORD=28.
-Property names are usually all capitals,
-without underscores or any other punctuation.
-Exceptions include `|Text` for Text Frame objects,
-`|DISPLAY_UNIT` for Sheet objects, and some point co-ordinate properties.
+Properties (so called by Upverter and Protel) within a property list
+are separated by a pipe “`|`” character.
+For most records the list starts with pipe character as well
+(except for RECORD=28).
+Most property names are usually in all capitals,
+with words run together without underscores or any other punctuation.
+Exceptions include `|Text` for text frame objects,
+`|DISPLAY_UNIT` for sheet objects, and some properties for co-ordinates.
 
 Common data types represented by properties:
 
 * Strings (eParameterType_String):
     Most properties are directly decodable as ASCII strings,
     although the byte 0x8E has been seen bracketing parts of some strings
-* Integers (eParameterType_Integer): `|RECORD=31`, `|OWNERPARTID=-1`.
+* Decimal integers (eParameterType_Integer): `|RECORD=31`, `|OWNERPARTID=-1`.
     Default value if property is missing seems to be 0.
     * Enumerated types: `|RECORD=1`/`2`/. . ., `|RECORD=17|STYLE=1`/`2`/. . .
     * Bitfields:
@@ -48,7 +65,8 @@ Common data types represented by properties:
             * 0–7: Red
             * 8–15: Green
             * 16–23: Blue
-* Fixed point numbers (eParameterType_Float): `|ENDANGLE=360.000`
+* Decimal numbers with fractional part (eParameterType_Float):
+    `|ENDANGLE=360.000`
 * Boolean (eParameterType_Boolean): `|ISHIDDEN=T|PARTIDLOCKED=F`
 * Co-ordinate pairs (points): `|LOCATION.X=200|LOCATION.Y=100`.
     The _y_ values increase from bottom to top.
@@ -60,19 +78,23 @@ Common data types represented by properties:
 
 * TRotateBy90: 0 is default (rightwards)
 
-Each item in the "FileHeader" stream describes an object.
+Each item in the “FileHeader” stream describes an object.
 The first object is a header object with the following properties:
 * `|HEADER=Protel for Windows - Schematic Capture Binary File Version 5.0`
 * `|WEIGHT=`_integer_: number of remaining objects
 
-All subsequent objects are indexed starting from zero.
+All subsequent objects are indexed starting from zero, so that
+the object at index zero is the record directly following the header object.
 The type of these objects is identified by their `|RECORD` properties.
 
-If a proprterty is given with a value below, that documents the value I have seen used for it
+If a proprterty is given with a value below, that documents that
+it has only ever been seen with that particular value.
 
 ## `|RECORD=1` (Schematic Component) ##
 Set up component part.
-Occurs before any child objects.
+Other objects, such as lines, pins, and labels, exist
+which are “owned” by the component.
+The component object seems to occur before any of these child objects.
 * `|LIBREFERENCE`
 * `|COMPONENTDESCRIPTION`: Optional
 * `|PARTCOUNT=`_integer_: Number of separated parts within component
@@ -89,7 +111,8 @@ Occurs before any child objects.
 * `|CURRENTPARTID=`_integer_:
     Objects belonging to this part
     with `|OWNERPARTID` set to a different number (other than −1)
-    should probably be ignored
+    should probably be ignored, otherwise each part of a quad op amp
+    will probably display four op amps (sixteen total)
 * `|LIBRARYPATH`: Optional
 * `|SOURCELIBRARYNAME`
 * `|SHEETPARTFILENAME=*`: Optional
@@ -138,13 +161,15 @@ Text note
 * `|OWNERPARTID`: See `|RECORD=1|CURRENTPARTID`
 * `|LOCATION.X|LOCATION.Y`
 * `|ORIENTATION=3|JUSTIFICATION=2|COLOR`: Each optional
-* `|FONTID|TEXT`
+* `|FONTID|TEXT`:
+    FONTID probably selects from the font table in the Sheet object
 
 ## `|RECORD=5` (Bezier) ##
 Bezier curve for component symbol
 * `|OWNERINDEX|ISNOTACCESIBLE=T|OWNERPARTID=1|LINEWIDTH=1`
 * `|COLOR`
-* `|LOCATIONCOUNT=4|X1|Y1|X2|Y2|X3|Y3|X4|Y4`
+* `|LOCATIONCOUNT=4|X1|Y1|X2|Y2|X3|Y3|X4|Y4`:
+    Control points; possibly greater than four?
 
 ## `|RECORD=6` (Polyline) ##
 Polyline for component symbol
@@ -227,7 +252,7 @@ Rectangle for component symbol
 * `|TRANSPARENT=T`: Optional
 
 ## `|RECORD=15` (Sheet Symbol) ##
-Box for top-level schematic
+Box to go on a top-level schematic
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.Y|XSIZE|YSIZE`
@@ -241,7 +266,7 @@ Connection to power rail, ground, etc
 * `|STYLE`: Optional. Marker symbol:
     * 1 (ePowerArrow): Arrow
     * 2 (ePowerBar): Tee off rail
-    * 3 (eGndPower): Ground (broken triangle)
+    * 3 (eGndPower): Ground (broken triangle, made of horizontal lines)
     * 4 (eGnd?): Ground (earth ground)
 * `|SHOWNETNAME=T`
 * `|LOCATION.X|LOCATION.Y`: Point of connection
@@ -311,7 +336,8 @@ Text box
 * `|Text`: Special code “`~1`” starts a new line
 
 ## `|RECORD=29` (Junction) ##
-Junction of connected pins, wires, etc, sometimes represented by a dot
+Junction of connected pins, wires, etc, sometimes represented by a dot,
+but may not be displayed at all (configuration setting?)
 * `|INDEXINSHEET=-1`: Optional
 * `|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.Y`
@@ -324,7 +350,8 @@ Junction of connected pins, wires, etc, sometimes represented by a dot
 * `|EMBEDIMAGE=T|FILENAME=newAltmLogo.bmp`
 
 ## `|RECORD=31` (Sheet) ##
-First object after the header object
+First object after the header object,
+with properties for the entire schematic
 * `|FONTIDCOUNT`: Specifies the fonts referenced by `|FONTID`
     * `|SIZE`_n: Leading
     * `|ITALIC`_n_`=T|BOLD`_n_`=T`: Each optional
