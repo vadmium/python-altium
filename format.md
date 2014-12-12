@@ -18,12 +18,13 @@ Related references:
 
 ## OLE compound document ##
 
-The OLE root directory is called “Root Entry”, and it lists three streams.
-The schematic data is in the “FileHeader” stream.
+The OLE root directory is called “Root Entry”, and it lists three streams:
 
 * FileHeader
 * Storage
 * Additional
+
+The schematic data is in the “FileHeader” stream.
 
 ## FileHeader ##
 
@@ -45,7 +46,7 @@ Properties (so called by Upverter and Protel) within a property list
 are separated by a pipe “`|`” character.
 For most records the list starts with pipe character as well
 (except for RECORD=28).
-Most property names are usually in all capitals,
+Most property names are in all capitals,
 with words run together without underscores or any other punctuation.
 Exceptions include `|Text` for text frame objects,
 `|DISPLAY_UNIT` for sheet objects, and some properties for co-ordinates.
@@ -92,9 +93,9 @@ it has only ever been seen with that particular value.
 
 ## `|RECORD=1` (Schematic Component) ##
 Set up component part.
-Other objects, such as lines, pins, and labels, exist
+Other objects, such as lines, pins and labels exist,
 which are “owned” by the component.
-The component object seems to occur before any of these child objects.
+The component object seems to occur before any of its child objects.
 * `|LIBREFERENCE`
 * `|COMPONENTDESCRIPTION`: Optional
 * `|PARTCOUNT=`_integer_: Number of separated parts within component
@@ -112,7 +113,7 @@ The component object seems to occur before any of these child objects.
     Objects belonging to this part
     with `|OWNERPARTID` set to a different number (other than −1)
     should probably be ignored, otherwise each part of a quad op amp
-    will probably display four op amps (sixteen total)
+    will probably display four op-amps (sixteen total)
 * `|LIBRARYPATH`: Optional
 * `|SOURCELIBRARYNAME`
 * `|SHEETPARTFILENAME=*`: Optional
@@ -350,7 +351,7 @@ but may not be displayed at all (configuration setting?)
 * `|EMBEDIMAGE=T|FILENAME=newAltmLogo.bmp`
 
 ## `|RECORD=31` (Sheet) ##
-First object after the header object,
+First object after the header object (i.e. at index zero),
 with properties for the entire schematic
 * `|FONTIDCOUNT`: Specifies the fonts referenced by `|FONTID`
     * `|SIZE`_n: Leading
