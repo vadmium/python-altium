@@ -18,7 +18,7 @@ class View:
     
     # Values such that:
     # * Text aligned at point (align_x, align_y) is
-    #     inside a double unit square square, aligned to adjacent edges,
+    #     inside a double unit square, aligned to adjacent edges,
     #     and is centred between pairs of distant edges
     # * Negating an alignment value
     #     mirrors between left and right, and top and bottom
