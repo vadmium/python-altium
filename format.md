@@ -1,7 +1,7 @@
 ﻿# Altium schematic file format #
 
 Altium *.SchDoc files use the OLE compound document format.
-Inside the OLE container is a stream
+Inside the OLE container is a stream (embedded file)
 containing a sequence of schematic objects.
 Each schematic object is a collection of properties,
 encoded as ASCII or byte strings.
@@ -18,7 +18,7 @@ Related references:
 
 ## OLE compound document ##
 
-The OLE root directory is called “Root Entry”, and it lists three streams:
+The OLE root directory (called “Root Entry”) lists three streams:
 
 * FileHeader
 * Storage
