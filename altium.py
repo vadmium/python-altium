@@ -42,6 +42,27 @@ def read(file):
     
     return objects
 
+def get_sheet(objects):
+    '''Returns the object holding settings for the sheet'''
+    sheet = objects[1]
+    assert sheet["RECORD"] == Record.SHEET
+    return sheet
+
+def get_sheet_style(sheet):
+    '''Returns the size of the sheet: (name, (width, height))
+    
+    Units are 1/100" = 10 mils = 0.254 mm.'''
+    
+    STYLES = {
+        SheetStyle.A4: ("A4", (1150, 760)),
+        SheetStyle.A3: ("A3", (1550, 1150)),
+        SheetStyle.A: ("A", (950, 760)),
+    }
+    [sheetstyle, size] = STYLES[sheet.get("SHEETSTYLE", SheetStyle.A4)]
+    if "USECUSTOMSHEET" in sheet:
+        size = tuple(int(sheet["CUSTOM" + "XY"[x]]) for x in range(2))
+    return (sheetstyle, size)
+
 class Record:
     """Schematic object record types"""
     SCH_COMPONENT = b"1"
@@ -126,13 +147,8 @@ Renderer: """By default, the schematic is converted to an SVG file,
         objects = read(file)
         stat = os.stat(file.fileno())
     
-    sheet = objects[1]
-    assert sheet["RECORD"] == Record.SHEET
-    (sheetstyle, size) = {SheetStyle.A4: ("A4", (1150, 760)), SheetStyle.A3: ("A3", (1550, 1150)), SheetStyle.A: ("A", (950, 760))}[sheet.get("SHEETSTYLE", SheetStyle.A4)]
-    if "USECUSTOMSHEET" in sheet:
-        size = tuple(int(sheet["CUSTOM" + "XY"[x]]) for x in range(2))
-    
-    # Units are 1/100" or 10 mils
+    sheet = get_sheet(objects)
+    [sheetstyle, size] = get_sheet_style(sheet)
     renderer = Renderer(size, "in", 1/100,
         margin=0.3, line=1, down=-1, textbottom=True)
     
