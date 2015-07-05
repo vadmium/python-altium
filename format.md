@@ -69,8 +69,7 @@ Common data types represented by properties:
 * Decimal numbers with fractional part (eParameterType_Float):
     `|ENDANGLE=360.000`
 * Boolean (eParameterType_Boolean): `|ISHIDDEN=T|PARTIDLOCKED=F`
-* Co-ordinate pairs (points): `|LOCATION.X=200|LOCATION.Y=100`.
-    The _y_ values increase from bottom to top.
+* Co-ordinate pairs (points): `|LOCATION.X=200|LOCATION.Y=100`
 * Lists:
     `|FONTIDCOUNT=2|SIZE1=10|FONTNAME1=`. . .`|SIZE2=10|FONTNAME2=`. . .
 * Co-ordinate lists: `|LOCATIONCOUNT=2|X1=100|Y1=100|X2=200|Y2=100`
@@ -78,6 +77,9 @@ Common data types represented by properties:
 ---
 
 * TRotateBy90: 0 is default (rightwards)
+
+The _y_ values increase from bottom to top. Dimensions and positions are
+in units of 1/100″ = 10 mils = 0.254 mm.
 
 Each item in the “FileHeader” stream describes an object.
 The first object is a header object with the following properties:
@@ -361,10 +363,11 @@ with properties for the entire schematic
         but the text objects themselves already indicate the orientation.
     * `|FONTNAME`_n_`=Times New Roman`
 * `|USEMBCS=T|ISBOC=T|HOTSPOTGRIDON=T|HOTSPOTGRIDON=T|HOTSPOTGRIDSIZE`
-* `|SHEETSTYLE`
-    * 0 (eSheetA4, default): “A4”, 1150 × 760
-    * 1 (eSheetA4): “A3”, 1550 × 1150
-    * 5 (eSheetA): “A”, 950 × 760
+* `|SHEETSTYLE`: Dimensions tend to be slightly smaller than the actual
+    paper size
+    * 0 (default): “A4”, 1150 × 760
+    * 1: “A3”, 1550 × 1150
+    * 5: “A”, 950 × 760
 * `|SYSTEMFONT=1`: Presumably a font number to use as a default
 * `|BORDERON=T`
 * `|TITLEBLOCKON=T`:
