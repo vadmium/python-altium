@@ -337,8 +337,8 @@ Text box
 * `|Text`: Special code “`~1`” starts a new line
 
 ## `|RECORD=29` (Junction) ##
-Junction of connected pins, wires, etc, sometimes represented by a dot,
-but may not be displayed at all (configuration setting?)
+Junction of connected pins, wires, etc, sometimes represented by a dot.
+It may not be displayed at all, depending on a configuration setting.
 * `|INDEXINSHEET=-1`: Optional
 * `|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.Y`
