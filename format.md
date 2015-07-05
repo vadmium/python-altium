@@ -88,7 +88,7 @@ All subsequent objects are indexed starting from zero, so that
 the object at index zero is the record directly following the header object.
 The type of these objects is identified by their `|RECORD` properties.
 
-If a proprterty is given with a value below, that documents that
+If a property is given with a value below, that documents that
 it has only ever been seen with that particular value.
 
 ## `|RECORD=1` (Schematic Component) ##
@@ -354,7 +354,7 @@ but may not be displayed at all (configuration setting?)
 First object after the header object (i.e. at index zero),
 with properties for the entire schematic
 * `|FONTIDCOUNT`: Specifies the fonts referenced by `|FONTID`
-    * `|SIZE`_n: Leading
+    * `|SIZE`_n_: Leading
     * `|ITALIC`_n_`=T|BOLD`_n_`=T`: Each optional
     * `|ROTATION`_n_`=90`: Optional.
         Seems to be associated with sideways vertical text,
