@@ -6,6 +6,45 @@ containing a sequence of schematic objects.
 Each schematic object is a collection of properties,
 encoded as ASCII or byte strings.
 
+Contents:
+
+* [OLE compound document](#ole-compound-document)
+* [FileHeader](#fileheader)
+* [Property list](#property-list)
+* [Object records](#object-records)
+    * [1: Schematic component](#schematic-component)
+    * [2: Pin](#pin)
+    * [4: Label](#label)
+    * [5: Bezier](#bezier)
+    * [6: Polyline](#polyline)
+    * [7: Polygon](#polygon)
+    * [8: Ellipse](#ellipse)
+    * [10: Round rectangle](#round-rectangle)
+    * [11: Elliptical arc](#elliptical-arc)
+    * [12: Arc](#arc)
+    * [13: Line](#line)
+    * [14: Rectangle](#rectangle)
+    * [15: Sheet symbol](#sheet-symbol)
+    * [17: Power object](#power-object)
+    * [18: Port](#port)
+    * [22: No ERC](#no-erc)
+    * [25: Net label](#net-label)
+    * [27: Wire](#wire)
+    * [28: Text frame](#text-frame)
+    * [29: Junction](#junction)
+    * [30: Image](#image)
+    * [31: Sheet](#sheet)
+    * [32, 33: Sheet name and file name](#sheet-name-and-file-name)
+    * [34: Designator](#designator)
+    * [39](#39)
+    * [41: Parameter](#parameter)
+    * [43: Warning sign](#warning-sign)
+    * [44](#44)
+    * [45](#45)
+    * [46](#46)
+    * [47](#47)
+    * [48](#48)
+
 Related references:
 
 * The Upverter universal format converter,
@@ -90,11 +129,13 @@ All subsequent objects are indexed starting from zero, so that
 the object at index zero is the record directly following the header object.
 The type of these objects is identified by their `|RECORD` properties.
 
+## Object record types ##
+
 If a property is given with a value below, that documents that
 it has only ever been seen with that particular value.
 
-## `|RECORD=1` (Schematic Component) ##
-Set up component part.
+### Schematic component ###
+`|RECORD=1`: Set up component part.
 Other objects, such as lines, pins and labels exist,
 which are “owned” by the component.
 The component object seems to occur before any of its child objects.
@@ -124,8 +165,8 @@ The component object seems to occur before any of its child objects.
 * `|PARTIDLOCKED=F`
 * `|NOTUSEDBTABLENAME|DESIGNITEMID`: Optional
 
-## `|RECORD=2` (Pin) ##
-Component pin, including line, name and number
+### Pin ###
+`|RECORD=2`: Component pin, including line, name and number
 * `|OWNERINDEX`: Component part index
 * `|OWNERPARTID`: See `|RECORD=1|CURRENTPARTID`
 * `|OWNERPARTDISPLAYMODE|DESCRIPTION`: Optional
@@ -157,25 +198,26 @@ Component pin, including line, name and number
 * `|DESIGNATOR`: Pin “number”, shown outside component, against pin line
 * `|SWAPIDPIN|SWAPINPART`: Optional
 
-## `|RECORD=4` (Label) ##
-Text note
+### Label ###
+`|RECORD=4`: Text note
 * `|OWNERINDEX`: Component part index
 * `|ISNOTACCESIBLE=T|INDEXINSHEET`: Each optional
 * `|OWNERPARTID`: See `|RECORD=1|CURRENTPARTID`
 * `|LOCATION.X|LOCATION.Y`
 * `|ORIENTATION=3|JUSTIFICATION=2|COLOR`: Each optional
-* `|FONTID|TEXT`:
-    FONTID probably selects from the font table in the Sheet object
+* `|FONTID`: Probably selects from the font table in the [Sheet](#sheet)
+    object
+* `|TEXT`
 
-## `|RECORD=5` (Bezier) ##
-Bezier curve for component symbol
+### Bezier ###
+`|RECORD=5`: Bezier curve for component symbol
 * `|OWNERINDEX|ISNOTACCESIBLE=T|OWNERPARTID=1|LINEWIDTH=1`
 * `|COLOR`
 * `|LOCATIONCOUNT=4|X1|Y1|X2|Y2|X3|Y3|X4|Y4`:
     Control points; possibly greater than four?
 
-## `|RECORD=6` (Polyline) ##
-Polyline for component symbol
+### Polyline ###
+`|RECORD=6`: Polyline for component symbol
 * `|OWNERINDEX`: Component part index
 * `|ISNOTACCESIBLE=T|INDEXINSHEET`: Each optional
 * `|OWNERPARTID`: See `|RECORD=1|CURRENTPARTID`
@@ -183,8 +225,8 @@ Polyline for component symbol
 * `|LINEWIDTH=1|COLOR`: Optional
 * `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .
 
-## `|RECORD=7` (Polygon) ##
-Polygon for component symbol
+### Polygon ###
+`|RECORD=7`: Polygon for component symbol
 * `|OWNERINDEX|ISNOTACCESIBLE=T`
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=1`
@@ -194,8 +236,8 @@ Polygon for component symbol
 * `|ISSOLID=T`
 * `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .
 
-## `|RECORD=8` (Ellipse) ##
-Inherits Circle properties
+### Ellipse ###
+`|RECORD=8`: Inherits Circle properties
 * `|RADIUS`
 * `|RADIUS_FRAC=94381`: Optional
 * `|SECONDARYRADIUS`
@@ -205,16 +247,16 @@ Inherits Circle properties
 Circle:
 * `|OWNERINDEX|ISNOTACCESIBLE=T|OWNERPARTID=1|LOCATION.X|LOCATION.Y`
 
-## `|RECORD=10` (Round Rectangle) ##
-As for Rectangle; additionally:
+### Round rectangle ###
+`|RECORD=10`: As for [Rectangle](#rectangle); additionally:
 * `|CORNERXRADIUS|CORNERYRADIUS`
 
-## `|RECORD=11` (Elliptical Arc)
-Inherits Arc properties
+### Elliptical arc ###
+`|RECORD=11`: Inherits [Arc](#arc) properties
 * `|SECONDARYRADIUS`: Radius along _x_ axis; `|RADIUS` is along _y_ axis
 
-## `|RECORD=12` (Arc) ##
-Circle or arc for component symbol.
+### Arc ###
+`|RECORD=12`: Circle or arc for component symbol.
 Unable to get arcs in exclusive “or” gate to line up.
 * `|OWNERINDEX`: Component part index
 * `|ISNOTACCESIBLE=T`
@@ -227,8 +269,8 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|ENDANGLE=`_fixed point_: 360.000 for full circle
 * `|COLOR`
 
-## `|RECORD=13` (Line) ##
-Line for component symbol
+### Line ###
+`|RECORD=13`: Line for component symbol
 * `|OWNERINDEX`: Component part index
 * `|ISNOTACCESIBLE=T`
 * `|INDEXINSHEET`: Optional
@@ -238,8 +280,8 @@ Line for component symbol
 * `|LINEWIDTH=1`: Line thickness
 * `|COLOR`
 
-## `|RECORD=14` (Rectangle) ##
-Rectangle for component symbol
+### Rectangle ###
+`|RECORD=14`: Rectangle for component symbol
 * `|OWNERINDEX`: Component part index
 * `|ISNOTACCESIBLE=T`: Non-English spelling of “accessible”!
 * `|INDEXINSHEET`: Optional
@@ -254,16 +296,16 @@ Rectangle for component symbol
     If not present, rectangle is not filled in, despite `|AREACOLOR`.
 * `|TRANSPARENT=T`: Optional
 
-## `|RECORD=15` (Sheet Symbol) ##
-Box to go on a top-level schematic
+### Sheet symbol ###
+`|RECORD=15`: Box to go on a top-level schematic
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.Y|XSIZE|YSIZE`
 * `|COLOR|AREACOLOR|ISSOLID=T|UNIQUEID`
 * `|SYMBOLTYPE=Normal`: Optional
 
-## `|RECORD=17` (Power Object) ##
-Connection to power rail, ground, etc
+### Power object ###
+`|RECORD=17`: Connection to power rail, ground, etc
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=-1`
 * `|STYLE`: Optional. Marker symbol:
@@ -279,8 +321,8 @@ Connection to power rail, ground, etc
 * `|ISCROSSSHEETCONNECTOR`: Optional.
     Marker symbol is a double chevron pointing towards the connection.
 
-## `|RECORD=18` (Port) ##
-Labelled connection
+### Port ###
+`|RECORD=18`: Labelled connection
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=-1`
 * `|STYLE=`_integer_
@@ -303,31 +345,31 @@ Labelled connection
     every character is still suffixed with one.
 * `|UNIQUEID`
 
-## `|RECORD=22` (No ERC) ##
-Cross indicating intentional non-connection
+### No ERC ###
+`|RECORD=22`: Cross indicating intentional non-connection
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=-1|LOCATION.X|LOCATION.Y`
 * `|COLOR`
 
-## `|RECORD=25` (Net Label) ##
-Net label
+### Net label ###
+`|RECORD=25`: Net label
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.Y`: Point of net connection
 * `|COLOR`
 * `|FONTID`
-* `|TEXT`: As for Port
+* `|TEXT`: As for [Port](#port)
 
-## `|RECORD=27` (Wire) ##
-Polyline wire connection
+### Wire ###
+`|RECORD=27`: Polyline wire connection
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=-1`
 * `|LINEWIDTH=1`
 * `|COLOR`
 * `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .
 
-## `RECORD=28` (Text Frame) ##
-Text box
+### Text frame ###
+`RECORD=28`: Text box
 * `|OWNERPARTID=-1`
 * `|LOCATION.X`: Lefthand side of box
 * `|LOCATION.Y`
@@ -338,7 +380,8 @@ Text box
 * `|CLIPTORECT=T`: Optional
 * `|Text`: Special code “`~1`” starts a new line
 
-## `|RECORD=29` (Junction) ##
+### Junction ###
+`|RECORD=29`:
 Junction of connected pins, wires, etc, sometimes represented by a dot.
 It may not be displayed at all, depending on a configuration setting.
 * `|INDEXINSHEET=-1`: Optional
@@ -346,14 +389,15 @@ It may not be displayed at all, depending on a configuration setting.
 * `|LOCATION.X|LOCATION.Y`
 * `|COLOR`
 
-## `|RECORD=30` (Image) ##
+### Image ###
+`|RECORD=30`
 * `|OWNERINDEX=1|INDEXINSHEET|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.Y`: Bottom-left corner
 * `|CORNER.X|CORNER.Y`
 * `|EMBEDIMAGE=T|FILENAME=newAltmLogo.bmp`
 
-## `|RECORD=31` (Sheet) ##
-First object after the header object (i.e. at index zero),
+### Sheet ###
+`|RECORD=31`: First object after the header object (i.e. at index zero),
 with properties for the entire schematic
 * `|FONTIDCOUNT`: Specifies the fonts referenced by `|FONTID`
     * `|SIZE`_n_: Leading
@@ -380,15 +424,16 @@ with properties for the entire schematic
 * `|USECUSTOMSHEET=T`: Optional
 * `|CUSTOMXZONES=6|CUSTOMYZONES=4|CUSTOMMARGINWIDTH=20|DISPLAY_UNIT=4`
 
-## `|RECORD=32` (Sheet Name) / `33` (Sheet File Name) ##
+### Sheet name and file name ###
+`|RECORD=32` (sheet name) / `33` (sheet file name):
 Labels on top-level schematic
 * `|OWNERINDEX`
 * `|INDEXINSHEET=-1`: Optional
 * `|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.Y|COLOR|FONTID|TEXT`
 
-## `|RECORD=34` (Designator) ##
-Component designator label
+### Designator ###
+`|RECORD=34`: Component designator label
 * `|OWNERINDEX`: Component part index
 * `|INDEXINSHEET=-1`: Optional
 * `|OWNERPARTID=-1`
@@ -400,11 +445,12 @@ Component designator label
 * `|READONLYSTATE=1` (TParameter_ReadOnlyState? = eReadOnly_Name?)
 * `|ISMIRRORED=T`: Optional
 
-## `|RECORD=39` ##
+### 39 ###
+`|RECORD=39`
 * `|ISNOTACCESIBLE=T|OWNERPARTID=-1|FILENAME`
 
-## `|RECORD=41` (Parameter) ##
-Label, such as component value
+### Parameter ###
+`|RECORD=41`: Label, such as component value
 * `|INDEXINSHEET|OWNERINDEX`: Each optional
 * `|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.X_FRAC|LOCATION.Y|LOCATION.Y_FRAC`: Each optional.
@@ -428,8 +474,8 @@ Label, such as component value
 * `|READONLYSTATE=1` (TParameter_ReadOnlyState? = eReadOnly_Name?)
 * `|UNIQUEID|ISMIRRORED=T`: Each optional
 
-## `|RECORD=43` (Warning Sign) ##
-Warning sign for differential tracks, clock lines, ...
+### Warning sign ###
+`|RECORD=43`: Warning sign for differential tracks, clock lines, ...
 * `|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.Y`: Each optional.
 * `|NAME=-1`
@@ -439,10 +485,11 @@ Warning sign for differential tracks, clock lines, ...
     * 1: Bottom-left alignment, then rotated 90° anticlockwise
     * 2: Top-right corner alignment
 
-## `|RECORD=44` ##
-`|OWNERINDEX`
+### 44 ###
+`|RECORD=44|OWNERINDEX`
 
-## `|RECORD=45` ##
+### 45 ###
+`|RECORD=45`
 * `|OWNERINDEX`
 * `|INDEXINSHEET=-1`: Optional
 * `|DESCRIPTION|USECOMPONENTLIBRARY=T`: Optional
@@ -453,13 +500,14 @@ Warning sign for differential tracks, clock lines, ...
 * `|INTEGRATEDMODEL=T|DATABASEMODEL=T`: Optional
 * `|ISCURRENT=T`: Optional
 
-## `|RECORD=46` ##
-`|OWNERINDEX`
+### 46 ###
+`|RECORD=46|OWNERINDEX`
 
-## `|RECORD=47` ##
+### 47 ###
+`|RECORD=47`
 * `|OWNERINDEX`
 * `|INDEXINSHEET`: Optional
 * `|DESINTF|DESIMPCOUNT=1|DESIMP0`
 
-## `|RECORD=48` ##
-`|OWNERINDEX`
+### 48 ###
+`|RECORD=48|OWNERINDEX`
