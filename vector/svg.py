@@ -54,7 +54,7 @@ class Renderer(base.Renderer):
         ]
         self.fonts = dict()
     
-    def addfont(self, id, size, family, italic=None, bold=None):
+    def addfont(self, id, size, family, *, italic=False, bold=False):
         props = [
             "font-size: {}px".format(size),
             "font-family: {}".format(family),

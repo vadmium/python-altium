@@ -234,7 +234,7 @@ class Renderer(base.Renderer, base.Subview):
             offset = (margin, margin)
         base.Subview.__init__(self, raw, offset=offset, colour=(0, 0, 0))
     
-    def addfont(self, id, size, family, italic=None, bold=None):
+    def addfont(self, id, size, family, *, italic=False, bold=False):
         kw = dict()
         if italic:
             kw.update(slant="italic")

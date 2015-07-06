@@ -63,6 +63,27 @@ def get_sheet_style(sheet):
         size = tuple(int(sheet["CUSTOM" + "XY"[x]]) for x in range(2))
     return (sheetstyle, size)
 
+def iter_fonts(sheet):
+    '''Yield a dictionary for each font defined for a sheet
+    
+    Dictionary keys:
+    
+    id: Positive integer
+    line: Font's line spacing
+    family: Typeface name
+    italic, bold: Boolean value
+    '''
+    for i in range(int(sheet["FONTIDCOUNT"])):
+        id = 1 + i
+        n = format(id)
+        yield dict(
+            id=id,
+            line=int(sheet["SIZE" + n]),
+            family=sheet["FONTNAME" + n].decode("ascii"),
+            italic=bool(sheet.get("ITALIC" + n)),
+            bold=bool(sheet.get("BOLD" + n)),
+        )
+
 class Record:
     """Schematic object record types"""
     SCH_COMPONENT = b"1"
@@ -152,19 +173,16 @@ Renderer: """By default, the schematic is converted to an SVG file,
     renderer = Renderer(size, "in", 1/100,
         margin=0.3, line=1, down=-1, textbottom=True)
     
-    for n in range(int(sheet["FONTIDCOUNT"])):
-        n = format(1 + n)
-        fontsize = int(sheet["SIZE" + n]) * 0.875
-        family = sheet["FONTNAME" + n].decode("ascii")
-        kw = dict()
-        italic = sheet.get("ITALIC" + n)
-        if italic:
-            kw.update(italic=True)
-        bold = sheet.get("BOLD" + n)
-        if bold:
-            kw.update(bold=True)
-        renderer.addfont("font" + n, fontsize, family, **kw)
-    renderer.setdefaultfont("font" + sheet["SYSTEMFONT"].decode("ascii"))
+    for font in iter_fonts(sheet):
+        name = font_name(font["id"])
+        
+        # Not sure if line spacing to font em size fudge factor is
+        # specific to Times New Roman, or to Altium
+        fontsize = font["line"] * 0.875
+        
+        renderer.addfont(name, fontsize, font["family"],
+            italic=font["italic"], bold=font["bold"])
+    renderer.setdefaultfont(font_name(int(sheet["SYSTEMFONT"])))
     renderer.start()
     
     arrowhead = dict(base=5, shoulder=7, radius=3)
@@ -352,7 +370,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
                     renderer.text(val.decode("ascii"),
                         colour=colour(obj["COLOR"]),
                         offset=(int(obj["LOCATION." + x]) for x in "XY"),
-                        font="font" + obj["FONTID"].decode("ascii"),
+                        font=font_name(int(obj["FONTID"])),
                     **kw)
                 else:
                     text(renderer, obj, **kw)
@@ -365,7 +383,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
                 desig += chr(ord("A") + int(owner["CURRENTPARTID"]) - 1)
             renderer.text(desig, (int(obj["LOCATION." + x]) for x in "XY"),
                 colour=colour(obj["COLOR"]),
-                font="font" + obj["FONTID"].decode(),
+                font=font_name(int(obj["FONTID"])),
             )
         
         elif (obj.keys() >= {"RECORD", "OWNERPARTID", "OWNERINDEX", "LOCATIONCOUNT", "X1", "X2", "Y1", "Y2"} and
@@ -488,7 +506,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
             renderer.text(overline(obj["TEXT"]),
                 colour=colour(obj["COLOR"]),
                 offset=(int(obj["LOCATION." + x]) for x in "XY"),
-                font="font" + obj["FONTID"].decode("ascii"),
+                font=font_name(int(obj["FONTID"])),
             )
         
         elif (obj.keys() - {"INDEXINSHEET", "OWNERPARTDISPLAYMODE", "STARTANGLE", "SECONDARYRADIUS"} == {"RECORD", "OWNERPARTID", "OWNERINDEX", "COLOR", "ENDANGLE", "ISNOTACCESIBLE", "LINEWIDTH", "LOCATION.X", "LOCATION.Y", "RADIUS"} and
@@ -533,7 +551,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
         obj["RECORD"] == b"28" and obj["ALIGNMENT"] == b"1" and obj["AREACOLOR"] == b"16777215" and obj.get("CLIPTORECT", b"T") == b"T" and obj["ISSOLID"] == b"T" and obj["OWNERPARTID"] == b"-1" and obj["WORDWRAP"] == b"T"):
             lhs = int(obj["LOCATION.X"])
             renderer.text(
-                font="font" + obj["FONTID"].decode("ascii"),
+                font=font_name(int(obj["FONTID"])),
                 offset=(lhs, int(obj["CORNER.Y"])),
                 width=int(obj["CORNER.X"]) - lhs,
                 text=obj["Text"].decode("ascii").replace("~1", "\n"),
@@ -594,8 +612,12 @@ def text(renderer, obj, **kw):
         kw["colour"] = colour(c)
     renderer.text(obj["TEXT"].decode("ascii"),
         offset=(int(obj["LOCATION." + x]) for x in "XY"),
-        font="font" + obj["FONTID"].decode("ascii"),
+        font=font_name(int(obj["FONTID"])),
     **kw)
+
+def font_name(id):
+    '''Convert Altium font number to text name for renderer'''
+    return "font{}".format(id)
 
 def overline(name):
     spans = list()
