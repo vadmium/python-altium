@@ -117,8 +117,9 @@ Common data types represented by properties:
 
 * TRotateBy90: 0 is default (rightwards)
 
-The _y_ values increase from bottom to top. Dimensions and positions are
-in units of 1/100″ = 10 mils = 0.254 mm.
+The origin (0, 0) is at the bottom left corner, and the _y_ values
+increase from bottom to top. Dimensions and positions are in units of
+1/100″ = 10 mils = 0.254 mm.
 
 Each item in the “FileHeader” stream describes an object.
 The first object is a header object with the following properties:
