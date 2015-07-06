@@ -244,7 +244,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
     
     for obj in objects:
         if (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR"} and
-        obj["RECORD"] == b"29" and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
+        obj["RECORD"] == Record.JUNCTION and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
             location = (int(obj["LOCATION." + x]) for x in "XY")
             col = colour(obj["COLOR"])
             renderer.circle(2, location, fill=col)
