@@ -585,6 +585,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
     renderer.finish()
 
 def colour(c):
+    '''Convert a TColor property value to a fractional RGB tuple'''
     return (x / 0xFF for x in int(c).to_bytes(3, "little"))
 
 def text(renderer, obj, **kw):
