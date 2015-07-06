@@ -401,7 +401,10 @@ It may not be displayed at all, depending on a configuration setting.
 `|RECORD=31`: First object after the header object (i.e. at index zero),
 with properties for the entire schematic
 * `|FONTIDCOUNT`: Specifies the fonts referenced by `|FONTID`
-    * `|SIZE`_n_: Leading
+    * `|SIZE`_n_: Line spacing. At least for Times New Roman, the font’s
+        actual point size or em size seems to be about 0.875 of this size.
+        So for `|SIZE`_n_`=10`, the total line spacing is 100 mil = 0.10″ =
+        7.2 pt, but the font’s em size is about 87.5 mil = 0.0875″ = 6.3 pt.
     * `|ITALIC`_n_`=T|BOLD`_n_`=T`: Each optional
     * `|ROTATION`_n_`=90`: Optional.
         Seems to be associated with sideways vertical text,
