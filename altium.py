@@ -544,7 +544,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
         
         elif (obj.keys() - {"INDEXINSHEET", "SYMBOLTYPE"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "XSIZE", "YSIZE", "COLOR", "AREACOLOR", "ISSOLID", "UNIQUEID"} and
         obj["RECORD"] == Record.SHEET_SYMBOL and obj["OWNERPARTID"] == b"-1" and obj["ISSOLID"] == b"T" and obj.get("SYMBOLTYPE", b"Normal") == b"Normal"):
-            renderer.rectangle((int(obj["XSIZE"]), int(obj["YSIZE"])),
+            renderer.rectangle((int(obj["XSIZE"]), -int(obj["YSIZE"])),
                 width=0.6,
                 outline=colour(obj["COLOR"]), fill=colour(obj["AREACOLOR"]),
                 offset=(int(obj["LOCATION." + x]) for x in "XY"),

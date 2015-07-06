@@ -256,7 +256,9 @@ Rectangle for component symbol
 Box to go on a top-level schematic
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=-1`
-* `|LOCATION.X|LOCATION.Y|XSIZE|YSIZE`
+* `|LOCATION.X|LOCATION.Y`: Top left corner (not bottom left like
+    other objects!)
+* `|XSIZE|YSIZE`: Positive integers
 * `|COLOR|AREACOLOR|ISSOLID=T|UNIQUEID`
 * `|SYMBOLTYPE=Normal`: Optional
 
