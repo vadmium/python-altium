@@ -235,7 +235,8 @@ The component object seems to occur before any of its child objects.
 * `|OWNERINDEX|ISNOTACCESIBLE=T|OWNERPARTID=1|LINEWIDTH=1`
 * `|COLOR`
 * `|LOCATIONCOUNT=4|X1|Y1|X2|Y2|X3|Y3|X4|Y4`:
-    Control points; possibly greater than four?
+    Control points; shares common data structure with [Polyline](#polyline)
+    etc
 
 ### Polyline ###
 `|RECORD=6`: Polyline for component symbol
