@@ -30,6 +30,7 @@ Contents:
     * [18: Port](#port)
     * [22: No ERC](#no-erc)
     * [25: Net label](#net-label)
+    * [26: Bus](#bus)
     * [27: Wire](#wire)
     * [28: Text frame](#text-frame)
     * [29: Junction](#junction)
@@ -186,8 +187,12 @@ The component object seems to occur before any of its child objects.
 * `|OWNERINDEX`: Component part index
 * `|OWNERPARTID`: See `|RECORD=1|CURRENTPARTID`
 * `|OWNERPARTDISPLAYMODE|DESCRIPTION`: Optional
-* `|SYMBOL_OUTEREDGE=1`: Optional.
-    If present, a bubble is shown, indicating negative logic.
+* `|SYMBOL_OUTEREDGE=1`: Optional symbol between component and pin.
+    0 (default): No symbol
+    1: A bubble (dot), indicating negative logic
+* `|SYMBOL_INNEREDGE`: Optional symbol touching inside edge of component
+    * 0 (default): No symbol
+    * 3: Clock input; arrow pointing inwards
 * `|FORMALTYPE=1`
 * `|ELECTRICAL`: Signal type on pin
     * 0 (default): Input. Arrow pointing into component.
@@ -379,6 +384,11 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|FONTID`
 * `|TEXT`: As for [Port](#port)
 
+### Bus ###
+`|RECORD=26`: Bus
+
+`|OWNERPARTID=-1|LINEWIDTH=1|COLOR=8388608|LOCATIONCOUNT=2|X1|Y1|X2|Y2`
+
 ### Wire ###
 `|RECORD=27`: Polyline wire connection
 * `|INDEXINSHEET`: Optional
@@ -396,14 +406,14 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|CORNER.Y`: Top text line
 * `|AREACOLOR=16777215` (= #FFFFFF)
 * `|FONTID|ISSOLID=T|ALIGNMENT=1|WORDWRAP=T`
-* `|CLIPTORECT=T`: Optional
+* `|CLIPTORECT=T|ORIENTATION`: Each optional
 * `|Text`: Special code “`~1`” starts a new line
 
 ### Junction ###
 `|RECORD=29`:
 Junction of connected pins, wires, etc, sometimes represented by a dot.
 It may not be displayed at all, depending on a configuration setting.
-* `|INDEXINSHEET=-1`: Optional
+* `|INDEXINSHEET=-1|LOCKED=T`: Each optional
 * `|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.Y`
 * `|COLOR`
@@ -413,7 +423,11 @@ It may not be displayed at all, depending on a configuration setting.
 * `|OWNERINDEX=1|INDEXINSHEET|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.Y`: Bottom-left corner
 * `|CORNER.X|CORNER.Y`
-* `|EMBEDIMAGE=T|FILENAME=newAltmLogo.bmp`
+* `|EMBEDIMAGE=T`
+* `|FILENAME`: File name may be without a path (filename.ext) or
+    an absolute Windows path (C:\\path\\filename.ext). Suffixes: “.bmp”,
+    “.tif”.
+* `|KEEPASPECT=T`: Optional
 
 ### Sheet ###
 `|RECORD=31`: First object after the header object (i.e. at index zero),
@@ -451,6 +465,7 @@ with properties for the entire schematic
     Should probably ignore this unless `|USECUSTOMSHEET=T` provided.
 * `|USECUSTOMSHEET=T`: Optional
 * `|CUSTOMXZONES=6|CUSTOMYZONES=4|CUSTOMMARGINWIDTH=20|DISPLAY_UNIT=4`
+* `|REFERENCEZONESON=T`: Optional
 
 ### Sheet name and file name ###
 `|RECORD=32` (sheet name) / `33` (sheet file name):
@@ -472,7 +487,7 @@ Labels on top-level schematic
 * `|NAME=Designator`
 * `|READONLYSTATE`:
     * 1: Name is read-only?
-* `|ISMIRRORED=T`: Optional
+* `|ISMIRRORED=T|ORIENTATION|ISHIDDEN`: Each optional
 
 ### 39 ###
 `|RECORD=39`
@@ -514,10 +529,10 @@ Labels on top-level schematic
     * 2: Top-right corner alignment
 
 ### 44 ###
-`|RECORD=44|OWNERINDEX`
+`|RECORD=44|OWNERINDEX`: Implementation list?
 
 ### 45 ###
-`|RECORD=45`
+`|RECORD=45`: Implementation?
 * `|OWNERINDEX`
 * `|INDEXINSHEET=-1`: Optional
 * `|DESCRIPTION|USECOMPONENTLIBRARY=T`: Optional
@@ -525,7 +540,7 @@ Labels on top-level schematic
 * `|DATAFILECOUNT=1|MODELDATAFILEENTITY0|MODELDATAFILEKIND0`:
     Optional
 * `|DATALINKSLOCKED=T|DATABASEDATALINKSLOCKED=T`: Optional
-* `|INTEGRATEDMODEL=T|DATABASEMODEL=T`: Optional
+* `|INTEGRATEDMODEL|DATABASEMODEL=T`: Optional [booleans](#boolean)
 * `|ISCURRENT=T`: Optional
 
 ### 46 ###
