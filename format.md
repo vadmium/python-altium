@@ -107,7 +107,8 @@ Some simple common data types represented by properties:
 The origin (0, 0) is at the bottom left corner, and the _y_ values
 increase from bottom to top. Sizes and locations are in units of
 1/100″ = 10 mils = 0.254 mm. Each dimension or co-ordinate is usually given
-as an [integer] property.
+as an [integer] property. Sometimes a second integer property with a
+`_FRAC` suffix is also given, maybe measured as a fraction of 100,000 units.
 
 ### Integers ###
 [Integer]: #integers
@@ -423,7 +424,7 @@ It may not be displayed at all, depending on a configuration setting.
 `|RECORD=30`
 * `|OWNERINDEX=1|INDEXINSHEET|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.Y`: Bottom-left corner
-* `|CORNER.X|CORNER.Y`
+* `|CORNER.X|CORNER.Y`: `_FRAC` counterparts may also be included
 * `|EMBEDIMAGE=T`
 * `|FILENAME`: File name may be without a path (filename.ext) or
     an absolute Windows path (C:\\path\\filename.ext). Suffixes: “.bmp”,
