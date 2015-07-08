@@ -53,10 +53,9 @@ Exceptions include `|Text` for text frame objects,
 
 Common data types represented by properties:
 
-* Strings (eParameterType_String):
-    Most properties are directly decodable as ASCII strings,
+* Strings: Most properties are directly decodable as ASCII strings,
     although the byte 0x8E has been seen bracketing parts of some strings
-* Decimal integers (eParameterType_Integer): `|RECORD=31`, `|OWNERPARTID=-1`.
+* Decimal integers: `|RECORD=31`, `|OWNERPARTID=-1`.
     Default value if property is missing seems to be 0.
     * Enumerated types: `|RECORD=1`/`2`/. . ., `|RECORD=17|STYLE=1`/`2`/. . .
     * Bitfields:
@@ -66,9 +65,8 @@ Common data types represented by properties:
             * 0–7: Red
             * 8–15: Green
             * 16–23: Blue
-* Decimal numbers with fractional part (eParameterType_Float):
-    `|ENDANGLE=360.000`
-* Boolean (eParameterType_Boolean): `|ISHIDDEN=T|PARTIDLOCKED=F`
+* Decimal numbers with fractional part: `|ENDANGLE=360.000`
+* Boolean: `|ISHIDDEN=T|PARTIDLOCKED=F`
 * Co-ordinate pairs (points): `|LOCATION.X=200|LOCATION.Y=100`.
     The _y_ values increase from bottom to top.
 * Lists:
@@ -130,24 +128,23 @@ Component pin, including line, name and number
 * `|SYMBOL_OUTEREDGE=1`: Optional.
     If present, a bubble is shown, indicating negative logic.
 * `|FORMALTYPE=1`
-* `|ELECTRICAL`: TPinElectrical: Signal type on pin
-    * 0 (eElectricInput, default): Input. Arrow pointing into component.
-    * 1 (eElectricIO): Bidirectional. Diamond.
-    * 2 (eElectricOutput): Output.
-        Arrow (triangle) pointing out of component
-    * 3 (eElectricOpenCollector): Open collector
-    * 4 (eElectricPassive): Passive. No symbol.
-    * 5 (eElectricHiZ): Tri-state?
-    * 6 (eElectricOpenEmitter): Open emitter
-    * 7 (eElectricPower): Power. No symbol.
+* `|ELECTRICAL`: Signal type on pin
+    * 0 (default): Input. Arrow pointing into component.
+    * 1: Input and output (bidirectional). Diamond.
+    * 2: Output. Arrow (triangle) pointing out of component
+    * 3: Open collector
+    * 4: Passive. No symbol.
+    * 5: Hi-Z (tri-state?)
+    * 6: Open emitter
+    * 7: Power. No symbol.
 * `|PINCONGLOMERATE=`_integer_: Bit map:
-    * 0–1 (Orientation): TRotateBy90: Pin direction:
-        * 0 (eRotate0): Rightwards
-        * 1 (eRotate90): Upwards
-        * 2 (eRotate180): Leftwards
-        * 3 (eRotate270): Downwards
-    * 3 (ShowName): Pin name shown
-    * 4 (ShowDesignator): Pin number shown
+    * 0–1: TRotateBy90: Pin orientation:
+        * 0: Rightwards (0°)
+        * 1: Upwards (90°)
+        * 2: Leftwards (180°)
+        * 3: Downwards (270°)
+    * 3: Pin name shown
+    * 4: Designator shown
 * `|PINLENGTH=`_integer_
 * `|LOCATION.X|LOCATION.Y`: Point where pin line extends from component
 * `|NAME`: Pin function, shown inside component, opposite the pin line.
@@ -267,10 +264,10 @@ Connection to power rail, ground, etc
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=-1`
 * `|STYLE`: Optional. Marker symbol:
-    * 1 (ePowerArrow): Arrow
-    * 2 (ePowerBar): Tee off rail
-    * 3 (eGndPower): Ground (broken triangle, made of horizontal lines)
-    * 4 (eGnd?): Ground (earth ground)
+    * 1: Arrow
+    * 2: Tee off rail (bar)
+    * 3: Ground (broken triangle, made of horizontal lines)
+    * 4: Ground (earth ground)
 * `|SHOWNETNAME=T`
 * `|LOCATION.X|LOCATION.Y`: Point of connection
 * `|ORIENTATION=`_integer_: TRotateBy90: Direction the marker points
@@ -364,9 +361,9 @@ with properties for the entire schematic
     * `|FONTNAME`_n_`=Times New Roman`
 * `|USEMBCS=T|ISBOC=T|HOTSPOTGRIDON=T|HOTSPOTGRIDON=T|HOTSPOTGRIDSIZE`
 * `|SHEETSTYLE`
-    * 0 (eSheetA4, default): “A4”, 1150 × 760
-    * 1 (eSheetA4): “A3”, 1550 × 1150
-    * 5 (eSheetA): “A”, 950 × 760
+    * 0 (default): “A4”, 1150 × 760
+    * 1: “A3”, 1550 × 1150
+    * 5: “A”, 950 × 760
 * `|SYSTEMFONT=1`: Presumably a font number to use as a default
 * `|BORDERON=T`
 * `|TITLEBLOCKON=T`:
@@ -396,7 +393,8 @@ Component designator label
 * `|FONTID`
 * `|TEXT`: Has a letter appended based on `|RECORD=1|PARTCOUNT|CURRENTPARTID`
 * `|NAME`=Designator
-* `|READONLYSTATE=1` (TParameter_ReadOnlyState? = eReadOnly_Name?)
+* `|READONLYSTATE`:
+    * 1: Name is read-only?
 * `|ISMIRRORED=T`: Optional
 
 ## `|RECORD=39` ##
@@ -424,7 +422,7 @@ Label, such as component value
     from the referenced parameter’s `|TEXT` property.
 * `|ISHIDDEN=T`: Optional
 * `|NAME`
-* `|READONLYSTATE=1` (TParameter_ReadOnlyState? = eReadOnly_Name?)
+* `|READONLYSTATE`: Same as for [Designator](#designator)?
 * `|UNIQUEID|ISMIRRORED=T`: Each optional
 
 ## `|RECORD=43` (Warning Sign) ##
