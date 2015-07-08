@@ -51,7 +51,7 @@ def read(file):
 def get_sheet(objects):
     '''Returns the object holding settings for the sheet'''
     sheet = objects[1]
-    assert sheet["RECORD"] == Record.SHEET
+    assert int(sheet["RECORD"]) == Record.SHEET
     return sheet
 
 def get_sheet_style(sheet):
@@ -61,7 +61,7 @@ def get_sheet_style(sheet):
         SheetStyle.A3: ("A3", (1550, 1110)),
         SheetStyle.A: ("A", (950, 750)),
     }
-    [sheetstyle, size] = STYLES[sheet.get("SHEETSTYLE", SheetStyle.A4)]
+    [sheetstyle, size] = STYLES[int(sheet.get("SHEETSTYLE", 0))]
     if "USECUSTOMSHEET" in sheet:
         size = tuple(int(sheet["CUSTOM" + "XY"[x]]) for x in range(2))
     if int(sheet.get("WORKSPACEORIENTATION", 0)):
@@ -108,60 +108,61 @@ def get_location(obj):
 
 class Record:
     """Schematic object record types"""
-    SCH_COMPONENT = b"1"
-    PIN = b"2"
-    LABEL = b"4"
-    BEZIER = b"5"
-    POLYLINE = b"6"
-    POLYGON = b"7"
-    ELLIPSE = b"8"
-    ROUND_RECTANGLE = b"10"
-    ELLIPTICAL_ARC = b"11"
-    ARC = b"12"
-    LINE = b"13"
-    RECTANGLE = b"14"
-    SHEET_SYMBOL = b"15"
-    POWER_OBJECT = b"17"
-    PORT = b"18"
-    NO_ERC = b"22"
-    NET_LABEL = b"25"
-    WIRE = b"27"
-    TEXT_FRAME = b"28"
-    JUNCTION = b"29"
-    IMAGE = b"30"
-    SHEET = b"31"
-    SHEET_NAME = b"32"
-    SHEET_FILE_NAME = b"33"
-    DESIGNATOR = b"34"
-    PARAMETER = b"41"
+    HEADER = 0
+    SCH_COMPONENT = 1
+    PIN = 2
+    LABEL = 4
+    BEZIER = 5
+    POLYLINE = 6
+    POLYGON = 7
+    ELLIPSE = 8
+    ROUND_RECTANGLE = 10
+    ELLIPTICAL_ARC = 11
+    ARC = 12
+    LINE = 13
+    RECTANGLE = 14
+    SHEET_SYMBOL = 15
+    POWER_OBJECT = 17
+    PORT = 18
+    NO_ERC = 22
+    NET_LABEL = 25
+    WIRE = 27
+    TEXT_FRAME = 28
+    JUNCTION = 29
+    IMAGE = 30
+    SHEET = 31
+    SHEET_NAME = 32
+    SHEET_FILE_NAME = 33
+    DESIGNATOR = 34
+    PARAMETER = 41
 
 class PinElectrical:
     """Signal types for a pin"""
-    INPUT = b"0"
-    IO = b"1"
-    OUTPUT = b"2"
-    OPEN_COLLECTOR = b"3"
-    PASSIVE = b"4"
-    HI_Z = b"5"
-    OPEN_EMITTER = b"6"
-    POWER = b"7"
+    INPUT = 0
+    IO = 1
+    OUTPUT = 2
+    OPEN_COLLECTOR = 3
+    PASSIVE = 4
+    HI_Z = 5
+    OPEN_EMITTER = 6
+    POWER = 7
 
 class PowerObjectStyle:
     """Symbols for remote connections to common rails"""
-    ARROW = b"1"
-    BAR = b"2"
-    GND = b"4"
+    ARROW = 1
+    BAR = 2
+    GND = 4
 
 class ParameterReadOnlyState:
-    NAME = b"1"
+    NAME = 1
 
 class SheetStyle:
     """Preset sheet sizes"""
-    A4 = b"0"
-    A3 = b"1"
-    A = b"5"
-    B = b"6"
-    C = b"7"
+    A4 = 0
+    A3 = 1
+    A = 5
+    B = 6
+    C = 7
 
 import vector
 from sys import stderr
@@ -302,12 +303,12 @@ Renderer: """By default, the schematic is converted to an SVG file,
     
     for obj in objects:
         if (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR"} and
-        obj["RECORD"] == Record.JUNCTION and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
+        int(obj["RECORD"]) == Record.JUNCTION and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
             col = colour(obj["COLOR"])
             renderer.circle(2, get_location(obj), fill=col)
         
         elif (obj.keys() - {"INDEXINSHEET", "IOTYPE", "ALIGNMENT"} == {"RECORD", "OWNERPARTID", "STYLE", "WIDTH", "LOCATION.X", "LOCATION.Y", "COLOR", "AREACOLOR", "TEXTCOLOR", "NAME", "UNIQUEID"} and
-        obj["RECORD"] == Record.PORT and obj["OWNERPARTID"] == b"-1"):
+        int(obj["RECORD"]) == Record.PORT and obj["OWNERPARTID"] == b"-1"):
             width = int(obj["WIDTH"])
             if "IOTYPE" in obj:
                 points = ((0, 0), (5, -5), (width - 5, -5),
@@ -343,7 +344,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
                     )
         
         elif (obj.keys() - {"INDEXINSHEET"} >= {"RECORD", "OWNERPARTID", "LINEWIDTH", "COLOR", "LOCATIONCOUNT", "X1", "Y1", "X2", "Y2"} and
-        obj["RECORD"] == Record.WIRE and obj["OWNERPARTID"] == b"-1" and obj["LINEWIDTH"] == b"1"):
+        int(obj["RECORD"]) == Record.WIRE and obj["OWNERPARTID"] == b"-1" and obj["LINEWIDTH"] == b"1"):
             points = list()
             for location in range(int(obj["LOCATIONCOUNT"])):
                 location = format(1 + location)
@@ -354,7 +355,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
         obj.keys() - {"USECOMPONENTLIBRARY", "DESCRIPTION", "DATAFILECOUNT", "MODELDATAFILEENTITY0", "MODELDATAFILEKIND0", "DATALINKSLOCKED", "DATABASEDATALINKSLOCKED", "ISCURRENT", "INDEXINSHEET", "INTEGRATEDMODEL", "DATABASEMODEL"} == {"RECORD", "OWNERINDEX", "MODELNAME", "MODELTYPE"} and
         obj["RECORD"] == b"45" and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj.get("USECOMPONENTLIBRARY", b"T") == b"T" and obj["MODELTYPE"] in {b"PCBLIB", b"SI", b"SIM", b"PCB3DLib"} and obj.get("DATAFILECOUNT", b"1") == b"1" and obj.get("ISCURRENT", b"T") == b"T" and obj.get("DATABASEMODEL", b"T") == b"T" and obj.get("DATALINKSLOCKED", b"T") == b"T" and obj.get("DATABASEDATALINKSLOCKED", b"T") == b"T" or
         obj.keys() >= {"RECORD", "AREACOLOR", "BORDERON", "CUSTOMX", "CUSTOMY", "DISPLAY_UNIT", "FONTIDCOUNT", "FONTNAME1", "HOTSPOTGRIDON", "HOTSPOTGRIDSIZE", "ISBOC", "SHEETNUMBERSPACESIZE", "SIZE1", "SNAPGRIDON", "SNAPGRIDSIZE", "SYSTEMFONT", "USEMBCS", "VISIBLEGRIDON", "VISIBLEGRIDSIZE"} and
-        obj["RECORD"] == Record.SHEET and obj["AREACOLOR"] == b"16317695" and obj["BORDERON"] == b"T" and obj.get("CUSTOMMARGINWIDTH", b"20") == b"20" and obj.get("CUSTOMXZONES", b"6") == b"6" and obj.get("CUSTOMYZONES", b"4") == b"4" and obj["DISPLAY_UNIT"] == b"4" and obj["FONTNAME1"] == b"Times New Roman" and obj["HOTSPOTGRIDON"] == b"T" and obj["ISBOC"] == b"T" and obj["SHEETNUMBERSPACESIZE"] == b"4" and obj["SIZE1"] == b"10" and obj["SNAPGRIDON"] == b"T" and obj["SYSTEMFONT"] == b"1" and obj.get("TITLEBLOCKON", b"T") == b"T" and obj["USEMBCS"] == b"T" and obj["VISIBLEGRIDON"] == b"T" and obj["VISIBLEGRIDSIZE"] == b"10" and obj.get("WORKSPACEORIENTATION", b"1") == b"1" or
+        int(obj["RECORD"]) == Record.SHEET and obj["AREACOLOR"] == b"16317695" and obj["BORDERON"] == b"T" and obj.get("CUSTOMMARGINWIDTH", b"20") == b"20" and obj.get("CUSTOMXZONES", b"6") == b"6" and obj.get("CUSTOMYZONES", b"4") == b"4" and obj["DISPLAY_UNIT"] == b"4" and obj["FONTNAME1"] == b"Times New Roman" and obj["HOTSPOTGRIDON"] == b"T" and obj["ISBOC"] == b"T" and obj["SHEETNUMBERSPACESIZE"] == b"4" and obj["SIZE1"] == b"10" and obj["SNAPGRIDON"] == b"T" and obj["SYSTEMFONT"] == b"1" and obj.get("TITLEBLOCKON", b"T") == b"T" and obj["USEMBCS"] == b"T" and obj["VISIBLEGRIDON"] == b"T" and obj["VISIBLEGRIDSIZE"] == b"10" and obj.get("WORKSPACEORIENTATION", b"1") == b"1" or
         obj.keys() == {"HEADER", "WEIGHT"} and
         obj["HEADER"] == b"Protel for Windows - Schematic Capture Binary File Version 5.0" or
         obj.keys() - {"INDEXINSHEET"} == {"RECORD", "DESIMP0", "DESIMPCOUNT", "DESINTF", "OWNERINDEX"} and
@@ -368,7 +369,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
             pass
         
         elif (obj.keys() - {"TEXT", "OWNERINDEX", "ISHIDDEN", "READONLYSTATE", "INDEXINSHEET", "UNIQUEID", "LOCATION.X", "LOCATION.X_FRAC", "LOCATION.Y", "LOCATION.Y_FRAC", "ORIENTATION", "ISMIRRORED"} == {"RECORD", "OWNERPARTID", "COLOR", "FONTID", "NAME"} and
-        obj["RECORD"] == Record.PARAMETER and obj["OWNERPARTID"] == b"-1"):
+        int(obj["RECORD"]) == Record.PARAMETER and obj["OWNERPARTID"] == b"-1"):
             if obj.get("ISHIDDEN") != b"T" and obj.keys() >= {"TEXT", "LOCATION.X", "LOCATION.Y"}:
                 orient = obj.get("ORIENTATION")
                 kw = {
@@ -399,7 +400,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
                     text(renderer, obj, **kw)
         
         elif (obj.keys() - {"INDEXINSHEET", "ISMIRRORED", "LOCATION.X_FRAC", "LOCATION.Y_FRAC"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR", "FONTID", "TEXT", "NAME", "READONLYSTATE"} and
-        obj["RECORD"] == Record.DESIGNATOR and obj["OWNERPARTID"] == b"-1" and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["NAME"] == b"Designator" and obj["READONLYSTATE"] == b"1"):
+        int(obj["RECORD"]) == Record.DESIGNATOR and obj["OWNERPARTID"] == b"-1" and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["NAME"] == b"Designator" and obj["READONLYSTATE"] == b"1"):
             desig = obj["TEXT"].decode("ascii")
             owner = objects[1 + int(obj["OWNERINDEX"])]
             if int(owner["PARTCOUNT"]) > 2:
@@ -410,7 +411,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
             )
         
         elif (obj.keys() >= {"RECORD", "OWNERPARTID", "OWNERINDEX", "LOCATIONCOUNT", "X1", "X2", "Y1", "Y2"} and
-        obj["RECORD"] == Record.POLYLINE and obj.get("ISNOTACCESIBLE", b"T") == b"T" and obj.get("LINEWIDTH", b"1") == b"1"):
+        int(obj["RECORD"]) == Record.POLYLINE and obj.get("ISNOTACCESIBLE", b"T") == b"T" and obj.get("LINEWIDTH", b"1") == b"1"):
             if obj["OWNERPARTID"] == b"-1":
                 current = True
             else:
@@ -421,7 +422,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
                 polyline(renderer, obj)
         
         elif (obj.keys() - {"OWNERPARTDISPLAYMODE", "INDEXINSHEET"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "COLOR", "ISNOTACCESIBLE", "LINEWIDTH", "LOCATION.X", "LOCATION.Y", "CORNER.X", "CORNER.Y"} and
-        obj["RECORD"] == Record.LINE and obj["ISNOTACCESIBLE"] == b"T"):
+        int(obj["RECORD"]) == Record.LINE and obj["ISNOTACCESIBLE"] == b"T"):
             owner = objects[1 + int(obj["OWNERINDEX"])]
             if (obj["OWNERPARTID"] == owner["CURRENTPARTID"] and
             obj.get("OWNERPARTDISPLAYMODE", b"0") == owner.get("DISPLAYMODE", b"0")):
@@ -433,7 +434,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
                 )
         
         elif (obj.keys() - {"NAME", "SWAPIDPIN", "OWNERPARTDISPLAYMODE", "ELECTRICAL", "DESCRIPTION", "SWAPIDPART", "SYMBOL_OUTEREDGE"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "DESIGNATOR", "FORMALTYPE", "LOCATION.X", "LOCATION.Y", "PINCONGLOMERATE", "PINLENGTH"} and
-        obj["RECORD"] == Record.PIN and obj["FORMALTYPE"] == b"1"):
+        int(obj["RECORD"]) == Record.PIN and obj["FORMALTYPE"] == b"1"):
             if obj["OWNERPARTID"] == objects[1 + int(obj["OWNERINDEX"])]["CURRENTPARTID"]:
                 pinlength = int(obj["PINLENGTH"])
                 pinconglomerate = int(obj["PINCONGLOMERATE"])
@@ -446,7 +447,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
                         view.circle(2.85, (3.15, 0), width=0.6)
                         points.append(6)
                     points.append(pinlength)
-                    electrical = obj.get("ELECTRICAL", PinElectrical.INPUT)
+                    electrical = int(obj.get("ELECTRICAL", 0))
                     marker = pinmarkers[electrical]
                     if marker:
                         kw.update(startarrow=marker)
@@ -472,13 +473,14 @@ Renderer: """By default, the schematic is converted to an SVG file,
                         **kw)
         
         elif (obj.keys() - {"INDEXINSHEET", "ORIENTATION", "STYLE", "ISCROSSSHEETCONNECTOR"} == {"RECORD", "OWNERPARTID", "COLOR", "LOCATION.X", "LOCATION.Y", "SHOWNETNAME", "TEXT"} and
-        obj["RECORD"] == Record.POWER_OBJECT and obj["OWNERPARTID"] == b"-1"):
+        int(obj["RECORD"]) == Record.POWER_OBJECT and obj["OWNERPARTID"] == b"-1"):
             orient = obj.get("ORIENTATION")
             if obj.get("ISCROSSSHEETCONNECTOR") == b"T":
                 marker = dchevron
                 offset = 14
             else:
-                (marker, offset) = connmarkers.get(obj["STYLE"], (None, 0))
+                marker = int(obj["STYLE"])
+                (marker, offset) = connmarkers.get(marker, (None, 0))
             
             col = colour(obj["COLOR"])
             with renderer.view(colour=col, offset=get_location(obj)) as view:
@@ -500,7 +502,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
                     view.text(t, pos, horiz=horiz, vert=vert)
         
         elif (obj.keys() - {"INDEXINSHEET", "OWNERPARTDISPLAYMODE", "ISSOLID", "LINEWIDTH", "CORNERXRADIUS", "CORNERYRADIUS", "TRANSPARENT"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "AREACOLOR", "COLOR", "CORNER.X", "CORNER.Y", "ISNOTACCESIBLE", "LOCATION.X", "LOCATION.Y"} and
-        obj["RECORD"] in {Record.RECTANGLE, Record.ROUND_RECTANGLE} and obj["ISNOTACCESIBLE"] == b"T" and obj.get("ISSOLID", b"T") == b"T"):
+        int(obj["RECORD"]) in {Record.RECTANGLE, Record.ROUND_RECTANGLE} and obj["ISNOTACCESIBLE"] == b"T" and obj.get("ISSOLID", b"T") == b"T"):
             owner = objects[1 + int(obj["OWNERINDEX"])]
             if (obj["OWNERPARTID"] == owner["CURRENTPARTID"] and
             obj.get("OWNERPARTDISPLAYMODE", b"0") == owner.get("DISPLAYMODE", b"0")):
@@ -510,7 +512,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
                 a = get_location(obj)
                 b = (int(obj["CORNER." + x]) for x in "XY")
                 
-                if obj["RECORD"] == Record.ROUND_RECTANGLE:
+                if int(obj["RECORD"]) == Record.ROUND_RECTANGLE:
                     r = list()
                     for x in "XY":
                         radius = obj.get("CORNER{}RADIUS".format(x))
@@ -524,7 +526,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
                     renderer.rectangle(a, b, **kw)
         
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERPARTID", "COLOR", "FONTID", "LOCATION.X", "LOCATION.Y", "TEXT"} and
-        obj["RECORD"] == Record.NET_LABEL and obj["OWNERPARTID"] == b"-1"):
+        int(obj["RECORD"]) == Record.NET_LABEL and obj["OWNERPARTID"] == b"-1"):
             renderer.text(overline(obj["TEXT"]),
                 colour=colour(obj["COLOR"]),
                 offset=get_location(obj),
@@ -532,12 +534,12 @@ Renderer: """By default, the schematic is converted to an SVG file,
             )
         
         elif (obj.keys() - {"INDEXINSHEET", "OWNERPARTDISPLAYMODE", "STARTANGLE", "SECONDARYRADIUS"} == {"RECORD", "OWNERPARTID", "OWNERINDEX", "COLOR", "ENDANGLE", "ISNOTACCESIBLE", "LINEWIDTH", "LOCATION.X", "LOCATION.Y", "RADIUS"} and
-        obj["RECORD"] in {Record.ARC, Record.ELLIPTICAL_ARC} and obj["ISNOTACCESIBLE"] == b"T" and obj["LINEWIDTH"] == b"1" and obj.get("OWNERPARTDISPLAYMODE", b"1") == b"1"):
+        int(obj["RECORD"]) in {Record.ARC, Record.ELLIPTICAL_ARC} and obj["ISNOTACCESIBLE"] == b"T" and obj["LINEWIDTH"] == b"1" and obj.get("OWNERPARTDISPLAYMODE", b"1") == b"1"):
             owner = objects[1 + int(obj["OWNERINDEX"])]
             if (owner["CURRENTPARTID"] == obj["OWNERPARTID"] and
             owner.get("DISPLAYMODE", b"0") == obj.get("OWNERPARTDISPLAYMODE", b"0")):
                 r = int(obj["RADIUS"])
-                if obj["RECORD"] == Record.ELLIPTICAL_ARC:
+                if int(obj["RECORD"]) == Record.ELLIPTICAL_ARC:
                     r2 = obj.get("SECONDARYRADIUS")
                     if r2 is None:
                         r2 = 0
@@ -556,14 +558,14 @@ Renderer: """By default, the schematic is converted to an SVG file,
                 )
         
         elif (obj.keys() - {"INDEXINSHEET", "LINEWIDTH"} > {"RECORD", "AREACOLOR", "COLOR", "ISNOTACCESIBLE", "ISSOLID", "LOCATIONCOUNT", "OWNERINDEX", "OWNERPARTID"} and
-        obj["RECORD"] == Record.POLYGON and obj["AREACOLOR"] == b"16711680" and obj["ISNOTACCESIBLE"] == b"T" and obj["ISSOLID"] == b"T" and obj.get("LINEWIDTH", b"1") == b"1" and obj["OWNERPARTID"] == b"1"):
+        int(obj["RECORD"]) == Record.POLYGON and obj["AREACOLOR"] == b"16711680" and obj["ISNOTACCESIBLE"] == b"T" and obj["ISSOLID"] == b"T" and obj.get("LINEWIDTH", b"1") == b"1" and obj["OWNERPARTID"] == b"1"):
             points = list()
             for location in range(int(obj["LOCATIONCOUNT"])):
                 location = format(1 + location)
                 points.append(tuple(int(obj[x + location]) for x in "XY"))
             renderer.polygon(fill=colour(obj["COLOR"]), points=points)
         elif (obj.keys() - {"INDEXINSHEET", "ISNOTACCESIBLE", "OWNERINDEX", "ORIENTATION", "JUSTIFICATION", "COLOR"} == {"RECORD", "FONTID", "LOCATION.X", "LOCATION.Y", "OWNERPARTID", "TEXT"} and
-        obj["RECORD"] == Record.LABEL):
+        int(obj["RECORD"]) == Record.LABEL):
             if obj["OWNERPARTID"] == b"-1" or obj["OWNERPARTID"] == objects[1 + int(obj["OWNERINDEX"])]["CURRENTPARTID"]:
                 text(renderer, obj)
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "COLOR", "LOCATION.X", "LOCATION.Y", "OWNERPARTID"} and
@@ -571,7 +573,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
             col = colour(obj["COLOR"])
             renderer.draw(nc, get_location(obj), colour=col)
         elif (obj.keys() - {"CLIPTORECT"} == {"RECORD", "ALIGNMENT", "AREACOLOR", "CORNER.X", "CORNER.Y", "FONTID", "ISSOLID", "LOCATION.X", "LOCATION.Y", "OWNERPARTID", "Text", "WORDWRAP"} and
-        obj["RECORD"] == b"28" and obj["ALIGNMENT"] == b"1" and obj["AREACOLOR"] == b"16777215" and obj.get("CLIPTORECT", b"T") == b"T" and obj["ISSOLID"] == b"T" and obj["OWNERPARTID"] == b"-1" and obj["WORDWRAP"] == b"T"):
+        int(obj["RECORD"]) == Record.TEXT_FRAME and obj["ALIGNMENT"] == b"1" and obj["AREACOLOR"] == b"16777215" and obj.get("CLIPTORECT", b"T") == b"T" and obj["ISSOLID"] == b"T" and obj["OWNERPARTID"] == b"-1" and obj["WORDWRAP"] == b"T"):
             [lhs, _] = get_location(obj)
             renderer.text(
                 font=font_name(int(obj["FONTID"])),
@@ -582,7 +584,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
             )
         
         elif (obj.keys() == {"RECORD", "OWNERINDEX", "ISNOTACCESIBLE", "OWNERPARTID", "LINEWIDTH", "COLOR", "LOCATIONCOUNT", "X1", "Y1", "X2", "Y2", "X3", "Y3", "X4", "Y4"} and
-        obj["RECORD"] == Record.BEZIER and obj["ISNOTACCESIBLE"] == b"T" and obj["OWNERPARTID"] == b"1" and obj["LINEWIDTH"] == b"1" and obj["LOCATIONCOUNT"] == b"4"):
+        int(obj["RECORD"]) == Record.BEZIER and obj["ISNOTACCESIBLE"] == b"T" and obj["OWNERPARTID"] == b"1" and obj["LINEWIDTH"] == b"1" and obj["LOCATIONCOUNT"] == b"4"):
             col = colour(obj["COLOR"])
             points = list()
             for n in range(4):
@@ -591,7 +593,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
             renderer.cubicbezier(*points, colour=col)
         
         elif (obj.keys() - {"RADIUS_FRAC", "SECONDARYRADIUS_FRAC"} == {"RECORD", "OWNERINDEX", "ISNOTACCESIBLE", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "RADIUS", "SECONDARYRADIUS", "COLOR", "AREACOLOR", "ISSOLID"} and
-        obj["RECORD"] == Record.ELLIPSE and obj["ISNOTACCESIBLE"] == b"T" and obj["SECONDARYRADIUS"] == obj["RADIUS"] and obj["ISSOLID"] == b"T"):
+        int(obj["RECORD"]) == Record.ELLIPSE and obj["ISNOTACCESIBLE"] == b"T" and obj["SECONDARYRADIUS"] == obj["RADIUS"] and obj["ISSOLID"] == b"T"):
             renderer.circle(
                 r=get_int_frac(obj, "RADIUS"),
                 width=0.6,
@@ -600,7 +602,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
             )
         
         elif (obj.keys() - {"INDEXINSHEET", "SYMBOLTYPE"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "XSIZE", "YSIZE", "COLOR", "AREACOLOR", "ISSOLID", "UNIQUEID"} and
-        obj["RECORD"] == Record.SHEET_SYMBOL and obj["OWNERPARTID"] == b"-1" and obj["ISSOLID"] == b"T" and obj.get("SYMBOLTYPE", b"Normal") == b"Normal"):
+        int(obj["RECORD"]) == Record.SHEET_SYMBOL and obj["OWNERPARTID"] == b"-1" and obj["ISSOLID"] == b"T" and obj.get("SYMBOLTYPE", b"Normal") == b"Normal"):
             renderer.rectangle((int(obj["XSIZE"]), -int(obj["YSIZE"])),
                 width=0.6,
                 outline=colour(obj["COLOR"]), fill=colour(obj["AREACOLOR"]),
@@ -608,11 +610,11 @@ Renderer: """By default, the schematic is converted to an SVG file,
             )
         
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR", "FONTID", "TEXT"} and
-        obj["RECORD"] in {Record.SHEET_NAME, Record.SHEET_FILE_NAME} and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
+        int(obj["RECORD"]) in {Record.SHEET_NAME, Record.SHEET_FILE_NAME} and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
             text(renderer, obj)
         
         elif (obj.keys() - {"CORNER.X_FRAC", "CORNER.Y_FRAC"} == {"RECORD", "OWNERINDEX", "INDEXINSHEET", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "CORNER.X", "CORNER.Y", "EMBEDIMAGE", "FILENAME"} and
-        obj["RECORD"] == Record.IMAGE and obj["OWNERINDEX"] == b"1" and obj["OWNERPARTID"] == b"-1" and obj["EMBEDIMAGE"] == b"T"):
+        int(obj["RECORD"]) == Record.IMAGE and obj["OWNERINDEX"] == b"1" and obj["OWNERPARTID"] == b"-1" and obj["EMBEDIMAGE"] == b"T"):
             corner = list()
             for x in "XY":
                 corner.append(get_int_frac(obj, "CORNER." + x))
