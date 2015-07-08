@@ -96,6 +96,8 @@ class SheetStyle:
     A4 = b"0"
     A3 = b"1"
     A = b"5"
+    B = b"6"
+    C = b"7"
 
 import vector
 from sys import stderr
@@ -244,7 +246,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
     
     for obj in objects:
         if (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR"} and
-        obj["RECORD"] == b"29" and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
+        obj["RECORD"] == Record.JUNCTION and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
             location = (int(obj["LOCATION." + x]) for x in "XY")
             col = colour(obj["COLOR"])
             renderer.circle(2, location, fill=col)
@@ -544,7 +546,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
         
         elif (obj.keys() - {"INDEXINSHEET", "SYMBOLTYPE"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "XSIZE", "YSIZE", "COLOR", "AREACOLOR", "ISSOLID", "UNIQUEID"} and
         obj["RECORD"] == Record.SHEET_SYMBOL and obj["OWNERPARTID"] == b"-1" and obj["ISSOLID"] == b"T" and obj.get("SYMBOLTYPE", b"Normal") == b"Normal"):
-            renderer.rectangle((int(obj["XSIZE"]), int(obj["YSIZE"])),
+            renderer.rectangle((int(obj["XSIZE"]), -int(obj["YSIZE"])),
                 width=0.6,
                 outline=colour(obj["COLOR"]), fill=colour(obj["AREACOLOR"]),
                 offset=(int(obj["LOCATION." + x]) for x in "XY"),

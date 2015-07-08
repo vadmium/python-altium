@@ -92,10 +92,9 @@ Exceptions include `|Text` for text frame objects,
 
 Common data types represented by properties:
 
-* Strings (eParameterType_String):
-    Most properties are directly decodable as ASCII strings,
+* Strings: Most properties are directly decodable as ASCII strings,
     although the byte 0x8E has been seen bracketing parts of some strings
-* Decimal integers (eParameterType_Integer): `|RECORD=31`, `|OWNERPARTID=-1`.
+* Decimal integers: `|RECORD=31`, `|OWNERPARTID=-1`.
     Default value if property is missing seems to be 0.
     * Enumerated types: `|RECORD=1`/`2`/. . ., `|RECORD=17|STYLE=1`/`2`/. . .
     * Bitfields:
@@ -105,9 +104,8 @@ Common data types represented by properties:
             * 0–7: Red
             * 8–15: Green
             * 16–23: Blue
-* Decimal numbers with fractional part (eParameterType_Float):
-    `|ENDANGLE=360.000`
-* Boolean (eParameterType_Boolean): `|ISHIDDEN=T|PARTIDLOCKED=F`
+* Decimal numbers with fractional part: `|ENDANGLE=360.000`
+* Boolean: `|ISHIDDEN=T|PARTIDLOCKED=F`
 * Co-ordinate pairs (points): `|LOCATION.X=200|LOCATION.Y=100`
 * Lists:
     `|FONTIDCOUNT=2|SIZE1=10|FONTNAME1=`. . .`|SIZE2=10|FONTNAME2=`. . .
@@ -174,24 +172,23 @@ The component object seems to occur before any of its child objects.
 * `|SYMBOL_OUTEREDGE=1`: Optional.
     If present, a bubble is shown, indicating negative logic.
 * `|FORMALTYPE=1`
-* `|ELECTRICAL`: TPinElectrical: Signal type on pin
-    * 0 (eElectricInput, default): Input. Arrow pointing into component.
-    * 1 (eElectricIO): Bidirectional. Diamond.
-    * 2 (eElectricOutput): Output.
-        Arrow (triangle) pointing out of component
-    * 3 (eElectricOpenCollector): Open collector
-    * 4 (eElectricPassive): Passive. No symbol.
-    * 5 (eElectricHiZ): Tri-state?
-    * 6 (eElectricOpenEmitter): Open emitter
-    * 7 (eElectricPower): Power. No symbol.
+* `|ELECTRICAL`: Signal type on pin
+    * 0 (default): Input. Arrow pointing into component.
+    * 1: Input and output (bidirectional). Diamond.
+    * 2: Output. Arrow (triangle) pointing out of component
+    * 3: Open collector
+    * 4: Passive. No symbol.
+    * 5: Hi-Z (tri-state?)
+    * 6: Open emitter
+    * 7: Power. No symbol.
 * `|PINCONGLOMERATE=`_integer_: Bit map:
-    * 0–1 (Orientation): TRotateBy90: Pin direction:
-        * 0 (eRotate0): Rightwards
-        * 1 (eRotate90): Upwards
-        * 2 (eRotate180): Leftwards
-        * 3 (eRotate270): Downwards
-    * 3 (ShowName): Pin name shown
-    * 4 (ShowDesignator): Pin number shown
+    * 0–1: TRotateBy90: Pin orientation:
+        * 0: Rightwards (0°)
+        * 1: Upwards (90°)
+        * 2: Leftwards (180°)
+        * 3: Downwards (270°)
+    * 3: Pin name shown
+    * 4: Designator shown
 * `|PINLENGTH=`_integer_
 * `|LOCATION.X|LOCATION.Y`: Point where pin line extends from component
 * `|NAME`: Pin function, shown inside component, opposite the pin line.
@@ -301,7 +298,9 @@ Unable to get arcs in exclusive “or” gate to line up.
 `|RECORD=15`: Box to go on a top-level schematic
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=-1`
-* `|LOCATION.X|LOCATION.Y|XSIZE|YSIZE`
+* `|LOCATION.X|LOCATION.Y`: Top left corner (not bottom left like
+    other objects!)
+* `|XSIZE|YSIZE`: Positive integers
 * `|COLOR|AREACOLOR|ISSOLID=T|UNIQUEID`
 * `|SYMBOLTYPE=Normal`: Optional
 
@@ -310,10 +309,12 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=-1`
 * `|STYLE`: Optional. Marker symbol:
-    * 1 (ePowerArrow): Arrow
-    * 2 (ePowerBar): Tee off rail
-    * 3 (eGndPower): Ground (broken triangle, made of horizontal lines)
-    * 4 (eGnd?): Ground (earth ground)
+    * Circle (?)
+    * 1: Arrow
+    * 2: Tee off rail (bar)
+    * Wave (?)
+    * 4: Ground (broken triangle, made of horizontal lines)
+    * Power ground, earth ground, earth (?)
 * `|SHOWNETNAME=T`
 * `|LOCATION.X|LOCATION.Y`: Point of connection
 * `|ORIENTATION=`_integer_: TRotateBy90: Direction the marker points
@@ -411,11 +412,17 @@ with properties for the entire schematic
         but the text objects themselves already indicate the orientation.
     * `|FONTNAME`_n_`=Times New Roman`
 * `|USEMBCS=T|ISBOC=T|HOTSPOTGRIDON=T|HOTSPOTGRIDON=T|HOTSPOTGRIDSIZE`
-* `|SHEETSTYLE`: Dimensions tend to be slightly smaller than the actual
-    paper size
+* `|SHEETSTYLE`: Selects a metric or imperial (ANSI?) paper size.
+    The drawing area (size of the grid rectangle) is given below,
+    and tends to be slightly smaller than the corresponding
+    paper size.
     * 0 (default): “A4”, 1150 × 760
     * 1: “A3”, 1550 × 1150
+    * A2, A1, A0 (?)
     * 5: “A”, 950 × 760
+    * 6: “B”
+    * 7: “C”
+    * Letter (= ANSI A?), Legal, Tabloid (= ANSI B?), OrCAD A–E (?)
 * `|SYSTEMFONT=1`: Presumably a font number to use as a default
 * `|BORDERON=T`
 * `|TITLEBLOCKON=T`:
@@ -445,8 +452,9 @@ Labels on top-level schematic
 * `|COLOR=8388608` (= #000080)
 * `|FONTID`
 * `|TEXT`: Has a letter appended based on `|RECORD=1|PARTCOUNT|CURRENTPARTID`
-* `|NAME`=Designator
-* `|READONLYSTATE=1` (TParameter_ReadOnlyState? = eReadOnly_Name?)
+* `|NAME=Designator`
+* `|READONLYSTATE`:
+    * 1: Name is read-only?
 * `|ISMIRRORED=T`: Optional
 
 ### 39 ###
@@ -473,9 +481,8 @@ Labels on top-level schematic
     whose `|NAME` matches the rest of the text,
     and the actual text is taken
     from the referenced parameter’s `|TEXT` property.
-* `|ISHIDDEN=T`: Optional
 * `|NAME`
-* `|READONLYSTATE=1` (TParameter_ReadOnlyState? = eReadOnly_Name?)
+* `|READONLYSTATE`: Same as for [Designator](#designator)?
 * `|UNIQUEID|ISMIRRORED=T`: Each optional
 
 ### Warning sign ###
