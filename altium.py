@@ -49,10 +49,7 @@ def get_sheet(objects):
     return sheet
 
 def get_sheet_style(sheet):
-    '''Returns the size of the sheet: (name, (width, height))
-    
-    Units are 1/100" = 10 mils = 0.254 mm.'''
-    
+    '''Returns the size of the sheet: (name, (width, height))'''
     STYLES = {
         SheetStyle.A4: ("A4", (1150, 760)),
         SheetStyle.A3: ("A3", (1550, 1150)),
@@ -62,6 +59,11 @@ def get_sheet_style(sheet):
     if "USECUSTOMSHEET" in sheet:
         size = tuple(int(sheet["CUSTOM" + "XY"[x]]) for x in range(2))
     return (sheetstyle, size)
+
+# Sizes and locations are in 1/100" = 10 mil = 0.254 mm units
+INCH_SIZE = 100
+UNIT_MILS = 10
+UNIT_MM = 0.254
 
 def iter_fonts(sheet):
     '''Yield a dictionary for each font defined for a sheet
@@ -170,7 +172,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
     
     sheet = get_sheet(objects)
     [sheetstyle, size] = get_sheet_style(sheet)
-    renderer = Renderer(size, "in", 1/100,
+    renderer = Renderer(size, "in", 1 / INCH_SIZE,
         margin=0.3, line=1, down=-1, textbottom=True)
     
     for font in iter_fonts(sheet):
