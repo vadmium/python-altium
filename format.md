@@ -401,7 +401,7 @@ Component designator label
 * `|COLOR=8388608` (= #000080)
 * `|FONTID`
 * `|TEXT`: Has a letter appended based on `|RECORD=1|PARTCOUNT|CURRENTPARTID`
-* `|NAME`=Designator
+* `|NAME=Designator`
 * `|READONLYSTATE`:
     * 1: Name is read-only?
 * `|ISMIRRORED=T`: Optional
@@ -429,7 +429,6 @@ Label, such as component value
     whose `|NAME` matches the rest of the text,
     and the actual text is taken
     from the referenced parameter’s `|TEXT` property.
-* `|ISHIDDEN=T`: Optional
 * `|NAME`
 * `|READONLYSTATE`: Same as for [Designator](#designator)?
 * `|UNIQUEID|ISMIRRORED=T`: Each optional
