@@ -465,6 +465,8 @@ with properties for the entire schematic
 * `|CUSTOMX|CUSTOMY`: Dimensions of sheet.
     Should probably ignore this unless `|USECUSTOMSHEET=T` provided.
 * `|USECUSTOMSHEET=T`: Optional
+* `|WORKSPACEORIENTATION=1`: Portrait instead of landscape orientation for
+    `|SHEETSTYLE`. How does this interact with `|USECUSTOMSHEET=T`?
 * `|CUSTOMXZONES=6|CUSTOMYZONES=4|CUSTOMMARGINWIDTH=20|DISPLAY_UNIT=4`
 * `|REFERENCEZONESON=T`: Optional
 
