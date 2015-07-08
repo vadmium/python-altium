@@ -101,9 +101,9 @@ Common data types represented by properties:
         `|COLOR=8388608` (= 0x800000), `|PINCONGLOMERATE=58` (= 0x3A)
         * RGB colours: `|COLOR=128|AREACOLOR=11599871` (= #800000, #FFFFB0)
             Inherited from Delphi TColor data type.
-            * 0–7: Red
-            * 8–15: Green
-            * 16–23: Blue
+            * Bits 0–7, mask 0x0000FF: Red
+            * Bits 8–15, mask 0x00FF00: Green
+            * Bits 16–23, mask 0xFF0000: Blue
 * Decimal numbers with fractional part: `|ENDANGLE=360.000`
 * Boolean: `|ISHIDDEN=T|PARTIDLOCKED=F`
 * Co-ordinate pairs (points): `|LOCATION.X=200|LOCATION.Y=100`
@@ -182,13 +182,13 @@ The component object seems to occur before any of its child objects.
     * 6: Open emitter
     * 7: Power. No symbol.
 * `|PINCONGLOMERATE=`_integer_: Bit map:
-    * 0–1: TRotateBy90: Pin orientation:
+    * Bits 0–1, mask 0x03: TRotateBy90: Pin orientation:
         * 0: Rightwards (0°)
         * 1: Upwards (90°)
         * 2: Leftwards (180°)
         * 3: Downwards (270°)
-    * 3: Pin name shown
-    * 4: Designator shown
+    * Bit 3, mask 0x08: Pin name shown
+    * Bit 4, mask 0x10: Designator shown
 * `|PINLENGTH=`_integer_
 * `|LOCATION.X|LOCATION.Y`: Point where pin line extends from component
 * `|NAME`: Pin function, shown inside component, opposite the pin line.
