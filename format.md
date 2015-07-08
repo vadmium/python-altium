@@ -11,6 +11,7 @@ Contents:
 * [OLE compound document](#ole-compound-document)
 * [FileHeader](#fileheader)
 * [Property list](#property-list)
+* [Data types](#data-types): [Integer], [Real], [Boolean]
 * [Object records](#object-records)
     * [1: Schematic component](#schematic-component)
     * [2: Pin](#pin)
@@ -90,45 +91,61 @@ with words run together without underscores or any other punctuation.
 Exceptions include `|Text` for text frame objects,
 `|DISPLAY_UNIT` for sheet objects, and some properties for co-ordinates.
 
-Common data types represented by properties:
+## Data types ##
+
+Some simple common data types represented by properties:
 
 * Strings: Most properties are directly decodable as ASCII strings,
     although the byte 0x8E has been seen bracketing parts of some strings
-* Decimal integers: `|RECORD=31`, `|OWNERPARTID=-1`.
-    Default value if property is missing seems to be 0.
-    * Enumerated types: `|RECORD=1`/`2`/. . ., `|RECORD=17|STYLE=1`/`2`/. . .
-    * Bitfields:
-        `|COLOR=8388608` (= 0x800000), `|PINCONGLOMERATE=58` (= 0x3A)
-        * RGB colours: `|COLOR=128|AREACOLOR=11599871` (= #800000, #FFFFB0)
-            Inherited from Delphi TColor data type.
-            * Bits 0–7, mask 0x0000FF: Red
-            * Bits 8–15, mask 0x00FF00: Green
-            * Bits 16–23, mask 0xFF0000: Blue
-* Decimal numbers with fractional part: `|ENDANGLE=360.000`
-* Boolean: `|ISHIDDEN=T|PARTIDLOCKED=F`
 * Co-ordinate pairs (points): `|LOCATION.X=200|LOCATION.Y=100`
 * Lists:
     `|FONTIDCOUNT=2|SIZE1=10|FONTNAME1=`. . .`|SIZE2=10|FONTNAME2=`. . .
 * Co-ordinate lists: `|LOCATIONCOUNT=2|X1=100|Y1=100|X2=200|Y2=100`
-
----
-
-* TRotateBy90: 0 is default (rightwards)
+* TRotateBy90: An enumerated [integer] type. Default is 0 (rightwards).
 
 The origin (0, 0) is at the bottom left corner, and the _y_ values
-increase from bottom to top. Dimensions and positions are in units of
-1/100″ = 10 mils = 0.254 mm.
+increase from bottom to top. Sizes and locations are in units of
+1/100″ = 10 mils = 0.254 mm. Each dimension or co-ordinate is usually given
+as an [integer] property.
+
+### Integers ###
+[Integer]: #integers
+
+Decimal integers: `|RECORD=31`, `|OWNERPARTID=-1`.
+Default value if property is missing seems to be 0.
+* Enumerated types: `|RECORD=1`/`2`/. . ., `|RECORD=17|STYLE=1`/`2`/. . .
+* Bitfields:
+    `|COLOR=8388608` (= 0x800000), `|PINCONGLOMERATE=58` (= 0x3A)
+    * RGB colours: `|COLOR=128|AREACOLOR=11599871` (= #800000, #FFFFB0)
+        Inherited from Delphi TColor data type.
+        * Bits 0–7, mask 0x0000FF: Red
+        * Bits 8–15, mask 0x00FF00: Green
+        * Bits 16–23, mask 0xFF0000: Blue
+
+### Real numbers ###
+[Real]: #real-numbers
+
+Decimal numbers with a fractional part: `|ENDANGLE=360.000`, encoding angles.
+Typically three decimal places. Property omitted when the value is zero.
+
+### Boolean ###
+[Boolean]: #boolean
+
+`|ISHIDDEN=T|PARTIDLOCKED=F`. When false, the property is often omitted,
+rather than explicitly set to `F`.
+
+## Object records ##
 
 Each item in the “FileHeader” stream describes an object.
 The first object is a header object with the following properties:
 * `|HEADER=Protel for Windows - Schematic Capture Binary File Version 5.0`
-* `|WEIGHT=`_integer_: number of remaining objects
+* `|WEIGHT=`_[integer]_: number of remaining objects
 
 All subsequent objects are indexed starting from zero, so that
 the object at index zero is the record directly following the header object.
 The type of these objects is identified by their `|RECORD` properties.
-
-## Object record types ##
+(The header object could actually be record type 0, but the property is
+omitted because zero is the default value.)
 
 If a property is given with a value below, that documents that
 it has only ever been seen with that particular value.
@@ -140,18 +157,18 @@ which are “owned” by the component.
 The component object seems to occur before any of its child objects.
 * `|LIBREFERENCE`
 * `|COMPONENTDESCRIPTION`: Optional
-* `|PARTCOUNT=`_integer_: Number of separated parts within component
+* `|PARTCOUNT=`_[integer]_: Number of separated parts within component
     (e.g. there might be four parts in a quad op-amp component).
     The value seems to be one more than you would expect,
     so 2 implies a normal component, and the quad op-amp would have 5.
-* `|DISPLAYMODECOUNT=`_integer_: Number of alternative symbols for part
+* `|DISPLAYMODECOUNT=`_[integer]_: Number of alternative symbols for part
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=-1|LOCATION.X|LOCATION.Y`
 * `|DISPLAYMODE`: Default is 0.
     Objects belonging to this part should only be displayed
     if their `|OWNERPARTDISPLAYMODE` property matches.
 * `|ISMIRRORED=T|ORIENTATION`: Optional
-* `|CURRENTPARTID=`_integer_:
+* `|CURRENTPARTID=`_[integer]_:
     Objects belonging to this part
     with `|OWNERPARTID` set to a different number (other than −1)
     should probably be ignored, otherwise each part of a quad op amp
@@ -189,7 +206,7 @@ The component object seems to occur before any of its child objects.
         * 3: Downwards (270°)
     * Bit 3, mask 0x08: Pin name shown
     * Bit 4, mask 0x10: Designator shown
-* `|PINLENGTH=`_integer_
+* `|PINLENGTH=`_[integer]_
 * `|LOCATION.X|LOCATION.Y`: Point where pin line extends from component
 * `|NAME`: Pin function, shown inside component, opposite the pin line.
     May not be present even if ShowName flag is set.
@@ -262,9 +279,9 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|OWNERPARTID`: See `|RECORD=1|CURRENTPARTID`
 * `|OWNERPARTDISPLAYMODE`: See `|RECORD=1|DISPLAYMODE`
 * `|LOCATION.X|LOCATION.Y`: Centre of circle
-* `|RADIUS=`_integer_`|LINEWIDTH=1`
-* `|STARTANGLE=`_fixed point_: Default 0; 0 for full circle
-* `|ENDANGLE=`_fixed point_: 360.000 for full circle
+* `|RADIUS=`_[integer]_`|LINEWIDTH=1`
+* `|STARTANGLE=`_[real]_: Default 0; 0 for full circle
+* `|ENDANGLE=`_[real]_: 360.000 for full circle
 * `|COLOR`
 
 ### Line ###
@@ -300,7 +317,7 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.Y`: Top left corner (not bottom left like
     other objects!)
-* `|XSIZE|YSIZE`: Positive integers
+* `|XSIZE|YSIZE`: Positive [integers](#integers)
 * `|COLOR|AREACOLOR|ISSOLID=T|UNIQUEID`
 * `|SYMBOLTYPE=Normal`: Optional
 
@@ -317,7 +334,7 @@ Unable to get arcs in exclusive “or” gate to line up.
     * Power ground, earth ground, earth (?)
 * `|SHOWNETNAME=T`
 * `|LOCATION.X|LOCATION.Y`: Point of connection
-* `|ORIENTATION=`_integer_: TRotateBy90: Direction the marker points
+* `|ORIENTATION=`_[integer]_: TRotateBy90: Direction the marker points
 * `|COLOR`
 * `|TEXT`: Shown beyond the marker
 * `|ISCROSSSHEETCONNECTOR`: Optional.
@@ -327,17 +344,17 @@ Unable to get arcs in exclusive “or” gate to line up.
 `|RECORD=18`: Labelled connection
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=-1`
-* `|STYLE=`_integer_
+* `|STYLE=`_[integer]_
     * 3: Extends from the specified location towards the right
     * 7: Upwards (rotated CW, then translated!)
 * `|IOTYPE=3`: Optional.
     If present, the label has angled points on both ends,
     otherwise, the left edge is flat and the right edge is angled.
-* `|ALIGNMENT=`_integer_ (Opposite for upwards style)
+* `|ALIGNMENT=`_[integer]_ (Opposite for upwards style)
     * Not present: ?
     * 1: Text is right-aligned
     * 2: Left-aligned
-* `|WIDTH=`_integer_
+* `|WIDTH=`_[integer]_
 * `|LOCATION.X|LOCATION.Y`
 * `|COLOR`
 * `|AREACOLOR=8454143` (= #FFFF80)
