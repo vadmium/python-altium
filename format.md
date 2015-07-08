@@ -286,7 +286,8 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|LOCATION.X|LOCATION.Y`: Centre of circle
 * `|RADIUS=`_[integer]_`|LINEWIDTH=1`
 * `|STARTANGLE=`_[real]_: Default 0; 0 for full circle
-* `|ENDANGLE=`_[real]_: 360.000 for full circle
+* `|ENDANGLE=`_[real]_: 360.000 for full circle. Setting both to zero may
+    also specify a full circle.
 * `|COLOR`
 
 ### Line ###

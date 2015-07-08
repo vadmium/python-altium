@@ -494,6 +494,9 @@ Renderer: """By default, the schematic is converted to an SVG file,
                 
                 start = float(obj.get("STARTANGLE", 0))
                 end = float(obj["ENDANGLE"])
+                if end == start:  # Full circle rather than a zero-length arc
+                    start = 0
+                    end = 360
                 centre = (int(obj["LOCATION." + x]) for x in "XY")
                 renderer.arc((r, r2), start, end, centre,
                     colour=colour(obj["COLOR"]),
