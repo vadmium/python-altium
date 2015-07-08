@@ -58,6 +58,9 @@ def get_sheet_style(sheet):
     [sheetstyle, size] = STYLES[sheet.get("SHEETSTYLE", SheetStyle.A4)]
     if "USECUSTOMSHEET" in sheet:
         size = tuple(int(sheet["CUSTOM" + "XY"[x]]) for x in range(2))
+    if int(sheet.get("WORKSPACEORIENTATION", 0)):
+        [height, width] = size
+        size = (width, height)
     return (sheetstyle, size)
 
 # Sizes and locations are in 1/100" = 10 mil = 0.254 mm units
