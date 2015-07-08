@@ -360,10 +360,17 @@ with properties for the entire schematic
         but the text objects themselves already indicate the orientation.
     * `|FONTNAME`_n_`=Times New Roman`
 * `|USEMBCS=T|ISBOC=T|HOTSPOTGRIDON=T|HOTSPOTGRIDON=T|HOTSPOTGRIDSIZE`
-* `|SHEETSTYLE`
+* `|SHEETSTYLE`: Selects a metric or imperial (ANSI?) paper size.
+    The drawing area (size of the grid rectangle) is given below,
+    and tends to be slightly smaller than the corresponding
+    paper size.
     * 0 (default): “A4”, 1150 × 760
     * 1: “A3”, 1550 × 1150
+    * A2, A1, A0 (?)
     * 5: “A”, 950 × 760
+    * 6: “B”
+    * 7: “C”
+    * Letter (= ANSI A?), Legal, Tabloid (= ANSI B?), OrCAD A–E (?)
 * `|SYSTEMFONT=1`: Presumably a font number to use as a default
 * `|BORDERON=T`
 * `|TITLEBLOCKON=T`:

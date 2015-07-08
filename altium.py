@@ -96,6 +96,8 @@ class SheetStyle:
     A4 = b"0"
     A3 = b"1"
     A = b"5"
+    B = b"6"
+    C = b"7"
 
 import vector
 from sys import stderr
