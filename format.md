@@ -264,10 +264,12 @@ Connection to power rail, ground, etc
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=-1`
 * `|STYLE`: Optional. Marker symbol:
+    * Circle (?)
     * 1: Arrow
     * 2: Tee off rail (bar)
-    * 3: Ground (broken triangle, made of horizontal lines)
-    * 4: Ground (earth ground)
+    * Wave (?)
+    * 4: Ground (broken triangle, made of horizontal lines)
+    * Power ground, earth ground, earth (?)
 * `|SHOWNETNAME=T`
 * `|LOCATION.X|LOCATION.Y`: Point of connection
 * `|ORIENTATION=`_integer_: TRotateBy90: Direction the marker points
