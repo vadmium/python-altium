@@ -73,6 +73,7 @@ def get_sheet_style(sheet):
 INCH_SIZE = 100
 UNIT_MILS = 10
 UNIT_MM = 0.254
+FRAC_DENOM = int(100e3)  # _FRAC properties are in 1/100,000 units
 
 def iter_fonts(sheet):
     '''Yield a dictionary for each font defined for a sheet
@@ -94,6 +95,16 @@ def iter_fonts(sheet):
             italic=bool(sheet.get("ITALIC" + n)),
             bold=bool(sheet.get("BOLD" + n)),
         )
+
+def get_int_frac(obj, property):
+    '''Return full value of a field with separate integer and fraction'''
+    value = int(obj[property])
+    value += int(obj.get(property + "_FRAC", 0)) / FRAC_DENOM
+    return value
+
+def get_location(obj):
+    '''Return location property co-ordinates as a tuple'''
+    return tuple(get_int_frac(obj, "LOCATION." + x) for x in "XY")
 
 class Record:
     """Schematic object record types"""
@@ -292,9 +303,8 @@ Renderer: """By default, the schematic is converted to an SVG file,
     for obj in objects:
         if (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR"} and
         obj["RECORD"] == Record.JUNCTION and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
-            location = (int(obj["LOCATION." + x]) for x in "XY")
             col = colour(obj["COLOR"])
-            renderer.circle(2, location, fill=col)
+            renderer.circle(2, get_location(obj), fill=col)
         
         elif (obj.keys() - {"INDEXINSHEET", "IOTYPE", "ALIGNMENT"} == {"RECORD", "OWNERPARTID", "STYLE", "WIDTH", "LOCATION.X", "LOCATION.Y", "COLOR", "AREACOLOR", "TEXTCOLOR", "NAME", "UNIQUEID"} and
         obj["RECORD"] == Record.PORT and obj["OWNERPARTID"] == b"-1"):
@@ -315,8 +325,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
                 shapekw = dict(rotate=+90, offset=(0, +width))
             else:
                 shapekw = dict()
-            offset = (int(obj["LOCATION." + x]) for x in "XY")
-            with renderer.view(offset=offset) as view:
+            with renderer.view(offset=get_location(obj)) as view:
                 view.polygon(points,
                     width=0.6,
                     outline=colour(obj["COLOR"]),
@@ -383,7 +392,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
                         raise LookupError("Parameter value for |OWNERINDEX={}|TEXT={}".format(obj["OWNERINDEX"].decode("ascii"), obj["TEXT"].decode("ascii")))
                     renderer.text(val.decode("ascii"),
                         colour=colour(obj["COLOR"]),
-                        offset=(int(obj["LOCATION." + x]) for x in "XY"),
+                        offset=get_location(obj),
                         font=font_name(int(obj["FONTID"])),
                     **kw)
                 else:
@@ -395,7 +404,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
             owner = objects[1 + int(obj["OWNERINDEX"])]
             if int(owner["PARTCOUNT"]) > 2:
                 desig += chr(ord("A") + int(owner["CURRENTPARTID"]) - 1)
-            renderer.text(desig, (int(obj["LOCATION." + x]) for x in "XY"),
+            renderer.text(desig, get_location(obj),
                 colour=colour(obj["COLOR"]),
                 font=font_name(int(obj["FONTID"])),
             )
@@ -419,7 +428,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
                 renderer.line(
                     colour=colour(obj["COLOR"]),
                     width=int(obj["LINEWIDTH"]),
-                    a=(int(obj["LOCATION." + x]) for x in "XY"),
+                    a=get_location(obj),
                     b=(int(obj["CORNER." + x]) for x in "XY"),
                 )
         
@@ -428,7 +437,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
             if obj["OWNERPARTID"] == objects[1 + int(obj["OWNERINDEX"])]["CURRENTPARTID"]:
                 pinlength = int(obj["PINLENGTH"])
                 pinconglomerate = int(obj["PINCONGLOMERATE"])
-                offset = (int(obj["LOCATION." + x]) for x in "XY")
+                offset = get_location(obj)
                 rotate = pinconglomerate & 3
                 with renderer.view(offset=offset, rotate=rotate) as view:
                     kw = dict()
@@ -472,8 +481,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
                 (marker, offset) = connmarkers.get(obj["STYLE"], (None, 0))
             
             col = colour(obj["COLOR"])
-            translate = (int(obj["LOCATION." + x]) for x in "XY")
-            with renderer.view(colour=col, offset=translate) as view:
+            with renderer.view(colour=col, offset=get_location(obj)) as view:
                 kw = dict()
                 if orient:
                     kw.update(rotate=int(orient))
@@ -499,7 +507,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
                 kw = dict(width=0.6, outline=colour(obj["COLOR"]))
                 if "ISSOLID" in obj:
                     kw.update(fill=colour(obj["AREACOLOR"]))
-                a = (int(obj["LOCATION." + x]) for x in "XY")
+                a = get_location(obj)
                 b = (int(obj["CORNER." + x]) for x in "XY")
                 
                 if obj["RECORD"] == Record.ROUND_RECTANGLE:
@@ -519,7 +527,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
         obj["RECORD"] == Record.NET_LABEL and obj["OWNERPARTID"] == b"-1"):
             renderer.text(overline(obj["TEXT"]),
                 colour=colour(obj["COLOR"]),
-                offset=(int(obj["LOCATION." + x]) for x in "XY"),
+                offset=get_location(obj),
                 font=font_name(int(obj["FONTID"])),
             )
         
@@ -543,8 +551,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
                 if end == start:  # Full circle rather than a zero-length arc
                     start = 0
                     end = 360
-                centre = (int(obj["LOCATION." + x]) for x in "XY")
-                renderer.arc((r, r2), start, end, centre,
+                renderer.arc((r, r2), start, end, get_location(obj),
                     colour=colour(obj["COLOR"]),
                 )
         
@@ -562,11 +569,10 @@ Renderer: """By default, the schematic is converted to an SVG file,
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "COLOR", "LOCATION.X", "LOCATION.Y", "OWNERPARTID"} and
         obj["RECORD"] == b"22" and obj["OWNERPARTID"] == b"-1"):
             col = colour(obj["COLOR"])
-            location = (int(obj["LOCATION." + x]) for x in "XY")
-            renderer.draw(nc, location, colour=col)
+            renderer.draw(nc, get_location(obj), colour=col)
         elif (obj.keys() - {"CLIPTORECT"} == {"RECORD", "ALIGNMENT", "AREACOLOR", "CORNER.X", "CORNER.Y", "FONTID", "ISSOLID", "LOCATION.X", "LOCATION.Y", "OWNERPARTID", "Text", "WORDWRAP"} and
         obj["RECORD"] == b"28" and obj["ALIGNMENT"] == b"1" and obj["AREACOLOR"] == b"16777215" and obj.get("CLIPTORECT", b"T") == b"T" and obj["ISSOLID"] == b"T" and obj["OWNERPARTID"] == b"-1" and obj["WORDWRAP"] == b"T"):
-            lhs = int(obj["LOCATION.X"])
+            [lhs, _] = get_location(obj)
             renderer.text(
                 font=font_name(int(obj["FONTID"])),
                 offset=(lhs, int(obj["CORNER.Y"])),
@@ -585,12 +591,12 @@ Renderer: """By default, the schematic is converted to an SVG file,
             renderer.cubicbezier(*points, colour=col)
         
         elif (obj.keys() - {"RADIUS_FRAC", "SECONDARYRADIUS_FRAC"} == {"RECORD", "OWNERINDEX", "ISNOTACCESIBLE", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "RADIUS", "SECONDARYRADIUS", "COLOR", "AREACOLOR", "ISSOLID"} and
-        obj["RECORD"] == Record.ELLIPSE and obj["ISNOTACCESIBLE"] == b"T" and obj.get("RADIUS_FRAC", b"94381") == b"94381" and obj["SECONDARYRADIUS"] == obj["RADIUS"] and obj.get("SECONDARYRADIUS_FRAC", b"22993") == b"22993" and obj["ISSOLID"] == b"T"):
+        obj["RECORD"] == Record.ELLIPSE and obj["ISNOTACCESIBLE"] == b"T" and obj["SECONDARYRADIUS"] == obj["RADIUS"] and obj["ISSOLID"] == b"T"):
             renderer.circle(
-                r=int(obj["RADIUS"]),
+                r=get_int_frac(obj, "RADIUS"),
                 width=0.6,
                 outline=colour(obj["COLOR"]), fill=colour(obj["AREACOLOR"]),
-                offset=(int(obj["LOCATION." + x]) for x in "XY"),
+                offset=get_location(obj),
             )
         
         elif (obj.keys() - {"INDEXINSHEET", "SYMBOLTYPE"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "XSIZE", "YSIZE", "COLOR", "AREACOLOR", "ISSOLID", "UNIQUEID"} and
@@ -598,21 +604,19 @@ Renderer: """By default, the schematic is converted to an SVG file,
             renderer.rectangle((int(obj["XSIZE"]), -int(obj["YSIZE"])),
                 width=0.6,
                 outline=colour(obj["COLOR"]), fill=colour(obj["AREACOLOR"]),
-                offset=(int(obj["LOCATION." + x]) for x in "XY"),
+                offset=get_location(obj),
             )
         
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR", "FONTID", "TEXT"} and
         obj["RECORD"] in {Record.SHEET_NAME, Record.SHEET_FILE_NAME} and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
             text(renderer, obj)
         
-        elif (obj.keys() == {"RECORD", "OWNERINDEX", "INDEXINSHEET", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "CORNER.X", "CORNER.Y", "EMBEDIMAGE", "FILENAME"} and
+        elif (obj.keys() - {"CORNER.X_FRAC", "CORNER.Y_FRAC"} == {"RECORD", "OWNERINDEX", "INDEXINSHEET", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "CORNER.X", "CORNER.Y", "EMBEDIMAGE", "FILENAME"} and
         obj["RECORD"] == Record.IMAGE and obj["OWNERINDEX"] == b"1" and obj["OWNERPARTID"] == b"-1" and obj["EMBEDIMAGE"] == b"T"):
-            location = list()
             corner = list()
             for x in "XY":
-                location.append(int(obj["LOCATION." + x]))
-                corner.append(int(obj["CORNER." + x]))
-            renderer.rectangle(location, corner, width=0.6)
+                corner.append(get_int_frac(obj, "CORNER." + x))
+            renderer.rectangle(get_location(obj), corner, width=0.6)
         
         else:
             print("".join("|{}={!r}".format(p, v) for (p, v) in sorted(obj.items())), file=stderr)
@@ -628,7 +632,7 @@ def text(renderer, obj, **kw):
     if c:
         kw["colour"] = colour(c)
     renderer.text(obj["TEXT"].decode("ascii"),
-        offset=(int(obj["LOCATION." + x]) for x in "XY"),
+        offset=get_location(obj),
         font=font_name(int(obj["FONTID"])),
     **kw)
 

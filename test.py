@@ -85,7 +85,7 @@ class ConversionTest(TestCase):
         
         self.assertEqual(sheet.tag, SVG + "rect")
         self.assertCountEqual(sheet.items(), (
-            ("transform",  "translate(100, -200)"),
+            ("transform",  "translate(100.0, -200.0)"),
             ("width", "40"), ("height", "30"),
             ("stroke-width", "0.6"), ("class", "solid"),
             ("style", "fill: #DD9933; stroke: #11BB77"),
