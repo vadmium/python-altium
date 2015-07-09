@@ -11,8 +11,9 @@ Contents:
 * [OLE compound document](#ole-compound-document)
 * [FileHeader](#fileheader)
 * [Property list](#property-list)
-* [Data types](#data-types): [Integer], [Real], [Boolean]
+* [Data types](#data-types): [Integer], [Colour], [Real], [Boolean]
 * [Object records](#object-records)
+    * [0: Header](#header)
     * [1: Schematic component](#schematic-component)
     * [2: Pin](#pin)
     * [4: Label](#label)
@@ -118,11 +119,15 @@ Default value if property is missing seems to be 0.
 * Enumerated types: `|RECORD=1`/`2`/. . ., `|RECORD=17|STYLE=1`/`2`/. . .
 * Bitfields:
     `|COLOR=8388608` (= 0x800000), `|PINCONGLOMERATE=58` (= 0x3A)
-    * RGB colours: `|COLOR=128|AREACOLOR=11599871` (= #800000, #FFFFB0)
-        Inherited from Delphi TColor data type.
-        * Bits 0–7, mask 0x0000FF: Red
-        * Bits 8–15, mask 0x00FF00: Green
-        * Bits 16–23, mask 0xFF0000: Blue
+
+### Colours ###
+[Colour]: #colours
+
+RGB colours: `|COLOR=128|AREACOLOR=11599871` (= #800000, #FFFFB0).
+Inherited from Delphi TColor data type.
+* Bits 0–7, mask 0x0000FF: Red
+* Bits 8–15, mask 0x00FF00: Green
+* Bits 16–23, mask 0xFF0000: Blue
 
 ### Real numbers ###
 [Real]: #real-numbers
@@ -139,18 +144,20 @@ rather than explicitly set to `F`.
 ## Object records ##
 
 Each item in the “FileHeader” stream describes an object.
-The first object is a header object with the following properties:
-* `|HEADER=Protel for Windows - Schematic Capture Binary File Version 5.0`
-* `|WEIGHT=`_[integer]_: number of remaining objects
-
+The first object is a [Header](#header) object.
 All subsequent objects are indexed starting from zero, so that
 the object at index zero is the record directly following the header object.
 The type of these objects is identified by their `|RECORD` properties.
-(The header object could actually be record type 0, but the property is
-omitted because zero is the default value.)
 
 If a property is given with a value below, that documents that
 it has only ever been seen with that particular value.
+
+### Header ###
+This object does not have a `|RECORD` property, but could be interpreted
+as being equivalent to setting `|RECORD=0`.
+
+* `|HEADER=Protel for Windows - Schematic Capture Binary File Version 5.0`
+* `|WEIGHT` ([integer]): number of remaining objects
 
 ### Schematic component ###
 `|RECORD=1`: Set up component part.
@@ -159,18 +166,18 @@ which are “owned” by the component.
 The component object seems to occur before any of its child objects.
 * `|LIBREFERENCE`
 * `|COMPONENTDESCRIPTION`: Optional
-* `|PARTCOUNT=`_[integer]_: Number of separated parts within component
+* `|PARTCOUNT` ([integer]): Number of separated parts within component
     (e.g. there might be four parts in a quad op-amp component).
     The value seems to be one more than you would expect,
     so 2 implies a normal component, and the quad op-amp would have 5.
-* `|DISPLAYMODECOUNT=`_[integer]_: Number of alternative symbols for part
+* `|DISPLAYMODECOUNT` ([integer]): Number of alternative symbols for part
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=-1|LOCATION.X|LOCATION.Y`
-* `|DISPLAYMODE`: Default is 0.
+* `|DISPLAYMODE` ([integer]):
     Objects belonging to this part should only be displayed
     if their `|OWNERPARTDISPLAYMODE` property matches.
 * `|ISMIRRORED=T|ORIENTATION`: Optional
-* `|CURRENTPARTID=`_[integer]_:
+* `|CURRENTPARTID` ([integer]):
     Objects belonging to this part
     with `|OWNERPARTID` set to a different number (other than −1)
     should probably be ignored, otherwise each part of a quad op amp
@@ -186,16 +193,18 @@ The component object seems to occur before any of its child objects.
 ### Pin ###
 `|RECORD=2`: Component pin, including line, name and number
 * `|OWNERINDEX`: Component part index
-* `|OWNERPARTID`: See `|RECORD=1|CURRENTPARTID`
+* `|OWNERPARTID`: See [Schematic component](#schematic-component)
+    `|CURRENTPARTID`
 * `|OWNERPARTDISPLAYMODE|DESCRIPTION`: Optional
-* `|SYMBOL_OUTEREDGE=1`: Optional symbol between component and pin.
+* `|SYMBOL_OUTEREDGE` ([integer]): Optional symbol between component and pin.
     0 (default): No symbol
     1: A bubble (dot), indicating negative logic
-* `|SYMBOL_INNEREDGE`: Optional symbol touching inside edge of component
+* `|SYMBOL_INNEREDGE` ([integer]): Optional symbol touching inside edge of
+    component
     * 0 (default): No symbol
     * 3: Clock input; arrow pointing inwards
 * `|FORMALTYPE=1`
-* `|ELECTRICAL`: Signal type on pin
+* `|ELECTRICAL` ([integer]): Signal type on pin
     * 0 (default): Input. Arrow pointing into component.
     * 1: Input and output (bidirectional). Diamond.
     * 2: Output. Arrow (triangle) pointing out of component
@@ -204,7 +213,7 @@ The component object seems to occur before any of its child objects.
     * 5: Hi-Z (tri-state?)
     * 6: Open emitter
     * 7: Power. No symbol.
-* `|PINCONGLOMERATE=`_integer_: Bit map:
+* `|PINCONGLOMERATE`: Bit mapped [integer]:
     * Bits 0–1, mask 0x03: TRotateBy90: Pin orientation:
         * 0: Rightwards (0°)
         * 1: Upwards (90°)
@@ -212,7 +221,7 @@ The component object seems to occur before any of its child objects.
         * 3: Downwards (270°)
     * Bit 3, mask 0x08: Pin name shown
     * Bit 4, mask 0x10: Designator shown
-* `|PINLENGTH=`_[integer]_
+* `|PINLENGTH`: [Integer]
 * `|LOCATION.X|LOCATION.Y`: Point where pin line extends from component
 * `|NAME`: Pin function, shown inside component, opposite the pin line.
     May not be present even if ShowName flag is set.
@@ -222,12 +231,14 @@ The component object seems to occur before any of its child objects.
 ### Label ###
 `|RECORD=4`: Text note
 * `|OWNERINDEX`: Component part index
-* `|ISNOTACCESIBLE=T|INDEXINSHEET`: Each optional
-* `|OWNERPARTID`: See `|RECORD=1|CURRENTPARTID`
+* `|ISNOTACCESIBLE`: [Boolean]
+* `|INDEXINSHEET`: Optional
+* `|OWNERPARTID`: See [Schematic component](#schematic-component)
+    `|CURRENTPARTID`
 * `|LOCATION.X|LOCATION.Y`
 * `|ORIENTATION=3|JUSTIFICATION=2|COLOR`: Each optional
-* `|FONTID`: Probably selects from the font table in the [Sheet](#sheet)
-    object
+* `|FONTID` ([integer]): Probably selects from the font table in the
+    [Sheet](#sheet) object
 * `|TEXT`
 
 ### Bezier ###
@@ -241,9 +252,12 @@ The component object seems to occur before any of its child objects.
 ### Polyline ###
 `|RECORD=6`: Polyline for component symbol
 * `|OWNERINDEX`: Component part index
-* `|ISNOTACCESIBLE=T|INDEXINSHEET`: Each optional
-* `|OWNERPARTID`: See `|RECORD=1|CURRENTPARTID`
-* `|OWNERPARTDISPLAYMODE`: See `|RECORD=1|DISPLAYMODE`
+* `|ISNOTACCESIBLE`: [Boolean]
+* `|INDEXINSHEET`: Optional
+* `|OWNERPARTID`: See [Schematic component](#schematic-component)
+    `|CURRENTPARTID`
+* `|OWNERPARTDISPLAYMODE`: See [Schematic component](#schematic-component)
+    `|DISPLAYMODE`
 * `|LINEWIDTH=1|COLOR`: Optional
 * `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .
 
@@ -260,10 +274,8 @@ The component object seems to occur before any of its child objects.
 
 ### Ellipse ###
 `|RECORD=8`: Inherits Circle properties
-* `|RADIUS`
-* `|RADIUS_FRAC=94381`: Optional
-* `|SECONDARYRADIUS`
-* `|SECONDARYRADIUS_FRAC`: Optional
+* `|RADIUS|RADIUS_FRAC`
+* `|SECONDARYRADIUS|SECONDARYRADIUS_FRAC`
 * `|COLOR|AREACOLOR|ISSOLID=T`
 
 Circle:
@@ -283,12 +295,15 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|OWNERINDEX`: Component part index
 * `|ISNOTACCESIBLE=T`
 * `|INDEXINSHEET`: Optional
-* `|OWNERPARTID`: See `|RECORD=1|CURRENTPARTID`
-* `|OWNERPARTDISPLAYMODE`: See `|RECORD=1|DISPLAYMODE`
+* `|OWNERPARTID`: See [Schematic component](#schematic-component)
+    `|CURRENTPARTID`
+* `|OWNERPARTDISPLAYMODE`: See [Schematic component](#schematic-component)
+    `|DISPLAYMODE`
 * `|LOCATION.X|LOCATION.Y`: Centre of circle
-* `|RADIUS=`_[integer]_`|LINEWIDTH=1`
-* `|STARTANGLE=`_[real]_: Default 0; 0 for full circle
-* `|ENDANGLE=`_[real]_: 360.000 for full circle. Setting both to zero may
+* `|RADIUS`: [Integer]
+* `|LINEWIDTH=1`
+* `|STARTANGLE` ([real]): Default 0; 0 for full circle
+* `|ENDANGLE` ([real]): 360 for full circle. Setting both to zero may
     also specify a full circle.
 * `|COLOR`
 
@@ -298,7 +313,8 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|ISNOTACCESIBLE=T`
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=1`
-* `|OWNERPARTDISPLAYMODE`: See `|RECORD=1|DISPLAYMODE`
+* `|OWNERPARTDISPLAYMODE`: See [Schematic component](#schematic-component)
+    `|DISPLAYMODE`
 * `|LOCATION.X|LOCATION.Y|CORNER.X|CORNER.Y`: Endpoints of the line
 * `|LINEWIDTH=1`: Line thickness
 * `|COLOR`
@@ -308,16 +324,17 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|OWNERINDEX`: Component part index
 * `|ISNOTACCESIBLE=T`: Non-English spelling of “accessible”!
 * `|INDEXINSHEET`: Optional
-* `|OWNERPARTID`: See `|RECORD=1|CURRENTPARTID`
+* `|OWNERPARTID`: See [Schematic component](#schematic-component)
+    `|CURRENTPARTID`
 * `|OWNERPARTDISPLAYMODE`: Optional
 * `|LOCATION.X|LOCATION.Y`: Bottom left corner
 * `|CORNER.X|CORNER.Y`: Top right corner
 * `|LINEWIDTH=1`: Optional
 * `|COLOR`: Outline colour
 * `|AREACOLOR`: Fill colour
-* `|ISSOLID=T`: Optional.
-    If not present, rectangle is not filled in, despite `|AREACOLOR`.
-* `|TRANSPARENT=T`: Optional
+* `|ISSOLID` ([boolean]):
+    If false, rectangle is not filled in, despite `|AREACOLOR`.
+* `|TRANSPARENT`: [Boolean]
 
 ### Sheet symbol ###
 `|RECORD=15`: Box to go on a top-level schematic
@@ -333,41 +350,42 @@ Unable to get arcs in exclusive “or” gate to line up.
 `|RECORD=17`: Connection to power rail, ground, etc
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=-1`
-* `|STYLE`: Optional. Marker symbol:
+* `|STYLE`: Marker symbol:
+    * 0: Default, if `|ISCROSSSHEETCONNECTOR=T`
     * Circle (?)
     * 1: Arrow
     * 2: Tee off rail (bar)
     * Wave (?)
     * 4: Ground (broken triangle, made of horizontal lines)
     * Power ground, earth ground, earth (?)
-* `|SHOWNETNAME=T`
+* `|SHOWNETNAME` ([boolean]): Show the `|TEXT` value
 * `|LOCATION.X|LOCATION.Y`: Point of connection
-* `|ORIENTATION=`_[integer]_: TRotateBy90: Direction the marker points
+* `|ORIENTATION` ([integer]): TRotateBy90: Direction the marker points
 * `|COLOR`
 * `|TEXT`: Shown beyond the marker
-* `|ISCROSSSHEETCONNECTOR`: Optional.
+* `|ISCROSSSHEETCONNECTOR` ([boolean]):
     Marker symbol is a double chevron pointing towards the connection.
 
 ### Port ###
 `|RECORD=18`: Labelled connection
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=-1`
-* `|STYLE=`_[integer]_
+* `|STYLE` ([integer]):
     * 3: Extends from the specified location towards the right
     * 7: Upwards (rotated CW, then translated!)
-* `|IOTYPE=3`: Optional.
-    If present, the label has angled points on both ends,
-    otherwise, the left edge is flat and the right edge is angled.
-* `|ALIGNMENT=`_[integer]_ (Opposite for upwards style)
-    * Not present: ?
+* `|IOTYPE` ([integer]):
+    * 0: The label’s left edge is flat and its right edge is angled
+    * 3: The label has angled points on both ends
+* `|ALIGNMENT` ([integer]): (Opposite for upwards style)
+    * 0: ?
     * 1: Text is right-aligned
     * 2: Left-aligned
-* `|WIDTH=`_[integer]_
+* `|WIDTH`: [Integer]
 * `|LOCATION.X|LOCATION.Y`
 * `|COLOR`
 * `|AREACOLOR=8454143` (= #FFFF80)
 * `|TEXTCOLOR`
-* `|NAME=`_ASCII_: A backslash indicates a bar over the preceding character.
+* `|NAME` (ASCII): A backslash indicates a bar over the preceding character.
     The whole string may also be prefixed with a backslash;
     every character is still suffixed with one.
 * `|UNIQUEID`
@@ -409,14 +427,16 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|CORNER.Y`: Top text line
 * `|AREACOLOR=16777215` (= #FFFFFF)
 * `|FONTID|ISSOLID=T|ALIGNMENT=1|WORDWRAP=T`
-* `|CLIPTORECT=T|ORIENTATION`: Each optional
+* `|CLIPTORECT`: [Boolean]
+* `|ORIENTATION`: Optional
 * `|Text`: Special code “`~1`” starts a new line
 
 ### Junction ###
 `|RECORD=29`:
 Junction of connected pins, wires, etc, sometimes represented by a dot.
 It may not be displayed at all, depending on a configuration setting.
-* `|INDEXINSHEET=-1|LOCKED=T`: Each optional
+* `|INDEXINSHEET=-1`: Optional
+* `|LOCKED`: [Boolean]
 * `|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.Y`
 * `|COLOR`
@@ -430,7 +450,7 @@ It may not be displayed at all, depending on a configuration setting.
 * `|FILENAME`: File name may be without a path (filename.ext) or
     an absolute Windows path (C:\\path\\filename.ext). Suffixes: “.bmp”,
     “.tif”.
-* `|KEEPASPECT=T`: Optional
+* `|KEEPASPECT`: [Boolean]
 
 ### Sheet ###
 `|RECORD=31`: First object after the header object (i.e. at index zero),
@@ -440,37 +460,39 @@ with properties for the entire schematic
         actual point size or em size seems to be about 0.875 of this size.
         So for `|SIZE`_n_`=10`, the total line spacing is 100 mil = 0.10″ =
         7.2 pt, but the font’s em size is about 87.5 mil = 0.0875″ = 6.3 pt.
-    * `|ITALIC`_n_`=T|BOLD`_n_`=T`: Each optional
-    * `|ROTATION`_n_`=90`: Optional.
+    * `|ITALIC`_n_`|BOLD`_n_: [Boolean]
+    * `|ROTATION`_n_ ([integer]): 0 or 90.
         Seems to be associated with sideways vertical text,
         but the text objects themselves already indicate the orientation.
     * `|FONTNAME`_n_`=Times New Roman`
 * `|USEMBCS=T|ISBOC=T|HOTSPOTGRIDON=T|HOTSPOTGRIDON=T|HOTSPOTGRIDSIZE`
-* `|SHEETSTYLE`: Selects a metric or imperial (ANSI?) paper size.
+* `|SHEETSTYLE` ([integer]): Selects a metric or imperial (ANSI?) paper size.
     The drawing area (size of the grid rectangle) is given below,
     and tends to be slightly smaller than the corresponding
     paper size.
-    * 0 (default): “A4”, 1150 × 760
+    * 0: “A4”, 1150 × 760
     * 1: “A3”, 1550 × 1150
     * A2, A1, A0 (?)
     * 5: “A”, 950 × 760
     * 6: “B”
     * 7: “C”
     * Letter (= ANSI A?), Legal, Tabloid (= ANSI B?), OrCAD A–E (?)
-* `|SYSTEMFONT=1`: Presumably a font number to use as a default
+* `|SYSTEMFONT` ([integer]): A font number to use as a default, normally 1.
 * `|BORDERON=T`
-* `|TITLEBLOCKON=T`:
-    Optional. Enables the rectangle with title, etc, details.
+* `|TITLEBLOCKON` ([boolean]):
+    Enables the rectangle with title, etc, details.
 * `|SHEETNUMBERSPACESIZE=4`
 * `|AREACOLOR=16317695` (= #FFFCF8)
 * `|SNAPGRIDON=T|SNAPGRIDSIZE|VISIBLEGRIDON=T|VISIBLEGRIDSIZE=10`
 * `|CUSTOMX|CUSTOMY`: Dimensions of sheet.
     Should probably ignore this unless `|USECUSTOMSHEET=T` provided.
-* `|USECUSTOMSHEET=T`: Optional
-* `|WORKSPACEORIENTATION=1`: Portrait instead of landscape orientation for
+* `|USECUSTOMSHEET`: [Boolean]
+* `|WORKSPACEORIENTATION` ([integer]): Switches orientation for
     `|SHEETSTYLE`. How does this interact with `|USECUSTOMSHEET=T`?
+    * 0: Landscape
+    * 1: Portrait
 * `|CUSTOMXZONES=6|CUSTOMYZONES=4|CUSTOMMARGINWIDTH=20|DISPLAY_UNIT=4`
-* `|REFERENCEZONESON=T`: Optional
+* `|REFERENCEZONESON`: [Boolean]
 
 ### Sheet name and file name ###
 `|RECORD=32` (sheet name) / `33` (sheet file name):
@@ -488,11 +510,13 @@ Labels on top-level schematic
 * `|LOCATION.X|LOCATION.Y`
 * `|COLOR=8388608` (= #000080)
 * `|FONTID`
-* `|TEXT`: Has a letter appended based on `|RECORD=1|PARTCOUNT|CURRENTPARTID`
+* `|TEXT`: Has a letter appended based on [Schematic component]
+    (#schematic-component) `|PARTCOUNT|CURRENTPARTID`
 * `|NAME=Designator`
-* `|READONLYSTATE`:
+* `|READONLYSTATE` ([integer]):
     * 1: Name is read-only?
-* `|ISMIRRORED=T|ORIENTATION|ISHIDDEN`: Each optional
+* `|ISMIRRORED`: [Boolean]
+* `|ORIENTATION|ISHIDDEN`: Each optional
 
 ### 39 ###
 `|RECORD=39`
@@ -505,13 +529,13 @@ Labels on top-level schematic
 * `|LOCATION.X|LOCATION.X_FRAC|LOCATION.Y|LOCATION.Y_FRAC`: Each optional.
     Probably should not display label if not present,
     even if `|ISHIDDEN=T` not specified.
-* `|ORIENTATION`
-    * Not present: Text is aligned at the bottom-left corner
+* `|ORIENTATION` ([integer]):
+    * 0: Text is aligned at the bottom-left corner
     * 1: Bottom-left alignment, then rotated 90° anticlockwise
     * 2: Top-right corner alignment
 * `|COLOR`
 * `|FONTID`
-* `|ISHIDDEN=T`: Optional
+* `|ISHIDDEN`: [Boolean]
 * `|TEXT`: Optional.
     If it starts with “`=`”,
     it names another parameter with the same `|OWNERINDEX`,
@@ -520,7 +544,8 @@ Labels on top-level schematic
     from the referenced parameter’s `|TEXT` property.
 * `|NAME`
 * `|READONLYSTATE`: Same as for [Designator](#designator)?
-* `|UNIQUEID|ISMIRRORED=T`: Each optional
+* `|UNIQUEID`: Optional
+* `|ISMIRRORED`: [Boolean]
 
 ### Warning sign ###
 `|RECORD=43`: Warning sign for differential tracks, clock lines, ...
@@ -528,8 +553,8 @@ Labels on top-level schematic
 * `|LOCATION.X|LOCATION.Y`: Each optional.
 * `|NAME=-1`
     * DIFFPAIR: a differential pair of wires
-* `|ORIENTATION`: Optional
-    * Not present: Text is aligned at the bottom-left corner
+* `|ORIENTATION` ([integer]):
+    * 0: Text is aligned at the bottom-left corner
     * 1: Bottom-left alignment, then rotated 90° anticlockwise
     * 2: Top-right corner alignment
 
@@ -545,8 +570,8 @@ Labels on top-level schematic
 * `|DATAFILECOUNT=1|MODELDATAFILEENTITY0|MODELDATAFILEKIND0`:
     Optional
 * `|DATALINKSLOCKED=T|DATABASEDATALINKSLOCKED=T`: Optional
-* `|INTEGRATEDMODEL|DATABASEMODEL=T`: Optional [booleans](#boolean)
-* `|ISCURRENT=T`: Optional
+* `|INTEGRATEDMODEL|DATABASEMODEL`: [Boolean]
+* `|ISCURRENT`: [Boolean]
 
 ### 46 ###
 `|RECORD=46|OWNERINDEX`
