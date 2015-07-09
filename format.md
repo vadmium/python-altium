@@ -493,7 +493,7 @@ with properties for the entire schematic
 * `|TITLEBLOCKON` ([boolean]):
     Enables the rectangle with title, etc, details.
 * `|SHEETNUMBERSPACESIZE=4`
-* `|AREACOLOR=16317695` (= #FFFCF8)
+* `|AREACOLOR=16317695` (= #FFFCF8): Background of entire drawing area
 * `|SNAPGRIDON=T|SNAPGRIDSIZE|VISIBLEGRIDON=T|VISIBLEGRIDSIZE=10`
 * `|CUSTOMX|CUSTOMY`: Dimensions of sheet.
     Should probably ignore this unless `|USECUSTOMSHEET=T` provided.
