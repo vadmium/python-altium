@@ -145,9 +145,9 @@ rather than explicitly set to `F`.
 
 Each item in the “FileHeader” stream describes an object.
 The first object is a [Header](#header) object.
-All subsequent objects are indexed starting from zero, so that
-the object at index zero is the record directly following the header object.
-The type of these objects is identified by their `|RECORD` properties.
+All subsequent objects are indexed starting from zero. The object at
+index zero directly follows the header object, and is a [Sheet](#sheet)
+object. The type of each object is identified by its `|RECORD` property.
 
 If a property is given with a value below, that documents that
 it has only ever been seen with that particular value.
