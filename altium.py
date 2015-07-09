@@ -297,7 +297,8 @@ Renderer: """By default, the schematic is converted to an SVG file,
     renderer.addobjects((gnd, rail, arrowconn, dchevron, nc))
     
     with renderer.view(offset=(0, size[1])) as base:
-        base.rectangle((size[0], -size[1]), width=0.6)
+        base.rectangle((size[0], -size[1]), outline=True, width=0.6,
+            fill=colour(sheet, "AREACOLOR"))
         base.rectangle((20, -20), (size[0] - 20, 20 - size[1]), width=0.6)
         for axis in range(2):
             for side in range(2):
@@ -406,8 +407,8 @@ Renderer: """By default, the schematic is converted to an SVG file,
         get_int(obj, "RECORD") in {44, 46, 48} or
         obj.keys() - {"USECOMPONENTLIBRARY", "DESCRIPTION", "DATAFILECOUNT", "MODELDATAFILEENTITY0", "MODELDATAFILEKIND0", "DATALINKSLOCKED", "DATABASEDATALINKSLOCKED", "ISCURRENT", "INDEXINSHEET", "INTEGRATEDMODEL", "DATABASEMODEL"} == {"RECORD", "OWNERINDEX", "MODELNAME", "MODELTYPE"} and
         get_int(obj, "RECORD") == 45 and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["MODELTYPE"] in {b"PCBLIB", b"SI", b"SIM", b"PCB3DLib"} and obj.get("DATAFILECOUNT", b"1") == b"1" or
-        obj.keys() >= {"RECORD", "AREACOLOR", "BORDERON", "CUSTOMX", "CUSTOMY", "DISPLAY_UNIT", "FONTIDCOUNT", "FONTNAME1", "HOTSPOTGRIDON", "HOTSPOTGRIDSIZE", "ISBOC", "SHEETNUMBERSPACESIZE", "SIZE1", "SNAPGRIDON", "SNAPGRIDSIZE", "SYSTEMFONT", "USEMBCS", "VISIBLEGRIDON", "VISIBLEGRIDSIZE"} and
-        get_int(obj, "RECORD") == Record.SHEET and obj["AREACOLOR"] == b"16317695" and get_bool(obj, "BORDERON") and obj.get("CUSTOMMARGINWIDTH", b"20") == b"20" and obj.get("CUSTOMXZONES", b"6") == b"6" and obj.get("CUSTOMYZONES", b"4") == b"4" and obj["DISPLAY_UNIT"] == b"4" and obj["FONTNAME1"] == b"Times New Roman" and get_bool(obj, "HOTSPOTGRIDON") and get_bool(obj, "ISBOC") and obj["SHEETNUMBERSPACESIZE"] == b"4" and obj["SIZE1"] == b"10" and get_bool(obj, "SNAPGRIDON") and obj["SYSTEMFONT"] == b"1" and get_bool(obj, "USEMBCS") and get_bool(obj, "VISIBLEGRIDON") and obj["VISIBLEGRIDSIZE"] == b"10" and obj.get("WORKSPACEORIENTATION", b"1") == b"1" or
+        obj.keys() >= {"RECORD", "BORDERON", "CUSTOMX", "CUSTOMY", "DISPLAY_UNIT", "FONTIDCOUNT", "FONTNAME1", "HOTSPOTGRIDON", "HOTSPOTGRIDSIZE", "ISBOC", "SHEETNUMBERSPACESIZE", "SIZE1", "SNAPGRIDON", "SNAPGRIDSIZE", "SYSTEMFONT", "USEMBCS", "VISIBLEGRIDON", "VISIBLEGRIDSIZE"} and
+        get_int(obj, "RECORD") == Record.SHEET and get_bool(obj, "BORDERON") and obj.get("CUSTOMMARGINWIDTH", b"20") == b"20" and obj.get("CUSTOMXZONES", b"6") == b"6" and obj.get("CUSTOMYZONES", b"4") == b"4" and obj["DISPLAY_UNIT"] == b"4" and obj["FONTNAME1"] == b"Times New Roman" and get_bool(obj, "HOTSPOTGRIDON") and get_bool(obj, "ISBOC") and obj["SHEETNUMBERSPACESIZE"] == b"4" and obj["SIZE1"] == b"10" and get_bool(obj, "SNAPGRIDON") and obj["SYSTEMFONT"] == b"1" and get_bool(obj, "USEMBCS") and get_bool(obj, "VISIBLEGRIDON") and obj["VISIBLEGRIDSIZE"] == b"10" and obj.get("WORKSPACEORIENTATION", b"1") == b"1" or
         obj.keys() == {"HEADER", "WEIGHT"} and
         obj["HEADER"] == b"Protel for Windows - Schematic Capture Binary File Version 5.0" or
         obj.keys() - {"INDEXINSHEET"} == {"RECORD", "DESIMP0", "DESIMPCOUNT", "DESINTF", "OWNERINDEX"} and
