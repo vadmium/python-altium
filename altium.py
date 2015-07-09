@@ -48,10 +48,20 @@ def read(file):
     
     return objects
 
+def get_int(obj, property):
+    return int(obj.get(property, 0))
+
+def get_bool(obj, property):
+    value = obj.get(property, b"F")
+    return {b"F": False, b"T": True}[value]
+
+def get_real(obj, property):
+    return float(obj.get(property, 0))
+
 def get_sheet(objects):
     '''Returns the object holding settings for the sheet'''
     sheet = objects[1]
-    assert int(sheet["RECORD"]) == Record.SHEET
+    assert get_int(sheet, "RECORD") == Record.SHEET
     return sheet
 
 def get_sheet_style(sheet):
@@ -61,10 +71,10 @@ def get_sheet_style(sheet):
         SheetStyle.A3: ("A3", (1550, 1110)),
         SheetStyle.A: ("A", (950, 750)),
     }
-    [sheetstyle, size] = STYLES[int(sheet.get("SHEETSTYLE", 0))]
-    if "USECUSTOMSHEET" in sheet:
-        size = tuple(int(sheet["CUSTOM" + "XY"[x]]) for x in range(2))
-    if int(sheet.get("WORKSPACEORIENTATION", 0)):
+    [sheetstyle, size] = STYLES[get_int(sheet, "SHEETSTYLE")]
+    if get_bool(sheet, "USECUSTOMSHEET"):
+        size = tuple(get_int(sheet, "CUSTOM" + "XY"[x]) for x in range(2))
+    if get_int(sheet, "WORKSPACEORIENTATION"):
         [height, width] = size
         size = (width, height)
     return (sheetstyle, size)
@@ -85,26 +95,37 @@ def iter_fonts(sheet):
     family: Typeface name
     italic, bold: Boolean value
     '''
-    for i in range(int(sheet["FONTIDCOUNT"])):
+    for i in range(get_int(sheet, "FONTIDCOUNT")):
         id = 1 + i
         n = format(id)
         yield dict(
             id=id,
-            line=int(sheet["SIZE" + n]),
+            line=get_int(sheet, "SIZE" + n),
             family=sheet["FONTNAME" + n].decode("ascii"),
-            italic=bool(sheet.get("ITALIC" + n)),
-            bold=bool(sheet.get("BOLD" + n)),
+            italic=get_bool(sheet, "ITALIC" + n),
+            bold=get_bool(sheet, "BOLD" + n),
         )
 
 def get_int_frac(obj, property):
     '''Return full value of a field with separate integer and fraction'''
-    value = int(obj[property])
-    value += int(obj.get(property + "_FRAC", 0)) / FRAC_DENOM
+    value = get_int(obj, property)
+    value += get_int(obj, property + "_FRAC") / FRAC_DENOM
     return value
 
 def get_location(obj):
     '''Return location property co-ordinates as a tuple'''
     return tuple(get_int_frac(obj, "LOCATION." + x) for x in "XY")
+
+def get_owner(objects, obj):
+    '''Return the object that "owns" obj'''
+    return objects[1 + get_int(obj, "OWNERINDEX")]
+
+def display_part(objects, obj):
+    '''Determine if obj is in the component's current part and display mode
+    '''
+    owner = get_owner(objects, obj)
+    return (obj["OWNERPARTID"] == owner["CURRENTPARTID"] and
+        get_int(obj, "OWNERPARTDISPLAYMODE") == get_int(owner, "DISPLAYMODE"))
 
 class Record:
     """Schematic object record types"""
@@ -207,7 +228,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
         
         renderer.addfont(name, fontsize, font["family"],
             italic=font["italic"], bold=font["bold"])
-    renderer.setdefaultfont(font_name(int(sheet["SYSTEMFONT"])))
+    renderer.setdefaultfont(font_name(get_int(sheet, "SYSTEMFONT")))
     renderer.start()
     
     arrowhead = dict(base=5, shoulder=7, radius=3)
@@ -270,7 +291,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
                             else:
                                 ref.vline(-10, +10, offset=(x, 0), width=0.6)
         
-        if "TITLEBLOCKON" in sheet:
+        if get_bool(sheet, "TITLEBLOCKON"):
             if not os.path.isabs(filename):
                 cwd = os.getcwd()
                 pwd = os.getenv("PWD")
@@ -303,87 +324,90 @@ Renderer: """By default, the schematic is converted to an SVG file,
     
     for obj in objects:
         if (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR"} and
-        int(obj["RECORD"]) == Record.JUNCTION and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
-            col = colour(obj["COLOR"])
+        get_int(obj, "RECORD") == Record.JUNCTION and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
+            col = colour(obj)
             renderer.circle(2, get_location(obj), fill=col)
         
         elif (obj.keys() - {"INDEXINSHEET", "IOTYPE", "ALIGNMENT"} == {"RECORD", "OWNERPARTID", "STYLE", "WIDTH", "LOCATION.X", "LOCATION.Y", "COLOR", "AREACOLOR", "TEXTCOLOR", "NAME", "UNIQUEID"} and
-        int(obj["RECORD"]) == Record.PORT and obj["OWNERPARTID"] == b"-1"):
-            width = int(obj["WIDTH"])
-            if "IOTYPE" in obj:
+        get_int(obj, "RECORD") == Record.PORT and obj["OWNERPARTID"] == b"-1"):
+            width = get_int(obj, "WIDTH")
+            if get_int(obj, "IOTYPE"):
                 points = ((0, 0), (5, -5), (width - 5, -5),
                     (width, 0), (width - 5, +5), (5, +5))
             else:
                 points = ((0, -5), (width - 5, -5),
                     (width, 0), (width - 5, +5), (0, +5))
-            if (obj.get("ALIGNMENT") == b"2") ^ (obj["STYLE"] != b"7"):
+            left_aligned = get_int(obj, "ALIGNMENT") == 2
+            upwards = get_int(obj, "STYLE") == 7
+            if left_aligned ^ (not upwards):
                 labelpoint = (10, 0)
                 horiz = renderer.LEFT
             else:
                 labelpoint = (width - 10, 0)
                 horiz = renderer.RIGHT
-            if obj["STYLE"] == b"7":
+            if upwards:
                 shapekw = dict(rotate=+90, offset=(0, +width))
             else:
                 shapekw = dict()
             with renderer.view(offset=get_location(obj)) as view:
                 view.polygon(points,
                     width=0.6,
-                    outline=colour(obj["COLOR"]),
-                    fill=colour(obj["AREACOLOR"]),
+                    outline=colour(obj),
+                    fill=colour(obj, "AREACOLOR"),
                 **shapekw)
                 
                 with contextlib.ExitStack() as context:
-                    if obj["STYLE"] == b"7":
+                    if upwards:
                         view = context.enter_context(view.view(rotate=+1))
                     view.text(
                         overline(obj["NAME"]),
-                        colour=colour(obj["TEXTCOLOR"]),
+                        colour=colour(obj, "TEXTCOLOR"),
                         offset=labelpoint,
                         vert=view.CENTRE, horiz=horiz,
                     )
         
         elif (obj.keys() - {"INDEXINSHEET"} >= {"RECORD", "OWNERPARTID", "LINEWIDTH", "COLOR", "LOCATIONCOUNT", "X1", "Y1", "X2", "Y2"} and
-        int(obj["RECORD"]) == Record.WIRE and obj["OWNERPARTID"] == b"-1" and obj["LINEWIDTH"] == b"1"):
+        get_int(obj, "RECORD") == Record.WIRE and obj["OWNERPARTID"] == b"-1" and obj["LINEWIDTH"] == b"1"):
             points = list()
-            for location in range(int(obj["LOCATIONCOUNT"])):
+            for location in range(get_int(obj, "LOCATIONCOUNT")):
                 location = format(1 + location)
-                points.append(tuple(int(obj[x + location]) for x in "XY"))
-            renderer.polyline(points, colour=colour(obj["COLOR"]))
+                point = tuple(get_int(obj, x + location) for x in "XY")
+                points.append(point)
+            renderer.polyline(points, colour=colour(obj))
         elif (obj.keys() == {"RECORD", "OWNERINDEX"} and
-        obj["RECORD"] in {b"46", b"48", b"44"} or
+        get_int(obj, "RECORD") in {44, 46, 48} or
         obj.keys() - {"USECOMPONENTLIBRARY", "DESCRIPTION", "DATAFILECOUNT", "MODELDATAFILEENTITY0", "MODELDATAFILEKIND0", "DATALINKSLOCKED", "DATABASEDATALINKSLOCKED", "ISCURRENT", "INDEXINSHEET", "INTEGRATEDMODEL", "DATABASEMODEL"} == {"RECORD", "OWNERINDEX", "MODELNAME", "MODELTYPE"} and
-        obj["RECORD"] == b"45" and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj.get("USECOMPONENTLIBRARY", b"T") == b"T" and obj["MODELTYPE"] in {b"PCBLIB", b"SI", b"SIM", b"PCB3DLib"} and obj.get("DATAFILECOUNT", b"1") == b"1" and obj.get("ISCURRENT", b"T") == b"T" and obj.get("DATABASEMODEL", b"T") == b"T" and obj.get("DATALINKSLOCKED", b"T") == b"T" and obj.get("DATABASEDATALINKSLOCKED", b"T") == b"T" or
+        get_int(obj, "RECORD") == 45 and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["MODELTYPE"] in {b"PCBLIB", b"SI", b"SIM", b"PCB3DLib"} and obj.get("DATAFILECOUNT", b"1") == b"1" or
         obj.keys() >= {"RECORD", "AREACOLOR", "BORDERON", "CUSTOMX", "CUSTOMY", "DISPLAY_UNIT", "FONTIDCOUNT", "FONTNAME1", "HOTSPOTGRIDON", "HOTSPOTGRIDSIZE", "ISBOC", "SHEETNUMBERSPACESIZE", "SIZE1", "SNAPGRIDON", "SNAPGRIDSIZE", "SYSTEMFONT", "USEMBCS", "VISIBLEGRIDON", "VISIBLEGRIDSIZE"} and
-        int(obj["RECORD"]) == Record.SHEET and obj["AREACOLOR"] == b"16317695" and obj["BORDERON"] == b"T" and obj.get("CUSTOMMARGINWIDTH", b"20") == b"20" and obj.get("CUSTOMXZONES", b"6") == b"6" and obj.get("CUSTOMYZONES", b"4") == b"4" and obj["DISPLAY_UNIT"] == b"4" and obj["FONTNAME1"] == b"Times New Roman" and obj["HOTSPOTGRIDON"] == b"T" and obj["ISBOC"] == b"T" and obj["SHEETNUMBERSPACESIZE"] == b"4" and obj["SIZE1"] == b"10" and obj["SNAPGRIDON"] == b"T" and obj["SYSTEMFONT"] == b"1" and obj.get("TITLEBLOCKON", b"T") == b"T" and obj["USEMBCS"] == b"T" and obj["VISIBLEGRIDON"] == b"T" and obj["VISIBLEGRIDSIZE"] == b"10" and obj.get("WORKSPACEORIENTATION", b"1") == b"1" or
+        get_int(obj, "RECORD") == Record.SHEET and obj["AREACOLOR"] == b"16317695" and get_bool(obj, "BORDERON") and obj.get("CUSTOMMARGINWIDTH", b"20") == b"20" and obj.get("CUSTOMXZONES", b"6") == b"6" and obj.get("CUSTOMYZONES", b"4") == b"4" and obj["DISPLAY_UNIT"] == b"4" and obj["FONTNAME1"] == b"Times New Roman" and get_bool(obj, "HOTSPOTGRIDON") and get_bool(obj, "ISBOC") and obj["SHEETNUMBERSPACESIZE"] == b"4" and obj["SIZE1"] == b"10" and get_bool(obj, "SNAPGRIDON") and obj["SYSTEMFONT"] == b"1" and get_bool(obj, "USEMBCS") and get_bool(obj, "VISIBLEGRIDON") and obj["VISIBLEGRIDSIZE"] == b"10" and obj.get("WORKSPACEORIENTATION", b"1") == b"1" or
         obj.keys() == {"HEADER", "WEIGHT"} and
         obj["HEADER"] == b"Protel for Windows - Schematic Capture Binary File Version 5.0" or
         obj.keys() - {"INDEXINSHEET"} == {"RECORD", "DESIMP0", "DESIMPCOUNT", "DESINTF", "OWNERINDEX"} and
-        obj["RECORD"] == b"47" and obj["DESIMPCOUNT"] == b"1" or
+        get_int(obj, "RECORD") == 47 and obj["DESIMPCOUNT"] == b"1" or
         obj.keys() == {"RECORD", "ISNOTACCESIBLE", "OWNERPARTID", "FILENAME"} and
-        obj["RECORD"] == b"39" and obj["ISNOTACCESIBLE"] == b"T" and obj["OWNERPARTID"] == b"-1"):
+        get_int(obj, "RECORD") == 39 and get_bool(obj, "ISNOTACCESIBLE") and obj["OWNERPARTID"] == b"-1"):
             pass
         
         elif (obj.keys() - {"ISMIRRORED", "ORIENTATION", "INDEXINSHEET", "COMPONENTDESCRIPTION", "SHEETPARTFILENAME", "DESIGNITEMID", "DISPLAYMODE", "NOTUSEDBTABLENAME", "LIBRARYPATH"} == {"RECORD", "OWNERPARTID", "UNIQUEID", "AREACOLOR", "COLOR", "CURRENTPARTID", "DISPLAYMODECOUNT", "LIBREFERENCE", "LOCATION.X", "LOCATION.Y", "PARTCOUNT", "PARTIDLOCKED", "SOURCELIBRARYNAME", "TARGETFILENAME"} and
-        obj["RECORD"] == b"1" and obj["OWNERPARTID"] == b"-1" and obj["AREACOLOR"] == b"11599871" and obj["COLOR"] == b"128" and obj["PARTIDLOCKED"] == b"F" and obj["TARGETFILENAME"] == b"*"):
+        get_int(obj, "RECORD") == Record.SCH_COMPONENT and obj["OWNERPARTID"] == b"-1" and obj["AREACOLOR"] == b"11599871" and obj["COLOR"] == b"128" and not get_bool(obj, "PARTIDLOCKED") and obj["TARGETFILENAME"] == b"*"):
             pass
         
         elif (obj.keys() - {"TEXT", "OWNERINDEX", "ISHIDDEN", "READONLYSTATE", "INDEXINSHEET", "UNIQUEID", "LOCATION.X", "LOCATION.X_FRAC", "LOCATION.Y", "LOCATION.Y_FRAC", "ORIENTATION", "ISMIRRORED"} == {"RECORD", "OWNERPARTID", "COLOR", "FONTID", "NAME"} and
-        int(obj["RECORD"]) == Record.PARAMETER and obj["OWNERPARTID"] == b"-1"):
-            if obj.get("ISHIDDEN") != b"T" and obj.keys() >= {"TEXT", "LOCATION.X", "LOCATION.Y"}:
-                orient = obj.get("ORIENTATION")
+        get_int(obj, "RECORD") == Record.PARAMETER and obj["OWNERPARTID"] == b"-1"):
+            if not get_bool(obj, "ISHIDDEN") and obj.keys() >= {"TEXT", "LOCATION.X", "LOCATION.Y"}:
+                orient = get_int(obj, "ORIENTATION")
                 kw = {
-                    None: dict(vert=renderer.BOTTOM, horiz=renderer.LEFT),
-                    b"1": dict(vert=renderer.BOTTOM, horiz=renderer.LEFT),
-                    b"2": dict(vert=renderer.TOP, horiz=renderer.RIGHT),
+                    0: dict(vert=renderer.BOTTOM, horiz=renderer.LEFT),
+                    1: dict(vert=renderer.BOTTOM, horiz=renderer.LEFT),
+                    2: dict(vert=renderer.TOP, horiz=renderer.RIGHT),
                 }[orient]
-                if orient == b"1":
+                if orient == 1:
                     kw.update(angle=+90)
                 val = obj["TEXT"]
                 if val.startswith(b"="):
                     match = val[1:].lower()
                     for o in objects:
-                        if o.get("RECORD") != Record.PARAMETER or o.get("OWNERINDEX") != obj["OWNERINDEX"]:
+                        if get_int(o, "RECORD") != Record.PARAMETER or o.get("OWNERINDEX") != obj["OWNERINDEX"]:
                             continue
                         if o["NAME"].lower() != match:
                             continue
@@ -392,62 +416,58 @@ Renderer: """By default, the schematic is converted to an SVG file,
                     else:
                         raise LookupError("Parameter value for |OWNERINDEX={}|TEXT={}".format(obj["OWNERINDEX"].decode("ascii"), obj["TEXT"].decode("ascii")))
                     renderer.text(val.decode("ascii"),
-                        colour=colour(obj["COLOR"]),
+                        colour=colour(obj),
                         offset=get_location(obj),
-                        font=font_name(int(obj["FONTID"])),
+                        font=font_name(get_int(obj, "FONTID")),
                     **kw)
                 else:
                     text(renderer, obj, **kw)
         
         elif (obj.keys() - {"INDEXINSHEET", "ISMIRRORED", "LOCATION.X_FRAC", "LOCATION.Y_FRAC"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR", "FONTID", "TEXT", "NAME", "READONLYSTATE"} and
-        int(obj["RECORD"]) == Record.DESIGNATOR and obj["OWNERPARTID"] == b"-1" and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["NAME"] == b"Designator" and obj["READONLYSTATE"] == b"1"):
+        get_int(obj, "RECORD") == Record.DESIGNATOR and obj["OWNERPARTID"] == b"-1" and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["NAME"] == b"Designator" and obj["READONLYSTATE"] == b"1"):
             desig = obj["TEXT"].decode("ascii")
-            owner = objects[1 + int(obj["OWNERINDEX"])]
-            if int(owner["PARTCOUNT"]) > 2:
-                desig += chr(ord("A") + int(owner["CURRENTPARTID"]) - 1)
+            owner = get_owner(objects, obj)
+            if get_int(owner, "PARTCOUNT") > 2:
+                desig += chr(ord("A") + get_int(owner, "CURRENTPARTID") - 1)
             renderer.text(desig, get_location(obj),
-                colour=colour(obj["COLOR"]),
-                font=font_name(int(obj["FONTID"])),
+                colour=colour(obj),
+                font=font_name(get_int(obj, "FONTID")),
             )
         
         elif (obj.keys() >= {"RECORD", "OWNERPARTID", "OWNERINDEX", "LOCATIONCOUNT", "X1", "X2", "Y1", "Y2"} and
-        int(obj["RECORD"]) == Record.POLYLINE and obj.get("ISNOTACCESIBLE", b"T") == b"T" and obj.get("LINEWIDTH", b"1") == b"1"):
+        get_int(obj, "RECORD") == Record.POLYLINE and obj.get("LINEWIDTH", b"1") == b"1"):
             if obj["OWNERPARTID"] == b"-1":
                 current = True
             else:
-                owner = objects[1 + int(obj["OWNERINDEX"])]
-                current = (obj["OWNERPARTID"] == owner["CURRENTPARTID"] and
-                    obj.get("OWNERPARTDISPLAYMODE", b"0") == owner.get("DISPLAYMODE", b"0"))
+                current = display_part(objects, obj)
             if current:
                 polyline(renderer, obj)
         
         elif (obj.keys() - {"OWNERPARTDISPLAYMODE", "INDEXINSHEET"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "COLOR", "ISNOTACCESIBLE", "LINEWIDTH", "LOCATION.X", "LOCATION.Y", "CORNER.X", "CORNER.Y"} and
-        int(obj["RECORD"]) == Record.LINE and obj["ISNOTACCESIBLE"] == b"T"):
-            owner = objects[1 + int(obj["OWNERINDEX"])]
-            if (obj["OWNERPARTID"] == owner["CURRENTPARTID"] and
-            obj.get("OWNERPARTDISPLAYMODE", b"0") == owner.get("DISPLAYMODE", b"0")):
+        get_int(obj, "RECORD") == Record.LINE and get_bool(obj, "ISNOTACCESIBLE")):
+            if display_part(objects, obj):
                 renderer.line(
-                    colour=colour(obj["COLOR"]),
-                    width=int(obj["LINEWIDTH"]),
+                    colour=colour(obj),
+                    width=get_int(obj, "LINEWIDTH"),
                     a=get_location(obj),
-                    b=(int(obj["CORNER." + x]) for x in "XY"),
+                    b=(get_int(obj, "CORNER." + x) for x in "XY"),
                 )
         
         elif (obj.keys() - {"NAME", "SWAPIDPIN", "OWNERPARTDISPLAYMODE", "ELECTRICAL", "DESCRIPTION", "SWAPIDPART", "SYMBOL_OUTEREDGE"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "DESIGNATOR", "FORMALTYPE", "LOCATION.X", "LOCATION.Y", "PINCONGLOMERATE", "PINLENGTH"} and
-        int(obj["RECORD"]) == Record.PIN and obj["FORMALTYPE"] == b"1"):
-            if obj["OWNERPARTID"] == objects[1 + int(obj["OWNERINDEX"])]["CURRENTPARTID"]:
-                pinlength = int(obj["PINLENGTH"])
-                pinconglomerate = int(obj["PINCONGLOMERATE"])
+        get_int(obj, "RECORD") == Record.PIN and obj["FORMALTYPE"] == b"1"):
+            if obj["OWNERPARTID"] == get_owner(objects, obj)["CURRENTPARTID"]:
+                pinlength = get_int(obj, "PINLENGTH")
+                pinconglomerate = get_int(obj, "PINCONGLOMERATE")
                 offset = get_location(obj)
                 rotate = pinconglomerate & 3
                 with renderer.view(offset=offset, rotate=rotate) as view:
                     kw = dict()
                     points = list()
-                    if "SYMBOL_OUTEREDGE" in obj:
+                    if get_int(obj, "SYMBOL_OUTEREDGE"):
                         view.circle(2.85, (3.15, 0), width=0.6)
                         points.append(6)
                     points.append(pinlength)
-                    electrical = int(obj.get("ELECTRICAL", 0))
+                    electrical = get_int(obj, "ELECTRICAL")
                     marker = pinmarkers[electrical]
                     if marker:
                         kw.update(startarrow=marker)
@@ -473,28 +493,28 @@ Renderer: """By default, the schematic is converted to an SVG file,
                         **kw)
         
         elif (obj.keys() - {"INDEXINSHEET", "ORIENTATION", "STYLE", "ISCROSSSHEETCONNECTOR"} == {"RECORD", "OWNERPARTID", "COLOR", "LOCATION.X", "LOCATION.Y", "SHOWNETNAME", "TEXT"} and
-        int(obj["RECORD"]) == Record.POWER_OBJECT and obj["OWNERPARTID"] == b"-1"):
-            orient = obj.get("ORIENTATION")
-            if obj.get("ISCROSSSHEETCONNECTOR") == b"T":
+        get_int(obj, "RECORD") == Record.POWER_OBJECT and obj["OWNERPARTID"] == b"-1"):
+            orient = get_int(obj, "ORIENTATION")
+            if get_bool(obj, "ISCROSSSHEETCONNECTOR"):
                 marker = dchevron
                 offset = 14
             else:
-                marker = int(obj["STYLE"])
+                marker = get_int(obj, "STYLE")
                 (marker, offset) = connmarkers.get(marker, (None, 0))
             
-            col = colour(obj["COLOR"])
+            col = colour(obj)
             with renderer.view(colour=col, offset=get_location(obj)) as view:
                 kw = dict()
                 if orient:
-                    kw.update(rotate=int(orient))
+                    kw.update(rotate=orient)
                 view.draw(marker, **kw)
                 
-                if obj["SHOWNETNAME"] != b"F":
+                if get_bool(obj, "SHOWNETNAME"):
                     orients = {
-                        b"2": (renderer.RIGHT, renderer.CENTRE, (-1, 0)),
-                        b"3": (renderer.CENTRE, renderer.TOP, (0, -1)),
-                        None: (renderer.LEFT, renderer.CENTRE, (+1, 0)),
-                        b"1": (renderer.CENTRE, renderer.BOTTOM, (0, +1)),
+                        0: (renderer.LEFT, renderer.CENTRE, (+1, 0)),
+                        1: (renderer.CENTRE, renderer.BOTTOM, (0, +1)),
+                        2: (renderer.RIGHT, renderer.CENTRE, (-1, 0)),
+                        3: (renderer.CENTRE, renderer.TOP, (0, -1)),
                     }
                     (horiz, vert, pos) = orients[orient]
                     t = obj["TEXT"].decode("ascii")
@@ -502,119 +522,109 @@ Renderer: """By default, the schematic is converted to an SVG file,
                     view.text(t, pos, horiz=horiz, vert=vert)
         
         elif (obj.keys() - {"INDEXINSHEET", "OWNERPARTDISPLAYMODE", "ISSOLID", "LINEWIDTH", "CORNERXRADIUS", "CORNERYRADIUS", "TRANSPARENT"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "AREACOLOR", "COLOR", "CORNER.X", "CORNER.Y", "ISNOTACCESIBLE", "LOCATION.X", "LOCATION.Y"} and
-        int(obj["RECORD"]) in {Record.RECTANGLE, Record.ROUND_RECTANGLE} and obj["ISNOTACCESIBLE"] == b"T" and obj.get("ISSOLID", b"T") == b"T"):
-            owner = objects[1 + int(obj["OWNERINDEX"])]
-            if (obj["OWNERPARTID"] == owner["CURRENTPARTID"] and
-            obj.get("OWNERPARTDISPLAYMODE", b"0") == owner.get("DISPLAYMODE", b"0")):
-                kw = dict(width=0.6, outline=colour(obj["COLOR"]))
-                if "ISSOLID" in obj:
-                    kw.update(fill=colour(obj["AREACOLOR"]))
+        get_int(obj, "RECORD") in {Record.RECTANGLE, Record.ROUND_RECTANGLE} and get_bool(obj, "ISNOTACCESIBLE")):
+            if display_part(objects, obj):
+                kw = dict(width=0.6, outline=colour(obj))
+                if get_bool(obj, "ISSOLID"):
+                    kw.update(fill=colour(obj, "AREACOLOR"))
                 a = get_location(obj)
-                b = (int(obj["CORNER." + x]) for x in "XY")
+                b = (get_int(obj, "CORNER." + x) for x in "XY")
                 
-                if int(obj["RECORD"]) == Record.ROUND_RECTANGLE:
+                if get_int(obj, "RECORD") == Record.ROUND_RECTANGLE:
                     r = list()
                     for x in "XY":
-                        radius = obj.get("CORNER{}RADIUS".format(x))
-                        if radius is None:
-                            radius = 0
-                        else:
-                            radius = int(radius)
+                        radius = get_int(obj, "CORNER{}RADIUS".format(x))
                         r.append(int(radius))
                     renderer.roundrect(r, a, b, **kw)
                 else:
                     renderer.rectangle(a, b, **kw)
         
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERPARTID", "COLOR", "FONTID", "LOCATION.X", "LOCATION.Y", "TEXT"} and
-        int(obj["RECORD"]) == Record.NET_LABEL and obj["OWNERPARTID"] == b"-1"):
+        get_int(obj, "RECORD") == Record.NET_LABEL and obj["OWNERPARTID"] == b"-1"):
             renderer.text(overline(obj["TEXT"]),
-                colour=colour(obj["COLOR"]),
+                colour=colour(obj),
                 offset=get_location(obj),
-                font=font_name(int(obj["FONTID"])),
+                font=font_name(get_int(obj, "FONTID")),
             )
         
         elif (obj.keys() - {"INDEXINSHEET", "OWNERPARTDISPLAYMODE", "STARTANGLE", "SECONDARYRADIUS"} == {"RECORD", "OWNERPARTID", "OWNERINDEX", "COLOR", "ENDANGLE", "ISNOTACCESIBLE", "LINEWIDTH", "LOCATION.X", "LOCATION.Y", "RADIUS"} and
-        int(obj["RECORD"]) in {Record.ARC, Record.ELLIPTICAL_ARC} and obj["ISNOTACCESIBLE"] == b"T" and obj["LINEWIDTH"] == b"1" and obj.get("OWNERPARTDISPLAYMODE", b"1") == b"1"):
-            owner = objects[1 + int(obj["OWNERINDEX"])]
-            if (owner["CURRENTPARTID"] == obj["OWNERPARTID"] and
-            owner.get("DISPLAYMODE", b"0") == obj.get("OWNERPARTDISPLAYMODE", b"0")):
-                r = int(obj["RADIUS"])
-                if int(obj["RECORD"]) == Record.ELLIPTICAL_ARC:
-                    r2 = obj.get("SECONDARYRADIUS")
-                    if r2 is None:
-                        r2 = 0
-                    else:
-                        r2 = int(r2)
+        get_int(obj, "RECORD") in {Record.ARC, Record.ELLIPTICAL_ARC} and get_bool(obj, "ISNOTACCESIBLE") and obj["LINEWIDTH"] == b"1" and obj.get("OWNERPARTDISPLAYMODE", b"1") == b"1"):
+            if display_part(objects, obj):
+                r = get_int(obj, "RADIUS")
+                if get_int(obj, "RECORD") == Record.ELLIPTICAL_ARC:
+                    r2 = get_int(obj, "SECONDARYRADIUS")
                 else:
                     r2 = r
                 
-                start = float(obj.get("STARTANGLE", 0))
-                end = float(obj["ENDANGLE"])
+                start = get_real(obj, "STARTANGLE")
+                end = get_real(obj, "ENDANGLE")
                 if end == start:  # Full circle rather than a zero-length arc
                     start = 0
                     end = 360
                 renderer.arc((r, r2), start, end, get_location(obj),
-                    colour=colour(obj["COLOR"]),
+                    colour=colour(obj),
                 )
         
         elif (obj.keys() - {"INDEXINSHEET", "LINEWIDTH"} > {"RECORD", "AREACOLOR", "COLOR", "ISNOTACCESIBLE", "ISSOLID", "LOCATIONCOUNT", "OWNERINDEX", "OWNERPARTID"} and
-        int(obj["RECORD"]) == Record.POLYGON and obj["AREACOLOR"] == b"16711680" and obj["ISNOTACCESIBLE"] == b"T" and obj["ISSOLID"] == b"T" and obj.get("LINEWIDTH", b"1") == b"1" and obj["OWNERPARTID"] == b"1"):
+        get_int(obj, "RECORD") == Record.POLYGON and obj["AREACOLOR"] == b"16711680" and get_bool(obj, "ISNOTACCESIBLE") and get_bool(obj, "ISSOLID") and obj.get("LINEWIDTH", b"1") == b"1" and obj["OWNERPARTID"] == b"1"):
             points = list()
-            for location in range(int(obj["LOCATIONCOUNT"])):
+            for location in range(get_int(obj, "LOCATIONCOUNT")):
                 location = format(1 + location)
-                points.append(tuple(int(obj[x + location]) for x in "XY"))
-            renderer.polygon(fill=colour(obj["COLOR"]), points=points)
+                point = tuple(get_int(obj, x + location) for x in "XY")
+                points.append(point)
+            renderer.polygon(fill=colour(obj), points=points)
         elif (obj.keys() - {"INDEXINSHEET", "ISNOTACCESIBLE", "OWNERINDEX", "ORIENTATION", "JUSTIFICATION", "COLOR"} == {"RECORD", "FONTID", "LOCATION.X", "LOCATION.Y", "OWNERPARTID", "TEXT"} and
-        int(obj["RECORD"]) == Record.LABEL):
-            if obj["OWNERPARTID"] == b"-1" or obj["OWNERPARTID"] == objects[1 + int(obj["OWNERINDEX"])]["CURRENTPARTID"]:
+        get_int(obj, "RECORD") == Record.LABEL):
+            if obj["OWNERPARTID"] == b"-1" or obj["OWNERPARTID"] == get_owner(objects, obj)["CURRENTPARTID"]:
                 text(renderer, obj)
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "COLOR", "LOCATION.X", "LOCATION.Y", "OWNERPARTID"} and
-        obj["RECORD"] == b"22" and obj["OWNERPARTID"] == b"-1"):
-            col = colour(obj["COLOR"])
+        get_int(obj, "RECORD") == Record.NO_ERC and obj["OWNERPARTID"] == b"-1"):
+            col = colour(obj)
             renderer.draw(nc, get_location(obj), colour=col)
         elif (obj.keys() - {"CLIPTORECT"} == {"RECORD", "ALIGNMENT", "AREACOLOR", "CORNER.X", "CORNER.Y", "FONTID", "ISSOLID", "LOCATION.X", "LOCATION.Y", "OWNERPARTID", "Text", "WORDWRAP"} and
-        int(obj["RECORD"]) == Record.TEXT_FRAME and obj["ALIGNMENT"] == b"1" and obj["AREACOLOR"] == b"16777215" and obj.get("CLIPTORECT", b"T") == b"T" and obj["ISSOLID"] == b"T" and obj["OWNERPARTID"] == b"-1" and obj["WORDWRAP"] == b"T"):
+        get_int(obj, "RECORD") == Record.TEXT_FRAME and obj["ALIGNMENT"] == b"1" and obj["AREACOLOR"] == b"16777215" and get_bool(obj, "ISSOLID") and obj["OWNERPARTID"] == b"-1" and get_bool(obj, "WORDWRAP")):
             [lhs, _] = get_location(obj)
             renderer.text(
-                font=font_name(int(obj["FONTID"])),
-                offset=(lhs, int(obj["CORNER.Y"])),
-                width=int(obj["CORNER.X"]) - lhs,
+                font=font_name(get_int(obj, "FONTID")),
+                offset=(lhs, get_int(obj, "CORNER.Y")),
+                width=get_int(obj, "CORNER.X") - lhs,
                 text=obj["Text"].decode("ascii").replace("~1", "\n"),
                 vert=renderer.TOP,
             )
         
         elif (obj.keys() == {"RECORD", "OWNERINDEX", "ISNOTACCESIBLE", "OWNERPARTID", "LINEWIDTH", "COLOR", "LOCATIONCOUNT", "X1", "Y1", "X2", "Y2", "X3", "Y3", "X4", "Y4"} and
-        int(obj["RECORD"]) == Record.BEZIER and obj["ISNOTACCESIBLE"] == b"T" and obj["OWNERPARTID"] == b"1" and obj["LINEWIDTH"] == b"1" and obj["LOCATIONCOUNT"] == b"4"):
-            col = colour(obj["COLOR"])
+        get_int(obj, "RECORD") == Record.BEZIER and get_bool(obj, "ISNOTACCESIBLE") and obj["OWNERPARTID"] == b"1" and obj["LINEWIDTH"] == b"1" and obj["LOCATIONCOUNT"] == b"4"):
+            col = colour(obj)
             points = list()
             for n in range(4):
                 n = format(1 + n)
-                points.append(tuple(int(obj[x + n]) for x in "XY"))
+                points.append(tuple(get_int(obj, x + n) for x in "XY"))
             renderer.cubicbezier(*points, colour=col)
         
         elif (obj.keys() - {"RADIUS_FRAC", "SECONDARYRADIUS_FRAC"} == {"RECORD", "OWNERINDEX", "ISNOTACCESIBLE", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "RADIUS", "SECONDARYRADIUS", "COLOR", "AREACOLOR", "ISSOLID"} and
-        int(obj["RECORD"]) == Record.ELLIPSE and obj["ISNOTACCESIBLE"] == b"T" and obj["SECONDARYRADIUS"] == obj["RADIUS"] and obj["ISSOLID"] == b"T"):
+        get_int(obj, "RECORD") == Record.ELLIPSE and get_bool(obj, "ISNOTACCESIBLE") and obj["SECONDARYRADIUS"] == obj["RADIUS"] and get_bool(obj, "ISSOLID")):
             renderer.circle(
                 r=get_int_frac(obj, "RADIUS"),
                 width=0.6,
-                outline=colour(obj["COLOR"]), fill=colour(obj["AREACOLOR"]),
+                outline=colour(obj), fill=colour(obj, "AREACOLOR"),
                 offset=get_location(obj),
             )
         
         elif (obj.keys() - {"INDEXINSHEET", "SYMBOLTYPE"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "XSIZE", "YSIZE", "COLOR", "AREACOLOR", "ISSOLID", "UNIQUEID"} and
-        int(obj["RECORD"]) == Record.SHEET_SYMBOL and obj["OWNERPARTID"] == b"-1" and obj["ISSOLID"] == b"T" and obj.get("SYMBOLTYPE", b"Normal") == b"Normal"):
-            renderer.rectangle((int(obj["XSIZE"]), -int(obj["YSIZE"])),
+        get_int(obj, "RECORD") == Record.SHEET_SYMBOL and obj["OWNERPARTID"] == b"-1" and get_bool(obj, "ISSOLID") and obj.get("SYMBOLTYPE", b"Normal") == b"Normal"):
+            corner = (get_int(obj, "XSIZE"), -get_int(obj, "YSIZE"))
+            renderer.rectangle(corner,
                 width=0.6,
-                outline=colour(obj["COLOR"]), fill=colour(obj["AREACOLOR"]),
+                outline=colour(obj), fill=colour(obj, "AREACOLOR"),
                 offset=get_location(obj),
             )
         
         elif (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERINDEX", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR", "FONTID", "TEXT"} and
-        int(obj["RECORD"]) in {Record.SHEET_NAME, Record.SHEET_FILE_NAME} and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
+        get_int(obj, "RECORD") in {Record.SHEET_NAME, Record.SHEET_FILE_NAME} and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
             text(renderer, obj)
         
         elif (obj.keys() - {"CORNER.X_FRAC", "CORNER.Y_FRAC"} == {"RECORD", "OWNERINDEX", "INDEXINSHEET", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "CORNER.X", "CORNER.Y", "EMBEDIMAGE", "FILENAME"} and
-        int(obj["RECORD"]) == Record.IMAGE and obj["OWNERINDEX"] == b"1" and obj["OWNERPARTID"] == b"-1" and obj["EMBEDIMAGE"] == b"T"):
+        get_int(obj, "RECORD") == Record.IMAGE and obj["OWNERINDEX"] == b"1" and obj["OWNERPARTID"] == b"-1" and get_bool(obj, "EMBEDIMAGE")):
             corner = list()
             for x in "XY":
                 corner.append(get_int_frac(obj, "CORNER." + x))
@@ -625,17 +635,16 @@ Renderer: """By default, the schematic is converted to an SVG file,
     
     renderer.finish()
 
-def colour(c):
+def colour(obj, property="COLOR"):
     '''Convert a TColor property value to a fractional RGB tuple'''
+    c = get_int(obj, property)
     return (x / 0xFF for x in int(c).to_bytes(3, "little"))
 
 def text(renderer, obj, **kw):
-    c = obj.get("COLOR")
-    if c:
-        kw["colour"] = colour(c)
+    kw["colour"] = colour(obj)
     renderer.text(obj["TEXT"].decode("ascii"),
         offset=get_location(obj),
-        font=font_name(int(obj["FONTID"])),
+        font=font_name(get_int(obj, "FONTID")),
     **kw)
 
 def font_name(id):
@@ -676,9 +685,7 @@ def polyline(renderer, obj):
         location = format(1 + location)
         points.append(tuple(int(obj[x + location]) for x in "XY"))
     kw = dict(points=points)
-    c = obj.get("COLOR")
-    if c:
-        kw.update(colour=colour(c))
+    kw.update(colour=colour(obj))
     renderer.polyline(**kw)
 
 if __name__ == "__main__":
