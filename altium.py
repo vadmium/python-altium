@@ -69,7 +69,22 @@ def get_sheet_style(sheet):
     STYLES = {
         SheetStyle.A4: ("A4", (1150, 760)),
         SheetStyle.A3: ("A3", (1550, 1110)),
+        SheetStyle.A2: ("A2", (2230, 1570)),
+        SheetStyle.A1: ("A1", (3150, 2230)),
+        SheetStyle.A0: ("A0", (4460, 3150)),
         SheetStyle.A: ("A", (950, 750)),
+        SheetStyle.B: ("B", (1500, 950)),
+        SheetStyle.C: ("C", (2000, 1500)),
+        SheetStyle.D: ("D", (3200, 2000)),
+        SheetStyle.E: ("E", (4200, 3200)),
+        SheetStyle.LETTER: ("Letter", (1100, 850)),
+        SheetStyle.LEGAL: ("Legal", (1400, 850)),
+        SheetStyle.TABLOID: ("Tabloid", (1700, 1100)),
+        SheetStyle.ORCAD_A: ("OrCAD A", (990, 790)),
+        SheetStyle.ORCAD_B: ("OrCAD B", (1540, 990)),
+        SheetStyle.ORCAD_C: ("OrCAD C", (2060, 1560)),
+        SheetStyle.ORCAD_D: ("OrCAD D", (3260, 2060)),
+        SheetStyle.ORCAD_E: ("OrCAD E", (4280, 3280)),
     }
     [sheetstyle, size] = STYLES[get_int(sheet, "SHEETSTYLE")]
     if get_bool(sheet, "USECUSTOMSHEET"):
@@ -181,9 +196,22 @@ class SheetStyle:
     """Preset sheet sizes"""
     A4 = 0
     A3 = 1
+    A2 = 2
+    A1 = 3
+    A0 = 4
     A = 5
     B = 6
     C = 7
+    D = 8
+    E = 9
+    LETTER = 10
+    LEGAL = 11
+    TABLOID = 12
+    ORCAD_A = 13
+    ORCAD_B = 14
+    ORCAD_C = 15
+    ORCAD_D = 16
+    ORCAD_E = 17
 
 import vector
 from sys import stderr
