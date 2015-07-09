@@ -148,7 +148,7 @@ Component pin, including line, name and number
 * `|PINLENGTH=`_integer_
 * `|LOCATION.X|LOCATION.Y`: Point where pin line extends from component
 * `|NAME`: Pin function, shown inside component, opposite the pin line.
-    May not be present even if ShowName flag is set.
+    May not be present even if the flag is set in `|PINCONGLOMERATE`.
 * `|DESIGNATOR`: Pin “number”, shown outside component, against pin line
 * `|SWAPIDPIN|SWAPINPART`: Optional
 
