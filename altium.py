@@ -326,10 +326,12 @@ Renderer: """By default, the schematic is converted to an SVG file,
                     kw.update(angle=+90)
                 val = obj["TEXT"]
                 if val.startswith(b"="):
+                    match = val[1:].lower()
                     for o in objects:
                         if o.get("RECORD") != Record.PARAMETER or o.get("OWNERINDEX") != obj["OWNERINDEX"]:
                             continue
-                        if o["NAME"].lower() != val[1:].lower():
+                        name = o.get("NAME")
+                        if name is None or name.lower() != match:
                             continue
                         val = o["TEXT"]
                         break
