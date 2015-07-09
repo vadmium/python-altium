@@ -2,6 +2,7 @@
 
 import struct
 from io import SEEK_CUR
+from warnings import warn
 
 try:
     from OleFileIO_PL import OleFileIO
@@ -33,7 +34,12 @@ def read(file):
                 continue
             
             (name, value) = property.split(b"=", 1)
-            obj[name.decode("ascii")] = value
+            name = name.decode("ascii")
+            existing = obj.get(name)
+            if existing not in (None, value):
+                msg = "Conflicting duplicate: {!r}, was {!r}"
+                warn(msg.format(property, existing))
+            obj[name] = value
         
         objects.append(obj)
         

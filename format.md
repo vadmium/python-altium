@@ -51,6 +51,9 @@ with words run together without underscores or any other punctuation.
 Exceptions include `|Text` for text frame objects,
 `|DISPLAY_UNIT` for sheet objects, and some properties for co-ordinates.
 
+Sometimes properties are repeated, such as `|HOTSPOTGRIDON=T` in the
+[Sheet](#sheet) record.
+
 Common data types represented by properties:
 
 * Strings: Most properties are directly decodable as ASCII strings,
@@ -361,7 +364,7 @@ with properties for the entire schematic
         Seems to be associated with sideways vertical text,
         but the text objects themselves already indicate the orientation.
     * `|FONTNAME`_n_`=Times New Roman`
-* `|USEMBCS=T|ISBOC=T|HOTSPOTGRIDON=T|HOTSPOTGRIDON=T|HOTSPOTGRIDSIZE`
+* `|USEMBCS=T|ISBOC=T|HOTSPOTGRIDON=T|HOTSPOTGRIDSIZE`
 * `|SHEETSTYLE`: Selects a metric or imperial (ANSI?) paper size.
     The drawing area (size of the grid rectangle) is given below,
     and tends to be slightly smaller than the corresponding
