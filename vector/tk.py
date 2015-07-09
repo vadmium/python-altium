@@ -229,7 +229,7 @@ class Renderer(base.Renderer, base.Subview):
         size = (xsize + 2 * margin, ysize + 2 * margin)
         raw = _RawRenderer(size, *pos, down=down, **kw)
         if down < 0:
-            offset = (margin, margin - ysize)
+            offset = (margin, -margin - ysize)
         else:
             offset = (margin, margin)
         base.Subview.__init__(self, raw, offset=offset, colour=(0, 0, 0))
