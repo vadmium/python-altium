@@ -130,7 +130,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
     
     sheet = objects[1]
     assert sheet["RECORD"] == Record.SHEET
-    (sheetstyle, size) = {SheetStyle.A4: ("A4", (1150, 760)), SheetStyle.A3: ("A3", (1550, 1150)), SheetStyle.A: ("A", (950, 760))}[sheet.get("SHEETSTYLE", SheetStyle.A4)]
+    (sheetstyle, size) = {SheetStyle.A4: ("A4", (1150, 760)), SheetStyle.A3: ("A3", (1550, 1110)), SheetStyle.A: ("A", (950, 750))}[sheet.get("SHEETSTYLE", SheetStyle.A4)]
     if "USECUSTOMSHEET" in sheet:
         size = tuple(int(sheet["CUSTOM" + "XY"[x]]) for x in range(2))
     
