@@ -259,13 +259,14 @@ The component object seems to occur before any of its child objects.
 * `|OWNERPARTDISPLAYMODE`: See [Schematic component](#schematic-component)
     `|DISPLAYMODE`
 * `|LINEWIDTH=1|COLOR`: Optional
-* `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .
+* `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .: May also include `_FRAC` counterparts
 
 ### Polygon ###
 `|RECORD=7`: Polygon for component symbol
 * `|OWNERINDEX|ISNOTACCESIBLE=T`
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=1`
+* `|OWNERPARTDISPLAYMODE`: Optional
 * `|LINEWIDTH=1`: Optional
 * `|COLOR=16711680` (= #0000FF)
 * `|AREACOLOR`
@@ -504,6 +505,8 @@ with properties for the entire schematic
     * 1: Portrait
 * `|CUSTOMXZONES=6|CUSTOMYZONES=4|CUSTOMMARGINWIDTH=20|DISPLAY_UNIT=4`
 * `|REFERENCEZONESON`: [Boolean]
+* `|SHOWTEMPLATEGRAPHICS`: [Boolean]
+* `|TEMPLATEFILENAME`: Optional Windows path
 
 ### Sheet name and file name ###
 `|RECORD=32` (sheet name) / `33` (sheet file name):
