@@ -429,7 +429,7 @@ Label, such as component value
     whose `|NAME` matches the rest of the text,
     and the actual text is taken
     from the referenced parameter’s `|TEXT` property.
-* `|NAME`: Optional
+* `|NAME`
 * `|READONLYSTATE`: Same as for [Designator](#designator)?
 * `|UNIQUEID|ISMIRRORED=T`: Each optional
 
