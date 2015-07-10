@@ -28,8 +28,10 @@ class ConversionTest(TestCase):
         stream = BytesIO()
         stream.fileno = lambda: stream
         
+        weight = format(1 + len(sch)).encode("ascii")
         preliminary = (
-            b"\x00",
+            b"|HEADER=Protel for Windows - Schematic Capture Binary File "
+                b"Version 5.0|WEIGHT=" + weight + b"\x00",
             b"|RECORD=31|FONTIDCOUNT=1|SIZE1=10|FONTNAME1=Times New Roman"
                 b"|SYSTEMFONT=1"
                 b"|AREACOLOR=16317695|BORDERON=T|CUSTOMX=|CUSTOMY="
