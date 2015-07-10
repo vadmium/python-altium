@@ -472,22 +472,22 @@ with properties for the entire schematic
     paper size.
     * 0: A4, 1150 × 760
     * 1: A3, 1550 × 1110
-    * 2 (?): A2, 2230 × 1570
-    * 3 (?): A1, 3150 × 2230
-    * 4 (?): A0, 4460 × 3150
+    * 2: A2, 2230 × 1570
+    * 3: A1, 3150 × 2230
+    * 4: A0, 4460 × 3150
     * 5: A, 950 × 750
     * 6: B, 1500 × 950
     * 7: C, 2000 × 1500
-    * 8 (?): D, 3200 × 2000
-    * 9 (?): E, 4200 × 3200
-    * 10 (?): Letter, 1100 × 850
-    * 11 (?): Legal, 1400 × 850
-    * 12 (?): Tabloid, 1700 × 1100
-    * 13 (?): OrCAD A, 990 × 790
-    * 14 (?): OrCAD B, 1540 × 990
-    * 15 (?): OrCAD C, 2060 × 1560
-    * 16 (?): OrCAD D, 3260 × 2060
-    * 17 (?): OrCAD E, 4280 × 3280
+    * 8: D, 3200 × 2000
+    * 9: E, 4200 × 3200
+    * 10: Letter, 1100 × 850
+    * 11: Legal, 1400 × 850
+    * 12: Tabloid, 1700 × 1100
+    * 13: OrCAD A, 990 × 790
+    * 14: OrCAD B, 1540 × 990
+    * 15: OrCAD C, 2060 × 1560
+    * 16: OrCAD D, 3260 × 2060
+    * 17: OrCAD E, 4280 × 3280
 * `|SYSTEMFONT` ([integer]): A font number to use as a default, normally 1.
 * `|BORDERON=T`
 * `|TITLEBLOCKON` ([boolean]):
