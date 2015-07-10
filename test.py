@@ -7,7 +7,7 @@ from contextlib import redirect_stdout
 from xml.etree.ElementTree import XML
 
 class ConversionTest(TestCase):
-    def test_svg(self):
+    def convert(self, sch):
         def mock_open(name, mode):
             self.assertEqual(mode, "rb")
             return stream
@@ -28,7 +28,7 @@ class ConversionTest(TestCase):
         stream = BytesIO()
         stream.fileno = lambda: stream
         
-        sch = (
+        preliminary = (
             b"\x00",
             b"|RECORD=31|FONTIDCOUNT=1|SIZE1=10|FONTNAME1=Times New Roman"
                 b"|SYSTEMFONT=1"
@@ -37,11 +37,8 @@ class ConversionTest(TestCase):
                 b"|SNAPGRIDON=T|SNAPGRIDSIZE=|VISIBLEGRIDON=T"
                 b"|VISIBLEGRIDSIZE=10|ISBOC=T|SHEETNUMBERSPACESIZE=4"
                 b"|USEMBCS=T\x00",
-            b"|RECORD=15|LOCATION.X=100|LOCATION.Y=200|XSIZE=40|YSIZE=30"
-                b"|COLOR=7846673|AREACOLOR=3381725|ISSOLID=T|OWNERPARTID=-1"
-                b"|UNIQUEID=\x00",
         )
-        for list in sch:
+        for list in preliminary + sch:
             stream.write(len(list).to_bytes(4, "little"))
             stream.write(list)
         stream.seek(0)
@@ -52,8 +49,15 @@ class ConversionTest(TestCase):
                 patch("altium.os", mock_os), \
                 redirect_stdout(output):
             altium.convert("dummy.SchDoc", svg.Renderer)
-        
-        output = XML(output.getvalue())
+        return output.getvalue()
+    
+    def test_svg(self):
+        sch = (
+            b"|RECORD=15|LOCATION.X=100|LOCATION.Y=200|XSIZE=40|YSIZE=30"
+                b"|COLOR=7846673|AREACOLOR=3381725|ISSOLID=T|OWNERPARTID=-1"
+                b"|UNIQUEID=\x00",
+        )
+        output = XML(self.convert(sch))
         SVG = "{http://www.w3.org/2000/svg}"
         
         self.assertEqual(output.tag, SVG + "svg")
@@ -84,3 +88,20 @@ class ConversionTest(TestCase):
             ("stroke-width", "0.6"), ("class", "solid"),
             ("style", "fill: #DD9933; stroke: #11BB77"),
         ))
+    
+    def test_indirect_parameter(self):
+        sch = (
+            # Component at index 1
+            b"|RECORD=1|OWNERPARTID=-1|UNIQUEID=ZZZZZZZZ|AREACOLOR=11599871"
+                b"|COLOR=128|CURRENTPARTID=1|DISPLAYMODECOUNT=1"
+                b"|LIBREFERENCE=555|LOCATION.X=100|LOCATION.Y=100"
+                b"|PARTCOUNT=2|PARTIDLOCKED=F|SOURCELIBRARYNAME=Lib.SchLib"
+                b"|TARGETFILENAME=*\x00",
+            b"|RECORD=44|OWNERINDEX=1\x00",  # Shares OWNERINDEX but no NAME
+            b"|RECORD=41|OWNERINDEX=1|NAME=Value|TEXT=555|OWNERPARTID=-1"
+                b"|COLOR=0|FONTID=1\x00",
+            b"|RECORD=41|OWNERINDEX=1|NAME=Comment"
+                b"|LOCATION.X=100|LOCATION.Y=100|TEXT==value|OWNERPARTID=-1"
+                b"|COLOR=0|FONTID=1\x00",
+        )
+        self.convert(sch)  # Should not raise an exception
