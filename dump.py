@@ -6,8 +6,12 @@ from sys import argv
 def main(file):
     with open(file, "rb") as file:
         objects = altium.read(file)
-    for o in objects:
-        print(repr(o))
+    for [i, o] in enumerate(objects):
+        if not i:
+            i = "Header"
+        else:
+            i = format(i - 1)
+        print("{}: {}".format(i, altium.dump_properties(o)))
 
 if __name__ == "__main__":
     try:
