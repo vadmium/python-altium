@@ -521,8 +521,8 @@ Labels on top-level schematic
 * `|LOCATION.X|LOCATION.Y`
 * `|COLOR=8388608` (= #000080)
 * `|FONTID`
-* `|TEXT`: Has a letter appended based on [Schematic component]
-    (#schematic-component) `|PARTCOUNT|CURRENTPARTID`
+* `|TEXT`: Has a letter appended based on `|PARTCOUNT|CURRENTPARTID` of
+    the owner [Schematic component](#schematic-component)
 * `|NAME=Designator`
 * `|READONLYSTATE` ([integer]):
     * 1: Name is read-only?
