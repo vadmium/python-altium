@@ -710,9 +710,9 @@ def overline(name):
 
 def polyline(renderer, obj):
     points = list()
-    for location in range(int(obj["LOCATIONCOUNT"])):
+    for location in range(get_int(obj, "LOCATIONCOUNT")):
         location = format(1 + location)
-        points.append(tuple(int(obj[x + location]) for x in "XY"))
+        points.append(tuple(get_int(obj, x + location) for x in "XY"))
     kw = dict(points=points)
     kw.update(colour=colour(obj))
     renderer.polyline(**kw)
