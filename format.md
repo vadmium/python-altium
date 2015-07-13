@@ -2,8 +2,8 @@
 
 Altium *.SchDoc files use the OLE compound document format.
 Inside the OLE container is a stream (embedded file)
-containing a sequence of schematic objects.
-Each schematic object is a collection of properties,
+containing schematic object records.
+Each record is a collection of properties,
 encoded as ASCII or byte strings.
 
 Contents:
@@ -145,9 +145,13 @@ rather than explicitly set to `F`.
 
 Each item in the “FileHeader” stream describes an object.
 The first object is a [Header](#header) object.
-All subsequent objects are indexed starting from zero. The object at
+All subsequent objects are indexed starting from zero. The type of
+each object is identified by its `|RECORD` property.
+
+Indexed objects have a hierarchical ownership relationship with
+each other, and are stored in depth-first order. The object at
 index zero directly follows the header object, and is a [Sheet](#sheet)
-object. The type of each object is identified by its `|RECORD` property.
+object.
 
 If a property is given with a value below, that documents that
 it has only ever been seen with that particular value.
@@ -538,7 +542,8 @@ Labels on top-level schematic
 
 ### Parameter ###
 `|RECORD=41`: Label, such as component value
-* `|INDEXINSHEET|OWNERINDEX`: Each optional
+* `|INDEXINSHEET`: Optional
+* `|OWNERINDEX` ([integer]): May be zero (omitted) for sheet parameters
 * `|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.X_FRAC|LOCATION.Y|LOCATION.Y_FRAC`: Each optional.
     Probably should not display label if not present,
@@ -558,7 +563,8 @@ Labels on top-level schematic
     from the referenced parameter’s `|TEXT` property.
 * `|NAME`
 * `|READONLYSTATE`: Same as for [Designator](#designator)?
-* `|UNIQUEID`: Optional
+* `|UNIQUEID`: Optional. Eight uppercase letters from A–Y (25 letters), meant
+    to be unique across a whole project (not just a single schematic)
 * `|ISMIRRORED`: [Boolean]
 
 ### Warning sign ###
