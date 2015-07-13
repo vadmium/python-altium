@@ -14,7 +14,7 @@ Contents:
 * [Data types](#data-types): [Integer], [Colour], [Real], [Boolean]
 * [Object records](#object-records)
     * [0: Header](#header)
-    * [1: Schematic component](#schematic-component)
+    * [1: Component](#component)
     * [2: Pin](#pin)
     * [4: Label](#label)
     * [5: Bezier](#bezier)
@@ -60,13 +60,9 @@ Related references:
 
 ## OLE compound document ##
 
-The OLE root directory (called “Root Entry”) lists three streams:
-
-* FileHeader
-* Storage
-* Additional
-
-The schematic data is in the “FileHeader” stream.
+The OLE root directory (called Root Entry) lists three streams:
+FileHeader, Storage, and Additional.
+The schematic data is in the FileHeader stream.
 
 ## FileHeader ##
 
@@ -143,7 +139,7 @@ rather than explicitly set to `F`.
 
 ## Object records ##
 
-Each item in the “FileHeader” stream describes an object.
+Each item in the FileHeader stream describes an object.
 The first object is a [Header](#header) object.
 All subsequent objects are indexed starting from zero. The type of
 each object is identified by its `|RECORD` property.
@@ -163,8 +159,8 @@ as being equivalent to setting `|RECORD=0`.
 * `|HEADER=Protel for Windows - Schematic Capture Binary File Version 5.0`
 * `|WEIGHT` ([integer]): number of remaining objects
 
-### Schematic component ###
-`|RECORD=1`: Set up component part.
+### Component ###
+`|RECORD=1`: Set up schematic component part.
 Other objects, such as lines, pins and labels exist,
 which are “owned” by the component.
 The component object seems to occur before any of its child objects.
@@ -197,8 +193,7 @@ The component object seems to occur before any of its child objects.
 ### Pin ###
 `|RECORD=2`: Component pin, including line, name and number
 * `|OWNERINDEX`: Component part index
-* `|OWNERPARTID`: See [Schematic component](#schematic-component)
-    `|CURRENTPARTID`
+* `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
 * `|OWNERPARTDISPLAYMODE|DESCRIPTION`: Optional
 * `|SYMBOL_OUTEREDGE` ([integer]): Optional symbol between component and pin.
     0 (default): No symbol
@@ -237,8 +232,7 @@ The component object seems to occur before any of its child objects.
 * `|OWNERINDEX`: Component part index
 * `|ISNOTACCESIBLE`: [Boolean]
 * `|INDEXINSHEET`: Optional
-* `|OWNERPARTID`: See [Schematic component](#schematic-component)
-    `|CURRENTPARTID`
+* `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
 * `|LOCATION.X|LOCATION.Y`
 * `|ORIENTATION=3|JUSTIFICATION=2|COLOR`: Each optional
 * `|FONTID` ([integer]): Probably selects from the font table in the
@@ -258,10 +252,8 @@ The component object seems to occur before any of its child objects.
 * `|OWNERINDEX`: Component part index
 * `|ISNOTACCESIBLE`: [Boolean]
 * `|INDEXINSHEET`: Optional
-* `|OWNERPARTID`: See [Schematic component](#schematic-component)
-    `|CURRENTPARTID`
-* `|OWNERPARTDISPLAYMODE`: See [Schematic component](#schematic-component)
-    `|DISPLAYMODE`
+* `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
+* `|OWNERPARTDISPLAYMODE`: See [Component](#component) `|DISPLAYMODE`
 * `|LINEWIDTH=1|COLOR`: Optional
 * `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .: May also include `_FRAC` counterparts
 
@@ -300,10 +292,8 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|OWNERINDEX`: Component part index
 * `|ISNOTACCESIBLE=T`
 * `|INDEXINSHEET`: Optional
-* `|OWNERPARTID`: See [Schematic component](#schematic-component)
-    `|CURRENTPARTID`
-* `|OWNERPARTDISPLAYMODE`: See [Schematic component](#schematic-component)
-    `|DISPLAYMODE`
+* `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
+* `|OWNERPARTDISPLAYMODE`: See [Component](#component) `|DISPLAYMODE`
 * `|LOCATION.X|LOCATION.Y`: Centre of circle
 * `|RADIUS`: [Integer]
 * `|LINEWIDTH=1`
@@ -318,8 +308,7 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|ISNOTACCESIBLE=T`
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=1`
-* `|OWNERPARTDISPLAYMODE`: See [Schematic component](#schematic-component)
-    `|DISPLAYMODE`
+* `|OWNERPARTDISPLAYMODE`: See [Component](#component) `|DISPLAYMODE`
 * `|LOCATION.X|LOCATION.Y|CORNER.X|CORNER.Y`: Endpoints of the line
 * `|LINEWIDTH=1`: Line thickness
 * `|COLOR`
@@ -329,8 +318,7 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|OWNERINDEX`: Component part index
 * `|ISNOTACCESIBLE=T`: Non-English spelling of “accessible”!
 * `|INDEXINSHEET`: Optional
-* `|OWNERPARTID`: See [Schematic component](#schematic-component)
-    `|CURRENTPARTID`
+* `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
 * `|OWNERPARTDISPLAYMODE`: Optional
 * `|LOCATION.X|LOCATION.Y`: Bottom left corner
 * `|CORNER.X|CORNER.Y`: Top right corner
@@ -529,7 +517,7 @@ Labels on top-level schematic
 * `|COLOR=8388608` (= #000080)
 * `|FONTID`
 * `|TEXT`: Has a letter appended based on `|PARTCOUNT|CURRENTPARTID` of
-    the owner [Schematic component](#schematic-component)
+    the owner [Component](#component)
 * `|NAME=Designator`
 * `|READONLYSTATE` ([integer]):
     * 1: Name is read-only?
