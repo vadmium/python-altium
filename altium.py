@@ -157,7 +157,7 @@ def display_part(objects, obj):
 class Record:
     """Schematic object record types"""
     HEADER = 0
-    SCH_COMPONENT = 1
+    COMPONENT = 1
     PIN = 2
     LABEL = 4
     BEZIER = 5
@@ -517,7 +517,7 @@ def handle_unknown(renderer, objects, obj):
     check_property(obj, "OWNERPARTID", b"-1")
     del obj["FILENAME"]
 
-@_setitem(handlers, Record.SCH_COMPONENT)
+@_setitem(handlers, Record.COMPONENT)
 def handle_component(renderer, objects, obj):
     for property in (
         "ISMIRRORED", "ORIENTATION", "INDEXINSHEET", "COMPONENTDESCRIPTION",
