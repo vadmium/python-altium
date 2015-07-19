@@ -27,7 +27,7 @@ Contents:
     * [13: Line](#line)
     * [14: Rectangle](#rectangle)
     * [15: Sheet symbol](#sheet-symbol)
-    * [17: Power object](#power-object)
+    * [17: Power port](#power-port)
     * [18: Port](#port)
     * [22: No ERC](#no-erc)
     * [25: Net label](#net-label)
@@ -39,11 +39,11 @@ Contents:
     * [31: Sheet](#sheet)
     * [32, 33: Sheet name and file name](#sheet-name-and-file-name)
     * [34: Designator](#designator)
-    * [39](#39)
+    * [39: Template](#template)
     * [41: Parameter](#parameter)
     * [43: Warning sign](#warning-sign)
-    * [44](#44)
-    * [45](#45)
+    * [44: Implementation list](#implementation-list)
+    * [45: Implementation](#implementation)
     * [46](#46)
     * [47](#47)
     * [48](#48)
@@ -339,7 +339,7 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|COLOR|AREACOLOR|ISSOLID=T|UNIQUEID`
 * `|SYMBOLTYPE=Normal`: Optional
 
-### Power object ###
+### Power port ###
 `|RECORD=17`: Connection to power rail, ground, etc
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=-1`
@@ -524,8 +524,8 @@ Labels on top-level schematic
 * `|ISMIRRORED`: [Boolean]
 * `|ORIENTATION|ISHIDDEN`: Each optional
 
-### 39 ###
-`|RECORD=39`
+### Template ###
+`|RECORD=39`: Sheet template, owning custom title block lines and labels
 * `|ISNOTACCESIBLE=T|OWNERPARTID=-1|FILENAME`
 
 ### Parameter ###
@@ -566,10 +566,10 @@ Labels on top-level schematic
     * 1: Bottom-left alignment, then rotated 90° anticlockwise
     * 2: Top-right corner alignment
 
-### 44 ###
+### Implementation list ###
 `|RECORD=44|OWNERINDEX`: Implementation list?
 
-### 45 ###
+### Implementation ###
 `|RECORD=45`: Implementation?
 * `|OWNERINDEX`
 * `|INDEXINSHEET=-1`: Optional
@@ -582,6 +582,8 @@ Labels on top-level schematic
 * `|ISCURRENT`: [Boolean]
 
 ### 46 ###
+Child of RECORD=45 ([Implementation](#implementation))
+
 `|RECORD=46|OWNERINDEX`
 
 ### 47 ###
@@ -591,4 +593,6 @@ Labels on top-level schematic
 * `|DESINTF|DESIMPCOUNT=1|DESIMP0`
 
 ### 48 ###
+Child of RECORD=45 ([Implementation])(#implementation))
+
 `|RECORD=48|OWNERINDEX`
