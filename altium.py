@@ -79,6 +79,13 @@ class Properties:
             msg = msg.format(name, value, ", ".join(map(repr, values)))
             warn(msg, stacklevel=2)
     
+    def check_unknown(self):
+        '''Warn if there are properties that weren't queried'''
+        unhandled = self._properties.keys() - self._known
+        if unhandled:
+            unhandled = ", ".join(sorted(unhandled))
+            warn("{} unhandled in {}".format(unhandled, self), stacklevel=2)
+    
     def get_int(self, property):
         return int(self.get(property, 0))
     
@@ -352,10 +359,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
         handler = handlers.get(record)
         if handler:
             handler(renderer, objects, obj)
-            unhandled = obj._properties.keys() - obj._known
-            if unhandled:
-                msg = "{} unhandled in {}"
-                warn(msg.format(", ".join(sorted(unhandled)), obj))
+            obj.check_unknown()
         else:
             warn("Unhandled record type: {}".format(obj))
     
