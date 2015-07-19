@@ -10,6 +10,20 @@ except ImportError:
     # Pillow version tends to do illegal seeks with Altium files
     from PIL.OleFileIO import OleFileIO
 
+class Object:
+    '''Base class for Altium schematic objects'''
+    
+    def __init__(self, *, properties=None):
+        self.properties = properties
+        self.children = list()
+    
+    def __repr__(self):
+        if self.properties is not None:
+            properties = "properties=<{}>".format(self.properties)
+        else:
+            properties = ""
+        return "{}({})".format(type(self).__name__, properties)
+
 def read(file):
     """Parses an Altium *.SchDoc schematic file and returns a Sheet object
     """
@@ -19,7 +33,13 @@ def read(file):
     parse_header(header)
     header.check_unknown()
     
-    return tuple(records)
+    sheet = Object(properties=next(records))
+    objects = [sheet]
+    for properties in records:
+        obj = Object(properties=properties)
+        objects[obj.properties.get_int("OWNERINDEX")].children.append(obj)
+        objects.append(obj)
+    return sheet
 
 def iter_records(file):
     """Yields object records from an Altium *.SchDoc schematic file
@@ -104,12 +124,6 @@ class Properties:
     def get_real(self, property):
         return float(self.get(property, 0))
 
-def get_sheet(objects):
-    '''Returns the object holding settings for the sheet'''
-    sheet = objects[0]
-    assert sheet.get_int("RECORD") == Record.SHEET
-    return sheet
-
 def get_sheet_style(sheet):
     '''Returns the size of the sheet: (name, (width, height))'''
     STYLES = {
@@ -178,14 +192,10 @@ def get_location(obj):
     '''Return location property co-ordinates as a tuple'''
     return tuple(get_int_frac(obj, "LOCATION." + x) for x in "XY")
 
-def get_owner(objects, obj):
-    '''Return the object that "owns" obj'''
-    return objects[obj.get_int("OWNERINDEX")]
-
 def display_part(objects, obj):
     '''Determine if obj is in the component's current part and display mode
     '''
-    owner = get_owner(objects, obj)
+    owner = objects.properties
     return (obj["OWNERPARTID"] == owner["CURRENTPARTID"] and
         obj.get_int("OWNERPARTDISPLAYMODE") == owner.get_int("DISPLAYMODE"))
 
@@ -289,7 +299,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
         objects = read(file)
         stat = os.stat(file.fileno())
     
-    sheet = get_sheet(objects)
+    sheet = objects.properties
     [sheetstyle, size] = get_sheet_style(sheet)
     renderer = Renderer(size, "in", 1 / INCH_SIZE,
         margin=0.3, line=1, down=-1, textbottom=True)
@@ -361,17 +371,23 @@ Renderer: """By default, the schematic is converted to an SVG file,
                 block.text("Sheet", (-145, 10))
                 block.text("of", (-117, 10))
                 block.text("Drawn By:", (-145, 0))
+    check_sheet(sheet)
     
-    for obj in objects:
+    handle_children(renderer, objects)
+    renderer.finish()
+
+def handle_children(renderer, owner):
+    for child in owner.children:
+        obj = child.properties
         record = obj.get_int("RECORD")
         handler = handlers.get(record)
         if handler:
-            handler(renderer, objects, obj)
+            handler(renderer, owner, obj)
             obj.check_unknown()
         else:
             warn("Unhandled record type: {}".format(obj))
     
-    renderer.finish()
+        handle_children(renderer, child)
 
 arrowhead = dict(base=5, shoulder=7, radius=3)
 arrowtail = dict(base=7, shoulder=0, radius=2.5)
@@ -487,7 +503,7 @@ def handle_wire(renderer, objects, obj):
 @_setitem(handlers, 46)
 @_setitem(handlers, 48)
 def handle_unknown(renderer, objects, obj):
-    obj["OWNERINDEX"]
+    pass
 
 @_setitem(handlers, 45)
 def handle_unknown(renderer, objects, obj):
@@ -498,13 +514,13 @@ def handle_unknown(renderer, objects, obj):
     ):
         obj.get(property)
     obj.check("INDEXINSHEET", None, b"-1")
-    obj["OWNERINDEX"]
     obj["MODELNAME"]
     obj.check("MODELTYPE", b"PCBLIB", b"SI", b"SIM", b"PCB3DLib")
     obj.check("DATAFILECOUNT", None, b"1")
 
-@_setitem(handlers, Record.SHEET)
-def handle_sheet(renderer, objects, obj):
+def check_sheet(obj):
+    assert obj.get_int("RECORD") == Record.SHEET
+    
     assert obj.get_bool("BORDERON")
     for property in (
         "CUSTOMX", "CUSTOMY", "HOTSPOTGRIDSIZE", "SNAPGRIDSIZE",
@@ -523,6 +539,8 @@ def handle_sheet(renderer, objects, obj):
     obj.check("VISIBLEGRIDSIZE", b"10")
     obj.get_bool("SHOWTEMPLATEGRAPHICS")
     obj.get("TEMPLATEFILENAME")
+    
+    obj.check_unknown()
 
 def parse_header(obj):
     obj.check("HEADER",
@@ -532,7 +550,7 @@ def parse_header(obj):
 @_setitem(handlers, 47)
 def handle_unknown(renderer, objects, obj):
     obj.get("INDEXINSHEET")
-    for property in ("DESIMP0", "DESINTF", "OWNERINDEX"):
+    for property in ("DESIMP0", "DESINTF"):
         obj[property]
     obj.check("DESIMPCOUNT", b"1")
 
@@ -571,7 +589,6 @@ def handle_parameter(renderer, objects, obj):
     obj.check("OWNERPARTID", b"-1")
     obj["NAME"]
     
-    owner = obj.get("OWNERINDEX")
     text_colour = colour(obj)
     val = obj.get("TEXT")
     offset = get_location(obj)
@@ -588,15 +605,17 @@ def handle_parameter(renderer, objects, obj):
             kw.update(angle=+90)
         if val.startswith(b"="):
             match = val[1:].lower()
-            for o in objects:
-                if o.get_int("RECORD") != Record.PARAMETER or o.get("OWNERINDEX") != owner:
+            for o in objects.children:
+                o = o.properties
+                if o.get_int("RECORD") != Record.PARAMETER:
                     continue
                 if o["NAME"].lower() != match:
                     continue
                 val = o["TEXT"]
                 break
             else:
-                raise LookupError("Parameter value for |OWNERINDEX={}|TEXT={}".format(owner.decode("ascii"), val.decode("ascii")))
+                msg = "Parameter value for |TEXT={} in {!r}"
+                raise LookupError(msg.format(val.decode("ascii"), objects))
             renderer.text(val.decode("ascii"),
                 colour=text_colour,
                 offset=offset,
@@ -608,14 +627,13 @@ def handle_parameter(renderer, objects, obj):
 @_setitem(handlers, Record.DESIGNATOR)
 def handle_designator(renderer, objects, obj):
     obj.get("ISMIRRORED")
-    obj["OWNERINDEX"]
     obj.check("OWNERPARTID", b"-1")
     obj.check("INDEXINSHEET", None, b"-1")
     obj.check("NAME", b"Designator")
     obj.check("READONLYSTATE", b"1")
     
     desig = obj["TEXT"].decode("ascii")
-    owner = get_owner(objects, obj)
+    owner = objects.properties
     if owner.get_int("PARTCOUNT") > 2:
         desig += chr(ord("A") + owner.get_int("CURRENTPARTID") - 1)
     renderer.text(desig, get_location(obj),
@@ -629,7 +647,6 @@ def handle_polyline(renderer, objects, obj):
     obj.get_bool("ISNOTACCESIBLE")
     obj.check("LINEWIDTH", None, b"1")
     
-    obj["OWNERINDEX"]
     for i in range(obj.get_int("LOCATIONCOUNT")):
         for x in "XY":
             get_int_frac(obj, "{}{}".format(x, 1 + i))
@@ -667,7 +684,7 @@ def handle_pin(renderer, objects, obj):
     electrical = obj.get_int("ELECTRICAL")
     name = obj.get("NAME")
     designator = obj["DESIGNATOR"].decode("ascii")
-    if obj["OWNERPARTID"] == get_owner(objects, obj)["CURRENTPARTID"]:
+    if obj["OWNERPARTID"] == objects.properties["CURRENTPARTID"]:
         rotate = pinconglomerate & 3
         with renderer.view(offset=offset, rotate=rotate) as view:
             kw = dict()
@@ -791,7 +808,6 @@ def handle_arc(renderer, objects, obj):
 @_setitem(handlers, Record.POLYGON)
 def handle_polygon(renderer, objects, obj):
     obj.get("INDEXINSHEET")
-    obj["OWNERINDEX"]
     obj.check("AREACOLOR", b"16711680")
     assert obj.get_bool("ISNOTACCESIBLE")
     assert obj.get_bool("ISSOLID")
@@ -813,14 +829,13 @@ def handle_label(renderer, objects, obj):
     ):
         obj.get(property)
     
-    obj.get("OWNERINDEX")
     colour(obj)
     obj["TEXT"]
     get_location(obj)
     obj.get_int("FONTID")
     
     part = obj["OWNERPARTID"]
-    if part == b"-1" or part == get_owner(objects, obj)["CURRENTPARTID"]:
+    if part == b"-1" or part == objects.properties["CURRENTPARTID"]:
         text(renderer, obj)
 
 @_setitem(handlers, Record.NO_ERC)
@@ -851,7 +866,6 @@ def handle_text_frame(renderer, objects, obj):
 
 @_setitem(handlers, Record.BEZIER)
 def handle_bezier(renderer, objects, obj):
-    obj.get("OWNERINDEX")
     assert obj.get_bool("ISNOTACCESIBLE")
     obj.check("OWNERPARTID", b"1")
     obj.check("LINEWIDTH", b"1")
@@ -866,7 +880,6 @@ def handle_bezier(renderer, objects, obj):
 
 @_setitem(handlers, Record.ELLIPSE)
 def handle_ellipse(renderer, objects, obj):
-    obj["OWNERINDEX"]
     obj["OWNERPARTID"]
     assert obj.get_bool("ISNOTACCESIBLE")
     obj.check("SECONDARYRADIUS", obj["RADIUS"])
@@ -898,7 +911,6 @@ def handle_sheet_symbol(renderer, objects, obj):
 @_setitem(handlers, Record.SHEET_NAME)
 @_setitem(handlers, Record.SHEET_FILE_NAME)
 def handle_sheet_name(renderer, objects, obj):
-    obj["OWNERINDEX"]
     obj.check("INDEXINSHEET", None, b"-1")
     obj.check("OWNERPARTID", b"-1")
     text(renderer, obj)
@@ -907,7 +919,6 @@ def handle_sheet_name(renderer, objects, obj):
 def handle_image(renderer, objects, obj):
     obj["INDEXINSHEET"]
     obj["FILENAME"]
-    obj.check("OWNERINDEX", b"1")
     obj.check("OWNERPARTID", b"-1")
     assert obj.get_bool("EMBEDIMAGE")
     
