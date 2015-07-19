@@ -11,13 +11,23 @@ except ImportError:
     from PIL.OleFileIO import OleFileIO
 
 def read(file):
-    """Returns a sequence of objects from an Altium *.SchDoc schematic file
+    """Parses an Altium *.SchDoc schematic file and returns a Sheet object
+    """
+    records = iter_records(file)
+    
+    header = next(records)
+    parse_header(header)
+    header.check_unknown()
+    
+    return tuple(records)
+
+def iter_records(file):
+    """Yields object records from an Altium *.SchDoc schematic file
     """
     
     ole = OleFileIO(file)
     stream = ole.openstream("FileHeader")
     
-    objects = list()
     while True:
         length = stream.read(4)
         if not length:
@@ -41,12 +51,10 @@ def read(file):
                 warn(msg.format(property, existing))
             obj[name] = value
         
-        objects.append(obj)
+        yield obj
         
         # Skip over null terminator byte
         stream.seek(+1, SEEK_CUR)
-    
-    return objects
 
 class Properties:
     '''Holds the |NAME=value properties of a schematic object'''
@@ -98,7 +106,7 @@ class Properties:
 
 def get_sheet(objects):
     '''Returns the object holding settings for the sheet'''
-    sheet = objects[1]
+    sheet = objects[0]
     assert sheet.get_int("RECORD") == Record.SHEET
     return sheet
 
@@ -172,7 +180,7 @@ def get_location(obj):
 
 def get_owner(objects, obj):
     '''Return the object that "owns" obj'''
-    return objects[1 + obj.get_int("OWNERINDEX")]
+    return objects[obj.get_int("OWNERINDEX")]
 
 def display_part(objects, obj):
     '''Determine if obj is in the component's current part and display mode
@@ -516,8 +524,7 @@ def handle_sheet(renderer, objects, obj):
     obj.get_bool("SHOWTEMPLATEGRAPHICS")
     obj.get("TEMPLATEFILENAME")
 
-@_setitem(handlers, Record.HEADER)
-def handle_header(renderer, objects, obj):
+def parse_header(obj):
     obj.check("HEADER",
         b"Protel for Windows - Schematic Capture Binary File Version 5.0")
     obj.get_int("WEIGHT")

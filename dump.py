@@ -5,13 +5,13 @@ from sys import argv
 
 def main(file):
     with open(file, "rb") as file:
-        objects = altium.read(file)
-    for [i, o] in enumerate(objects):
-        if not i:
-            i = "Header"
-        else:
-            i = format(i - 1)
-        print("{}: {}".format(i, o))
+        objects = altium.iter_records(file)
+        for [i, o] in enumerate(objects):
+            if not i:
+                i = "Header"
+            else:
+                i = format(i - 1)
+            print("{}: {}".format(i, o))
 
 if __name__ == "__main__":
     try:
