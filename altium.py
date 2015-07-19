@@ -215,7 +215,7 @@ class Record:
     LINE = 13
     RECTANGLE = 14
     SHEET_SYMBOL = 15
-    POWER_OBJECT = 17
+    POWER_PORT = 17
     PORT = 18
     NO_ERC = 22
     NET_LABEL = 25
@@ -227,7 +227,10 @@ class Record:
     SHEET_NAME = 32
     SHEET_FILE_NAME = 33
     DESIGNATOR = 34
+    TEMPLATE = 39
     PARAMETER = 41
+    IMPLEMENTATION_LIST = 44
+    IMPLEMENTATION = 45
 
 class PinElectrical:
     """Signal types for a pin"""
@@ -499,14 +502,14 @@ def handle_wire(renderer, objects, obj):
         points.append(point)
     renderer.polyline(points, colour=colour(obj))
 
-@_setitem(handlers, 44)
+@_setitem(handlers, Record.IMPLEMENTATION_LIST)
 @_setitem(handlers, 46)
 @_setitem(handlers, 48)
-def handle_unknown(renderer, objects, obj):
+def handle_simple(renderer, objects, obj):
     pass
 
-@_setitem(handlers, 45)
-def handle_unknown(renderer, objects, obj):
+@_setitem(handlers, Record.IMPLEMENTATION)
+def handle_implementation(renderer, objects, obj):
     for property in (
         "USECOMPONENTLIBRARY", "DESCRIPTION", "MODELDATAFILEENTITY0",
         "MODELDATAFILEKIND0", "DATALINKSLOCKED", "DATABASEDATALINKSLOCKED",
@@ -554,8 +557,8 @@ def handle_unknown(renderer, objects, obj):
         obj[property]
     obj.check("DESIMPCOUNT", b"1")
 
-@_setitem(handlers, 39)
-def handle_unknown(renderer, objects, obj):
+@_setitem(handlers, Record.TEMPLATE)
+def handle_template(renderer, objects, obj):
     assert obj.get_bool("ISNOTACCESIBLE")
     obj.check("OWNERPARTID", b"-1")
     obj["FILENAME"]
@@ -716,8 +719,8 @@ def handle_pin(renderer, objects, obj):
                     offset=(+9, 0),
                 **kw)
 
-@_setitem(handlers, Record.POWER_OBJECT)
-def handle_power_object(renderer, objects, obj):
+@_setitem(handlers, Record.POWER_PORT)
+def handle_power_port(renderer, objects, obj):
     obj.get("INDEXINSHEET")
     obj.check("OWNERPARTID", b"-1")
     
