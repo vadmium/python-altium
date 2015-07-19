@@ -11,7 +11,7 @@ def main(file):
             i = "Header"
         else:
             i = format(i - 1)
-        print("{}: {}".format(i, altium.dump_properties(o)))
+        print("{}: {}".format(i, o))
 
 if __name__ == "__main__":
     try:
