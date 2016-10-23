@@ -2,6 +2,7 @@
 
 import struct
 from io import SEEK_CUR
+from warnings import warn
 
 try:
     from OleFileIO_PL import OleFileIO
@@ -33,7 +34,12 @@ def read(file):
                 continue
             
             (name, value) = property.split(b"=", 1)
-            obj[name.decode("ascii")] = value
+            name = name.decode("ascii")
+            existing = obj.get(name)
+            if existing not in (None, value):
+                msg = "Conflicting duplicate: {!r}, was {!r}"
+                warn(msg.format(property, existing))
+            obj[name] = value
         
         objects.append(obj)
         
@@ -52,8 +58,8 @@ def get_sheet_style(sheet):
     '''Returns the size of the sheet: (name, (width, height))'''
     STYLES = {
         SheetStyle.A4: ("A4", (1150, 760)),
-        SheetStyle.A3: ("A3", (1550, 1150)),
-        SheetStyle.A: ("A", (950, 760)),
+        SheetStyle.A3: ("A3", (1550, 1110)),
+        SheetStyle.A: ("A", (950, 750)),
     }
     [sheetstyle, size] = STYLES[sheet.get("SHEETSTYLE", SheetStyle.A4)]
     if "USECUSTOMSHEET" in sheet:
@@ -143,6 +149,8 @@ class SheetStyle:
     A4 = b"0"
     A3 = b"1"
     A = b"5"
+    B = b"6"
+    C = b"7"
 
 import vector
 from sys import stderr
@@ -283,7 +291,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
     
     for obj in objects:
         if (obj.keys() - {"INDEXINSHEET"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "COLOR"} and
-        obj["RECORD"] == b"29" and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
+        obj["RECORD"] == Record.JUNCTION and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj["OWNERPARTID"] == b"-1"):
             location = (int(obj["LOCATION." + x]) for x in "XY")
             col = colour(obj["COLOR"])
             renderer.circle(2, location, fill=col)
@@ -335,9 +343,9 @@ Renderer: """By default, the schematic is converted to an SVG file,
         elif (obj.keys() == {"RECORD", "OWNERINDEX"} and
         obj["RECORD"] in {b"46", b"48", b"44"} or
         obj.keys() - {"USECOMPONENTLIBRARY", "DESCRIPTION", "DATAFILECOUNT", "MODELDATAFILEENTITY0", "MODELDATAFILEKIND0", "DATALINKSLOCKED", "DATABASEDATALINKSLOCKED", "ISCURRENT", "INDEXINSHEET", "INTEGRATEDMODEL", "DATABASEMODEL"} == {"RECORD", "OWNERINDEX", "MODELNAME", "MODELTYPE"} and
-        obj["RECORD"] == b"45" and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj.get("USECOMPONENTLIBRARY", b"T") == b"T" and obj["MODELTYPE"] in {b"PCBLIB", b"SI", b"SIM", b"PCB3DLib"} and obj.get("DATAFILECOUNT", b"1") == b"1" and obj.get("ISCURRENT", b"T") == b"T" and obj.get("INTEGRATEDMODEL", b"T") == b"T" and obj.get("DATABASEMODEL", b"T") == b"T" and obj.get("DATALINKSLOCKED", b"T") == b"T" and obj.get("DATABASEDATALINKSLOCKED", b"T") == b"T" or
+        obj["RECORD"] == b"45" and obj.get("INDEXINSHEET", b"-1") == b"-1" and obj.get("USECOMPONENTLIBRARY", b"T") == b"T" and obj["MODELTYPE"] in {b"PCBLIB", b"SI", b"SIM", b"PCB3DLib"} and obj.get("DATAFILECOUNT", b"1") == b"1" and obj.get("ISCURRENT", b"T") == b"T" and obj.get("DATABASEMODEL", b"T") == b"T" and obj.get("DATALINKSLOCKED", b"T") == b"T" and obj.get("DATABASEDATALINKSLOCKED", b"T") == b"T" or
         obj.keys() >= {"RECORD", "AREACOLOR", "BORDERON", "CUSTOMX", "CUSTOMY", "DISPLAY_UNIT", "FONTIDCOUNT", "FONTNAME1", "HOTSPOTGRIDON", "HOTSPOTGRIDSIZE", "ISBOC", "SHEETNUMBERSPACESIZE", "SIZE1", "SNAPGRIDON", "SNAPGRIDSIZE", "SYSTEMFONT", "USEMBCS", "VISIBLEGRIDON", "VISIBLEGRIDSIZE"} and
-        obj["RECORD"] == Record.SHEET and obj["AREACOLOR"] == b"16317695" and obj["BORDERON"] == b"T" and obj.get("CUSTOMMARGINWIDTH", b"20") == b"20" and obj.get("CUSTOMXZONES", b"6") == b"6" and obj.get("CUSTOMYZONES", b"4") == b"4" and obj["DISPLAY_UNIT"] == b"4" and obj["FONTNAME1"] == b"Times New Roman" and obj["HOTSPOTGRIDON"] == b"T" and obj["ISBOC"] == b"T" and obj["SHEETNUMBERSPACESIZE"] == b"4" and obj["SIZE1"] == b"10" and obj["SNAPGRIDON"] == b"T" and obj["SYSTEMFONT"] == b"1" and obj.get("TITLEBLOCKON", b"T") == b"T" and obj["USEMBCS"] == b"T" and obj["VISIBLEGRIDON"] == b"T" and obj["VISIBLEGRIDSIZE"] == b"10" or
+        obj["RECORD"] == Record.SHEET and obj["AREACOLOR"] == b"16317695" and obj["BORDERON"] == b"T" and obj.get("CUSTOMMARGINWIDTH", b"20") == b"20" and obj.get("CUSTOMXZONES", b"6") == b"6" and obj.get("CUSTOMYZONES", b"4") == b"4" and obj["DISPLAY_UNIT"] == b"4" and obj["FONTNAME1"] == b"Times New Roman" and obj["HOTSPOTGRIDON"] == b"T" and obj["ISBOC"] == b"T" and obj["SHEETNUMBERSPACESIZE"] == b"4" and obj["SIZE1"] == b"10" and obj["SNAPGRIDON"] == b"T" and obj["SYSTEMFONT"] == b"1" and obj.get("TITLEBLOCKON", b"T") == b"T" and obj["USEMBCS"] == b"T" and obj["VISIBLEGRIDON"] == b"T" and obj["VISIBLEGRIDSIZE"] == b"10" and obj.get("WORKSPACEORIENTATION", b"1") == b"1" or
         obj.keys() == {"HEADER", "WEIGHT"} and
         obj["HEADER"] == b"Protel for Windows - Schematic Capture Binary File Version 5.0" or
         obj.keys() - {"INDEXINSHEET"} == {"RECORD", "DESIMP0", "DESIMPCOUNT", "DESINTF", "OWNERINDEX"} and
@@ -363,10 +371,11 @@ Renderer: """By default, the schematic is converted to an SVG file,
                     kw.update(angle=+90)
                 val = obj["TEXT"]
                 if val.startswith(b"="):
+                    match = val[1:].lower()
                     for o in objects:
                         if o.get("RECORD") != Record.PARAMETER or o.get("OWNERINDEX") != obj["OWNERINDEX"]:
                             continue
-                        if o["NAME"].lower() != val[1:].lower():
+                        if o["NAME"].lower() != match:
                             continue
                         val = o["TEXT"]
                         break
@@ -531,6 +540,9 @@ Renderer: """By default, the schematic is converted to an SVG file,
                 
                 start = float(obj.get("STARTANGLE", 0))
                 end = float(obj["ENDANGLE"])
+                if end == start:  # Full circle rather than a zero-length arc
+                    start = 0
+                    end = 360
                 centre = (int(obj["LOCATION." + x]) for x in "XY")
                 renderer.arc((r, r2), start, end, centre,
                     colour=colour(obj["COLOR"]),
@@ -583,7 +595,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
         
         elif (obj.keys() - {"INDEXINSHEET", "SYMBOLTYPE"} == {"RECORD", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "XSIZE", "YSIZE", "COLOR", "AREACOLOR", "ISSOLID", "UNIQUEID"} and
         obj["RECORD"] == Record.SHEET_SYMBOL and obj["OWNERPARTID"] == b"-1" and obj["ISSOLID"] == b"T" and obj.get("SYMBOLTYPE", b"Normal") == b"Normal"):
-            renderer.rectangle((int(obj["XSIZE"]), int(obj["YSIZE"])),
+            renderer.rectangle((int(obj["XSIZE"]), -int(obj["YSIZE"])),
                 width=0.6,
                 outline=colour(obj["COLOR"]), fill=colour(obj["AREACOLOR"]),
                 offset=(int(obj["LOCATION." + x]) for x in "XY"),
@@ -594,7 +606,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
             text(renderer, obj)
         
         elif (obj.keys() == {"RECORD", "OWNERINDEX", "INDEXINSHEET", "OWNERPARTID", "LOCATION.X", "LOCATION.Y", "CORNER.X", "CORNER.Y", "EMBEDIMAGE", "FILENAME"} and
-        obj["RECORD"] == Record.IMAGE and obj["OWNERINDEX"] == b"1" and obj["OWNERPARTID"] == b"-1" and obj["EMBEDIMAGE"] == b"T" and obj["FILENAME"] == b"newAltmLogo.bmp"):
+        obj["RECORD"] == Record.IMAGE and obj["OWNERINDEX"] == b"1" and obj["OWNERPARTID"] == b"-1" and obj["EMBEDIMAGE"] == b"T"):
             location = list()
             corner = list()
             for x in "XY":

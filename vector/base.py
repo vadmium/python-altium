@@ -33,7 +33,7 @@ class View:
     END = 1 << 1
 
 class Renderer(View):
-    """
+    r"""
     Arrow shapes are defined by:
     * point: Where the line would end without the arrow
     * shoulder: Part laterally furthest away from the shaft
