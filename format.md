@@ -267,8 +267,7 @@ The component object seems to occur before any of its child objects.
 * `|OWNERPARTID=1`
 * `|OWNERPARTDISPLAYMODE`: Optional
 * `|LINEWIDTH=1`: Optional
-* `|COLOR=16711680` (= #0000FF)
-* `|AREACOLOR`
+* `|COLOR|AREACOLOR`
 * `|ISSOLID=T`
 * `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .
 

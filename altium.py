@@ -813,7 +813,6 @@ def handle_arc(renderer, objects, obj):
 @_setitem(handlers, Record.POLYGON)
 def handle_polygon(renderer, objects, obj):
     obj.get("INDEXINSHEET")
-    obj.check("AREACOLOR", b"16711680")
     assert obj.get_bool("ISNOTACCESIBLE")
     assert obj.get_bool("ISSOLID")
     obj.check("LINEWIDTH", None, b"1")
@@ -825,7 +824,8 @@ def handle_polygon(renderer, objects, obj):
         location = format(1 + location)
         point = tuple(obj.get_int(x + location) for x in "XY")
         points.append(point)
-    renderer.polygon(fill=colour(obj), points=points)
+    renderer.polygon(outline=colour(obj), fill=colour(obj, "AREACOLOR"),
+        points=points)
 
 @_setitem(handlers, Record.LABEL)
 def handle_label(renderer, objects, obj):
