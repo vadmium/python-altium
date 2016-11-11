@@ -107,3 +107,10 @@ class ConversionTest(TestCase):
                 b"|COLOR=0|FONTID=1\x00",
         )
         self.convert(sch)  # Should not raise an exception
+    
+    def test_unhandled_property(self):
+        sch = (
+            b"|RECORD=15|ISSOLID=T|UNIQUEID=|NEW-PROPERTY=dummy\x00",
+        )
+        with self.assertWarnsRegex(Warning, "NEW-PROPERTY unhandled"):
+            self.convert(sch)
