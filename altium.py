@@ -56,6 +56,7 @@ def iter_records(file):
         
         properties = stream.read(length - 1)
         obj = Properties()
+        seen = dict()
         for property in properties.split(b"|"):
             if not property:
                 # Most (but not all) property lists are
@@ -65,11 +66,12 @@ def iter_records(file):
             
             (name, value) = property.split(b"=", 1)
             name = name.decode("ascii")
-            existing = obj.get(name)
+            existing = seen.get(name)
             if existing not in (None, value):
                 msg = "Conflicting duplicate: {!r}, was {!r}"
                 warn(msg.format(property, existing))
             obj[name] = value
+            seen[name] = value
         
         yield obj
         
