@@ -403,6 +403,7 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|ORIENTATION` ([integer]):
     * 0: Text is aligned at the bottom-left corner
     * 1: Bottom-left alignment, then rotated 90° anticlockwise
+    * 3: Bottom-left alignment, then rotated 90° clockwise
 
 ### Bus ###
 `|RECORD=26`: Bus

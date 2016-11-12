@@ -784,10 +784,15 @@ def handle_net_label(renderer, objects, obj):
     obj.check("OWNERPARTID", b"-1")
     
     orient = obj.get_int("ORIENTATION")
-    kw = {
-        0: dict(),
-        1: dict(angle=+90),
-    }[orient]
+    try:
+        kw = {
+            0: dict(),
+            1: dict(angle=+90),
+            3: dict(angle=-90),
+        }[orient]
+    except LookupError:
+        warn("Unexpected ORIENTATION in {}".format(orient, obj))
+        kw = dict()
     renderer.text(overline(obj["TEXT"]),
         colour=colour(obj),
         offset=get_location(obj),
