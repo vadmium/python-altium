@@ -604,14 +604,12 @@ def handle_parameter(renderer, objects, obj):
     font = obj.get_int("FONTID")
     
     if not obj.get_bool("ISHIDDEN") and val is not None and offset != (0, 0):
+        kw =  dict()
         orient = obj.get_int("ORIENTATION")
-        kw = {
-            0: dict(vert=renderer.BOTTOM, horiz=renderer.LEFT),
-            1: dict(vert=renderer.BOTTOM, horiz=renderer.LEFT),
-            2: dict(vert=renderer.TOP, horiz=renderer.RIGHT),
-        }[orient]
-        if orient == 1:
+        if orient & 1:
             kw.update(angle=+90)
+        if orient & 2:
+            kw.update(vert=renderer.TOP, horiz=renderer.RIGHT)
         if val.startswith(b"="):
             match = val[1:].lower()
             for o in objects.children:
@@ -645,10 +643,18 @@ def handle_designator(renderer, objects, obj):
     owner = objects.properties
     if owner.get_int("PARTCOUNT") > 2:
         desig += chr(ord("A") + owner.get_int("CURRENTPARTID") - 1)
+    
+    kw = dict()
+    orient = obj.get_int("ORIENTATION")
+    if orient & 1:
+        kw.update(angle=+90)
+    if orient & 2:
+        kw.update(vert=renderer.TOP, horiz=renderer.RIGHT)
+    
     renderer.text(desig, get_location(obj),
         colour=colour(obj),
         font=font_name(obj.get_int("FONTID")),
-    )
+    **kw)
 
 @_setitem(handlers, Record.POLYLINE)
 def handle_polyline(renderer, objects, obj):

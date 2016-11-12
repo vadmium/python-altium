@@ -532,7 +532,9 @@ Labels on top-level schematic
 * `|READONLYSTATE` ([integer]):
     * 1: Name is read-only?
 * `|ISMIRRORED`: [Boolean]
-* `|ORIENTATION|ISHIDDEN`: Each optional
+* `|ORIENTATION` ([integer]): Probably the same as for [Parameter]
+    (#parameter)
+* `|ISHIDDEN`: Optional
 
 ### Template ###
 `|RECORD=39`: Sheet template, owning custom title block lines and labels
@@ -550,6 +552,7 @@ Labels on top-level schematic
     * 0: Text is aligned at the bottom-left corner
     * 1: Bottom-left alignment, then rotated 90° anticlockwise
     * 2: Top-right corner alignment
+    * 3: Top-right alignment, then rotated 90° anticlockwise
 * `|COLOR`
 * `|FONTID`
 * `|ISHIDDEN`: [Boolean]
