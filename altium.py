@@ -705,7 +705,7 @@ def handle_pin(renderer, objects, obj):
     electrical = obj.get_int("ELECTRICAL")
     name = obj.get("NAME")
     designator = obj["DESIGNATOR"].decode("ascii")
-    if obj["OWNERPARTID"] == objects.properties["CURRENTPARTID"]:
+    if obj.get("OWNERPARTID") in {None, objects.properties["CURRENTPARTID"]}:
         rotate = pinconglomerate & 3
         with renderer.view(offset=offset, rotate=rotate) as view:
             kw = dict()
