@@ -912,6 +912,7 @@ def handle_ellipse(renderer, objects, obj):
     obj.check("SECONDARYRADIUS", obj["RADIUS"])
     obj.get_int("SECONDARYRADIUS_FRAC")
     obj.check("ISSOLID", b"T")
+    obj.get_int("INDEXINSHEET")
     
     renderer.circle(
         r=get_int_frac(obj, "RADIUS"),

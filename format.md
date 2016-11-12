@@ -277,6 +277,7 @@ The component object seems to occur before any of its child objects.
 * `|RADIUS|RADIUS_FRAC`
 * `|SECONDARYRADIUS|SECONDARYRADIUS_FRAC`
 * `|COLOR|AREACOLOR|ISSOLID=T`
+* `|INDEXINSHEET`: [Integer]
 
 Circle:
 * `|OWNERINDEX|ISNOTACCESIBLE=T|OWNERPARTID=1|LOCATION.X|LOCATION.Y`
