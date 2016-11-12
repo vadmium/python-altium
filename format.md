@@ -449,7 +449,7 @@ It may not be displayed at all, depending on a configuration setting.
 * `|OWNERINDEX=1|INDEXINSHEET|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.Y`: Bottom-left corner
 * `|CORNER.X|CORNER.Y`: `_FRAC` counterparts may also be included
-* `|EMBEDIMAGE=T`
+* `|EMBEDIMAGE`: [Boolean]
 * `|FILENAME`: File name may be without a path (filename.ext) or
     an absolute Windows path (C:\\path\\filename.ext). Suffixes: “.bmp”,
     “.tif”.

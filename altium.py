@@ -967,7 +967,8 @@ def handle_image(renderer, objects, obj):
     obj["INDEXINSHEET"]
     obj["FILENAME"]
     obj.check("OWNERPARTID", b"-1")
-    obj.check("EMBEDIMAGE", b"T")
+    obj.get_bool("EMBEDIMAGE")
+    obj.get_bool("KEEPASPECT")
     
     corner = list()
     for x in "XY":
