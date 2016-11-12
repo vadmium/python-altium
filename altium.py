@@ -853,7 +853,6 @@ def handle_polygon(renderer, objects, obj):
     obj.get("INDEXINSHEET")
     obj.check("ISNOTACCESIBLE", b"T")
     obj.check("ISSOLID", b"T")
-    obj.check("LINEWIDTH", None, b"1")
     obj.check("OWNERPARTID", b"1")
     obj.get("OWNERPARTDISPLAYMODE")
     
@@ -863,7 +862,9 @@ def handle_polygon(renderer, objects, obj):
         point = tuple(obj.get_int(x + location) for x in "XY")
         points.append(point)
     renderer.polygon(outline=colour(obj), fill=colour(obj, "AREACOLOR"),
-        points=points)
+        points=points,
+        width=obj.get_int("LINEWIDTH") or 0.6,
+    )
 
 @_setitem(handlers, Record.LABEL)
 def handle_label(renderer, objects, obj):

@@ -269,7 +269,8 @@ The component object seems to occur before any of its child objects.
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID=1`
 * `|OWNERPARTDISPLAYMODE`: Optional
-* `|LINEWIDTH=1`: Optional
+* `|LINEWIDTH` ([integer]): If omitted (zero), there is a thin but visible
+    outline
 * `|COLOR|AREACOLOR`
 * `|ISSOLID=T`
 * `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .
