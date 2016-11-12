@@ -526,7 +526,7 @@ def handle_implementation(renderer, objects, obj):
 def check_sheet(obj):
     assert obj.get_int("RECORD") == Record.SHEET
     
-    assert obj.get_bool("BORDERON")
+    obj.check("BORDERON", b"T")
     for property in (
         "CUSTOMX", "CUSTOMY", "HOTSPOTGRIDSIZE", "SNAPGRIDSIZE",
     ):
@@ -535,12 +535,12 @@ def check_sheet(obj):
     obj.check("CUSTOMXZONES", None, b"6")
     obj.check("CUSTOMYZONES", None, b"4")
     obj.check("DISPLAY_UNIT", b"4")
-    assert obj.get_bool("HOTSPOTGRIDON")
-    assert obj.get_bool("ISBOC")
+    obj.check("HOTSPOTGRIDON", b"T")
+    obj.check("ISBOC", b"T")
     obj.check("SHEETNUMBERSPACESIZE", b"4")
-    assert obj.get_bool("SNAPGRIDON")
-    assert obj.get_bool("USEMBCS")
-    assert obj.get_bool("VISIBLEGRIDON")
+    obj.check("SNAPGRIDON", b"T")
+    obj.check("USEMBCS", b"T")
+    obj.check("VISIBLEGRIDON", b"T")
     obj.check("VISIBLEGRIDSIZE", b"10")
     obj.get_bool("SHOWTEMPLATEGRAPHICS")
     obj.get("TEMPLATEFILENAME")
@@ -561,7 +561,7 @@ def handle_unknown(renderer, objects, obj):
 
 @_setitem(handlers, Record.TEMPLATE)
 def handle_template(renderer, objects, obj):
-    assert obj.get_bool("ISNOTACCESIBLE")
+    obj.check("ISNOTACCESIBLE", b"T")
     obj.check("OWNERPARTID", b"-1")
     obj["FILENAME"]
 
@@ -582,7 +582,7 @@ def handle_component(renderer, objects, obj):
         obj[property]
     obj.check("AREACOLOR", b"11599871")
     obj.check("COLOR", b"128")
-    assert not obj.get_bool("PARTIDLOCKED")
+    obj.check("PARTIDLOCKED", b"F")
     obj.check("TARGETFILENAME", b"*")
     obj.get_bool("PINSMOVEABLE")
 
@@ -664,7 +664,7 @@ def handle_polyline(renderer, objects, obj):
 @_setitem(handlers, Record.LINE)
 def handle_line(renderer, objects, obj):
     obj.get("INDEXINSHEET")
-    assert obj.get_bool("ISNOTACCESIBLE")
+    obj.check("ISNOTACCESIBLE", b"T")
     
     kw = dict(
         colour=colour(obj),
@@ -760,7 +760,7 @@ def handle_rectangle(renderer, objects, obj):
     obj.get("INDEXINSHEET")
     obj.get("LINEWIDTH")
     obj.get("TRANSPARENT")
-    assert obj.get_bool("ISNOTACCESIBLE")
+    obj.check("ISNOTACCESIBLE", b"T")
     
     kw = dict(width=0.6, outline=colour(obj))
     fill = colour(obj, "AREACOLOR")
@@ -798,7 +798,7 @@ def handle_net_label(renderer, objects, obj):
 @_setitem(handlers, Record.ELLIPTICAL_ARC)
 def handle_arc(renderer, objects, obj):
     obj.get("INDEXINSHEET")
-    assert obj.get_bool("ISNOTACCESIBLE")
+    obj.check("ISNOTACCESIBLE", b"T")
     obj.check("LINEWIDTH", b"1")
     
     r = obj.get_int("RADIUS")
@@ -819,8 +819,8 @@ def handle_arc(renderer, objects, obj):
 @_setitem(handlers, Record.POLYGON)
 def handle_polygon(renderer, objects, obj):
     obj.get("INDEXINSHEET")
-    assert obj.get_bool("ISNOTACCESIBLE")
-    assert obj.get_bool("ISSOLID")
+    obj.check("ISNOTACCESIBLE", b"T")
+    obj.check("ISSOLID", b"T")
     obj.check("LINEWIDTH", None, b"1")
     obj.check("OWNERPARTID", b"1")
     obj.get("OWNERPARTDISPLAYMODE")
@@ -862,9 +862,9 @@ def handle_text_frame(renderer, objects, obj):
     obj.get("CLIPTORECT")
     obj.check("ALIGNMENT", b"1")
     obj.check("AREACOLOR", b"16777215")
-    assert obj.get_bool("ISSOLID")
+    obj.check("ISSOLID", b"T")
     obj.check("OWNERPARTID", b"-1")
-    assert obj.get_bool("WORDWRAP")
+    obj.check("WORDWRAP", b"T")
     
     [lhs, _] = get_location(obj)
     renderer.text(
@@ -877,7 +877,7 @@ def handle_text_frame(renderer, objects, obj):
 
 @_setitem(handlers, Record.BEZIER)
 def handle_bezier(renderer, objects, obj):
-    assert obj.get_bool("ISNOTACCESIBLE")
+    obj.check("ISNOTACCESIBLE", b"T")
     obj.check("OWNERPARTID", b"1")
     obj.check("LINEWIDTH", b"1")
     obj.check("LOCATIONCOUNT", b"4")
@@ -892,10 +892,10 @@ def handle_bezier(renderer, objects, obj):
 @_setitem(handlers, Record.ELLIPSE)
 def handle_ellipse(renderer, objects, obj):
     obj["OWNERPARTID"]
-    assert obj.get_bool("ISNOTACCESIBLE")
+    obj.check("ISNOTACCESIBLE", b"T")
     obj.check("SECONDARYRADIUS", obj["RADIUS"])
     obj.get_int("SECONDARYRADIUS_FRAC")
-    assert obj.get_bool("ISSOLID")
+    obj.check("ISSOLID", b"T")
     
     renderer.circle(
         r=get_int_frac(obj, "RADIUS"),
@@ -909,7 +909,7 @@ def handle_sheet_symbol(renderer, objects, obj):
     obj.get("INDEXINSHEET")
     obj["UNIQUEID"]
     obj.check("OWNERPARTID", b"-1")
-    assert obj.get_bool("ISSOLID")
+    obj.check("ISSOLID", b"T")
     obj.check("SYMBOLTYPE", None, b"Normal")
     
     corner = (obj.get_int("XSIZE"), -obj.get_int("YSIZE"))
@@ -931,7 +931,7 @@ def handle_image(renderer, objects, obj):
     obj["INDEXINSHEET"]
     obj["FILENAME"]
     obj.check("OWNERPARTID", b"-1")
-    assert obj.get_bool("EMBEDIMAGE")
+    obj.check("EMBEDIMAGE", b"T")
     
     corner = list()
     for x in "XY":
