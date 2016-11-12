@@ -767,11 +767,13 @@ def handle_power_port(renderer, objects, obj):
 @_setitem(handlers, Record.ROUND_RECTANGLE)
 def handle_rectangle(renderer, objects, obj):
     obj.get("INDEXINSHEET")
-    obj.get("LINEWIDTH")
     obj.get("TRANSPARENT")
     obj.check("ISNOTACCESIBLE", b"T")
     
-    kw = dict(width=0.6, outline=colour(obj))
+    kw = dict(
+        width=obj.get_int("LINEWIDTH") or 0.6,
+        outline=colour(obj),
+    )
     fill = colour(obj, "AREACOLOR")
     if obj.get_bool("ISSOLID"):
         kw.update(fill=fill)

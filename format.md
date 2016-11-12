@@ -325,7 +325,7 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|OWNERPARTDISPLAYMODE`: Optional
 * `|LOCATION.X|LOCATION.Y`: Bottom left corner
 * `|CORNER.X|CORNER.Y`: Top right corner
-* `|LINEWIDTH=1`: Optional
+* `|LINEWIDTH`: [Integer]. If zero, there is still a thin visible outline.
 * `|COLOR`: Outline colour
 * `|AREACOLOR`: Fill colour
 * `|ISSOLID` ([boolean]):
