@@ -603,7 +603,9 @@ def handle_parameter(renderer, objects, obj):
     offset = get_location(obj)
     font = obj.get_int("FONTID")
     
-    if not obj.get_bool("ISHIDDEN") and val is not None and offset != (0, 0):
+    if objects.properties.get_int("RECORD") == 48:
+        return
+    if not obj.get_bool("ISHIDDEN"):
         kw =  dict()
         orient = obj.get_int("ORIENTATION")
         if orient & 1:

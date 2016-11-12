@@ -541,13 +541,13 @@ Labels on top-level schematic
 * `|ISNOTACCESIBLE=T|OWNERPARTID=-1|FILENAME`
 
 ### Parameter ###
-`|RECORD=41`: Label, such as component value
+`|RECORD=41`: Label, such as component value. Probably should not
+display label if the record is a child of record [48](#48), even if
+`|ISHIDDEN=T` not specified.
 * `|INDEXINSHEET`: Optional
 * `|OWNERINDEX` ([integer]): May be zero (omitted) for sheet parameters
 * `|OWNERPARTID=-1`
-* `|LOCATION.X|LOCATION.X_FRAC|LOCATION.Y|LOCATION.Y_FRAC`: Each optional.
-    Probably should not display label if not present,
-    even if `|ISHIDDEN=T` not specified.
+* `|LOCATION.X|LOCATION.X_FRAC|LOCATION.Y|LOCATION.Y_FRAC`
 * `|ORIENTATION` ([integer]):
     * 0: Text is aligned at the bottom-left corner
     * 1: Bottom-left alignment, then rotated 90° anticlockwise
