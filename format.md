@@ -190,7 +190,7 @@ The component object seems to occur before any of its child objects.
 * `|SHEETPARTFILENAME=*`: Optional
 * `|TARGETFILENAME=*|UNIQUEID`
 * `|AREACOLOR=11599871|COLOR=128` (= #FFFFB0, #800000)
-* `|PARTIDLOCKED=F`
+* `|PARTIDLOCKED`: [Boolean]
 * `|NOTUSEDBTABLENAME|DESIGNITEMID`: Optional
 * `|PINSMOVEABLE`: [Boolean]
 

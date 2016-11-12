@@ -582,7 +582,7 @@ def handle_component(renderer, objects, obj):
         obj[property]
     obj.check("AREACOLOR", b"11599871")
     obj.check("COLOR", b"128")
-    obj.check("PARTIDLOCKED", b"F")
+    obj.get_bool("PARTIDLOCKED")
     obj.check("TARGETFILENAME", b"*")
     obj.get_bool("PINSMOVEABLE")
 
