@@ -170,7 +170,7 @@ def iter_fonts(sheet):
     id: Positive integer
     line: Font's line spacing
     family: Typeface name
-    italic, bold: Boolean value
+    italic, bold, underline: Boolean values
     '''
     for i in range(sheet.get_int("FONTIDCOUNT")):
         id = 1 + i
@@ -181,6 +181,7 @@ def iter_fonts(sheet):
             family=sheet["FONTNAME" + n].decode("ascii"),
             italic=sheet.get_bool("ITALIC" + n),
             bold=sheet.get_bool("BOLD" + n),
+            underline=sheet.get_bool("UNDERLINE" + n),
         )
         sheet.get("ROTATION{}".format(1 + i))
 
@@ -317,7 +318,9 @@ Renderer: """By default, the schematic is converted to an SVG file,
         fontsize = font["line"] * 0.875
         
         renderer.addfont(name, fontsize, font["family"],
-            italic=font["italic"], bold=font["bold"])
+            italic=font["italic"], bold=font["bold"],
+            underline=font["underline"],
+        )
     renderer.setdefaultfont(font_name(sheet.get_int("SYSTEMFONT")))
     renderer.start()
     renderer.addobjects((gnd, rail, arrowconn, dchevron, nc, clock))

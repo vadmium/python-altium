@@ -463,7 +463,7 @@ with properties for the entire schematic
         actual point size or em size seems to be about 0.875 of this size.
         So for `|SIZE`_n_`=10`, the total line spacing is 100 mil = 0.10″ =
         7.2 pt, but the font’s em size is about 87.5 mil = 0.0875″ = 6.3 pt.
-    * `|ITALIC`_n_`|BOLD`_n_: [Boolean]
+    * `|ITALIC`_n_`|BOLD`_n_`|UNDERLINE`_n_: [Boolean]
     * `|ROTATION`_n_ ([integer]): 0 or 90.
         Seems to be associated with sideways vertical text,
         but the text objects themselves already indicate the orientation.

@@ -54,7 +54,8 @@ class Renderer(base.Renderer):
         ]
         self.fonts = dict()
     
-    def addfont(self, id, size, family, *, italic=False, bold=False):
+    def addfont(self, id, size, family, *,
+            italic=False, bold=False, underline=False):
         props = [
             "font-size: {}px".format(size),
             "font-family: {}".format(family),
@@ -63,6 +64,8 @@ class Renderer(base.Renderer):
             props.append("font-style: italic")
         if bold:
             props.append("font-weight: bold")
+        if underline:
+            props.append("text-decoration: underline")
         self.fonts["." + id] = props
     
     def setdefaultfont(self, id):
