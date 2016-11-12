@@ -399,6 +399,9 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|COLOR`
 * `|FONTID`
 * `|TEXT`: As for [Port](#port)
+* `|ORIENTATION` ([integer]):
+    * 0: Text is aligned at the bottom-left corner
+    * 1: Bottom-left alignment, then rotated 90° anticlockwise
 
 ### Bus ###
 `|RECORD=26`: Bus

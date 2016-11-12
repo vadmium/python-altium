@@ -782,11 +782,16 @@ def handle_net_label(renderer, objects, obj):
     obj.get("INDEXINSHEET")
     obj.check("OWNERPARTID", b"-1")
     
+    orient = obj.get_int("ORIENTATION")
+    kw = {
+        0: dict(),
+        1: dict(angle=+90),
+    }[orient]
     renderer.text(overline(obj["TEXT"]),
         colour=colour(obj),
         offset=get_location(obj),
         font=font_name(obj.get_int("FONTID")),
-    )
+    **kw)
 
 @_setitem(handlers, Record.ARC)
 @_setitem(handlers, Record.ELLIPTICAL_ARC)
