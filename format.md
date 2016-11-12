@@ -556,7 +556,7 @@ display label if the record is a child of record [48](#48), even if
 * `|COLOR`
 * `|FONTID`
 * `|ISHIDDEN`: [Boolean]
-* `|TEXT`: Optional.
+* `|TEXT`: If omitted, there is no label.
     If it starts with “`=`”,
     it names another parameter with the same `|OWNERINDEX`,
     whose `|NAME` matches the rest of the text,

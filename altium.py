@@ -608,7 +608,7 @@ def handle_parameter(renderer, objects, obj):
     
     if objects.properties.get_int("RECORD") == 48:
         return
-    if not obj.get_bool("ISHIDDEN"):
+    if not obj.get_bool("ISHIDDEN") and val:
         kw =  dict()
         orient = obj.get_int("ORIENTATION")
         if orient & 1:
