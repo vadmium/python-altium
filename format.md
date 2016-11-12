@@ -192,6 +192,7 @@ The component object seems to occur before any of its child objects.
 * `|AREACOLOR=11599871|COLOR=128` (= #FFFFB0, #800000)
 * `|PARTIDLOCKED=F`
 * `|NOTUSEDBTABLENAME|DESIGNITEMID`: Optional
+* `|PINSMOVEABLE`: [Boolean]
 
 ### Pin ###
 `|RECORD=2`: Component pin, including line, name and number

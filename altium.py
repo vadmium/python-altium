@@ -584,6 +584,7 @@ def handle_component(renderer, objects, obj):
     obj.check("COLOR", b"128")
     assert not obj.get_bool("PARTIDLOCKED")
     obj.check("TARGETFILENAME", b"*")
+    obj.get_bool("PINSMOVEABLE")
 
 @_setitem(handlers, Record.PARAMETER)
 def handle_parameter(renderer, objects, obj):
