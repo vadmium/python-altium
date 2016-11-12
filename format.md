@@ -245,8 +245,8 @@ The component object seems to occur before any of its child objects.
 
 ### Bezier ###
 `|RECORD=5`: Bezier curve for component symbol
-* `|OWNERINDEX|ISNOTACCESIBLE=T|OWNERPARTID=1|LINEWIDTH=1`
-* `|COLOR`
+* `|OWNERINDEX|ISNOTACCESIBLE|OWNERPARTID`
+* `|LINEWIDTH|COLOR`
 * `|LOCATIONCOUNT=4|X1|Y1|X2|Y2|X3|Y3|X4|Y4`:
     Control points; shares common data structure with [Polyline](#polyline)
     etc
@@ -258,7 +258,9 @@ The component object seems to occur before any of its child objects.
 * `|INDEXINSHEET`: Optional
 * `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
 * `|OWNERPARTDISPLAYMODE`: See [Component](#component) `|DISPLAYMODE`
-* `|LINEWIDTH=1|COLOR`: Optional
+* `|LINEWIDTH` ([integer]): Values greater than one seem to be drawn thicker
+    than expected
+* `|COLOR`
 * `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .: May also include `_FRAC` counterparts
 
 ### Polygon ###

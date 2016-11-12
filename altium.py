@@ -654,15 +654,20 @@ def handle_designator(renderer, objects, obj):
 def handle_polyline(renderer, objects, obj):
     obj.get("INDEXINSHEET")
     obj.get_bool("ISNOTACCESIBLE")
-    obj.check("LINEWIDTH", None, b"1")
+    linewidth = obj.get_int("LINEWIDTH")
     
+    points = list()
     for i in range(obj.get_int("LOCATIONCOUNT")):
-        for x in "XY":
-            get_int_frac(obj, "{}{}".format(x, 1 + i))
-    colour(obj)
+        location = (get_int_frac(obj, "{}{}".format(x, 1 + i)) for x in "XY")
+        points.append(tuple(location))
+    kw = dict(points=points)
+    kw.update(colour=colour(obj))
     
     if obj["OWNERPARTID"] == b"-1" or display_part(objects, obj):
-        polyline(renderer, obj)
+        assert linewidth
+        if linewidth != 1:
+            kw.update(width=linewidth)
+        renderer.polyline(**kw)
 
 @_setitem(handlers, Record.LINE)
 def handle_line(renderer, objects, obj):
@@ -893,17 +898,20 @@ def handle_text_frame(renderer, objects, obj):
 
 @_setitem(handlers, Record.BEZIER)
 def handle_bezier(renderer, objects, obj):
-    obj.check("ISNOTACCESIBLE", b"T")
-    obj.check("OWNERPARTID", b"1")
-    obj.check("LINEWIDTH", b"1")
+    obj.get_bool("ISNOTACCESIBLE")
+    obj.get_int("OWNERPARTID")
     obj.check("LOCATIONCOUNT", b"4")
+    obj.get_int("INDEXINSHEET")
     
-    col = colour(obj)
+    kw = dict(colour=colour(obj))
     points = list()
     for n in range(4):
         n = format(1 + n)
         points.append(tuple(obj.get_int(x + n) for x in "XY"))
-    renderer.cubicbezier(*points, colour=col)
+    width = obj.get_int("LINEWIDTH")
+    if width != 1:
+        kw.update(width=width)
+    renderer.cubicbezier(*points, **kw)
 
 @_setitem(handlers, Record.ELLIPSE)
 def handle_ellipse(renderer, objects, obj):
@@ -998,15 +1006,6 @@ def overline(name):
     if plain:
         spans.append(dict(text=plain))
     return spans
-
-def polyline(renderer, obj):
-    points = list()
-    for location in range(obj.get_int("LOCATIONCOUNT")):
-        location = format(1 + location)
-        points.append(tuple(get_int_frac(obj, x + location) for x in "XY"))
-    kw = dict(points=points)
-    kw.update(colour=colour(obj))
-    renderer.polyline(**kw)
 
 if __name__ == "__main__":
     main()
