@@ -320,7 +320,7 @@ Renderer: """By default, the schematic is converted to an SVG file,
             italic=font["italic"], bold=font["bold"])
     renderer.setdefaultfont(font_name(sheet.get_int("SYSTEMFONT")))
     renderer.start()
-    renderer.addobjects((gnd, rail, arrowconn, dchevron, nc))
+    renderer.addobjects((gnd, rail, arrowconn, dchevron, nc, clock))
     
     with renderer.view(offset=(0, size[1])) as base:
         base.rectangle((size[0], -size[1]), outline=True, width=0.6,
@@ -429,6 +429,9 @@ connmarkers = {
 def nc(renderer):
     renderer.line((+3, +3), (-3, -3), width=0.6)
     renderer.line((-3, +3), (+3, -3), width=0.6)
+
+def clock(renderer):
+    renderer.polyline(((0, +3), (-5, 0), (0, -3)), width=0.6)
 
 # Mapping of record type numbers to handler functions. The handler functions
 # should remove all recognized properties from the "obj" dictionary, so that
@@ -687,6 +690,7 @@ def handle_pin(renderer, objects, obj):
     pinconglomerate = obj.get_int("PINCONGLOMERATE")
     offset = get_location(obj)
     outer_edge = obj.get_int("SYMBOL_OUTEREDGE")
+    inner_edge = obj.get_int("SYMBOL_INNEREDGE")
     electrical = obj.get_int("ELECTRICAL")
     name = obj.get("NAME")
     designator = obj["DESIGNATOR"].decode("ascii")
@@ -703,6 +707,11 @@ def handle_pin(renderer, objects, obj):
             if marker:
                 kw.update(startarrow=marker)
             view.hline(*points, **kw)
+            
+            if inner_edge == 3:
+                view.draw(clock)
+            elif inner_edge:
+                warn("Unexpected SYMBOL_INNEREDGE in {}".format(obj))
             
             if pinconglomerate >> 1 & 1:
                 invert = -1
