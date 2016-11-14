@@ -200,11 +200,11 @@ The component object seems to occur before any of its child objects.
 * `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
 * `|OWNERPARTDISPLAYMODE|DESCRIPTION`: Optional
 * `|SYMBOL_OUTEREDGE` ([integer]): Optional symbol between component and pin.
-    0 (default): No symbol
-    1: A bubble (dot), indicating negative logic
+    * 0: No symbol
+    * 1: A bubble (dot), indicating negative logic
 * `|SYMBOL_INNEREDGE` ([integer]): Optional symbol touching inside edge of
     component
-    * 0 (default): No symbol
+    * 0: No symbol
     * 3: Clock input; arrow pointing inwards
 * `|FORMALTYPE=1`
 * `|ELECTRICAL` ([integer]): Signal type on pin
