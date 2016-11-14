@@ -174,7 +174,7 @@ The component object seems to occur before any of its child objects.
     The value seems to be one more than you would expect,
     so 2 implies a normal component, and the quad op-amp would have 5.
 * `|DISPLAYMODECOUNT` ([integer]): Number of alternative symbols for part
-* `|INDEXINSHEET`: Optional
+* `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID=-1|LOCATION.X|LOCATION.Y`
 * `|DISPLAYMODE` ([integer]):
     Objects belonging to this part should only be displayed
@@ -235,7 +235,7 @@ The component object seems to occur before any of its child objects.
 `|RECORD=4`: Text note
 * `|OWNERINDEX`: Component part index
 * `|ISNOTACCESIBLE`: [Boolean]
-* `|INDEXINSHEET`: Optional
+* `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
 * `|LOCATION.X|LOCATION.Y`
 * `|ORIENTATION=3|JUSTIFICATION=2|COLOR`: Each optional
@@ -255,7 +255,7 @@ The component object seems to occur before any of its child objects.
 `|RECORD=6`: Polyline for component symbol
 * `|OWNERINDEX`: Component part index
 * `|ISNOTACCESIBLE`: [Boolean]
-* `|INDEXINSHEET`: Optional
+* `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
 * `|OWNERPARTDISPLAYMODE`: See [Component](#component) `|DISPLAYMODE`
 * `|LINEWIDTH` ([integer]): Values greater than one seem to be drawn thicker
@@ -266,7 +266,7 @@ The component object seems to occur before any of its child objects.
 ### Polygon ###
 `|RECORD=7`: Polygon for component symbol
 * `|OWNERINDEX|ISNOTACCESIBLE=T`
-* `|INDEXINSHEET`: Optional
+* `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID=1`
 * `|OWNERPARTDISPLAYMODE`: Optional
 * `|LINEWIDTH` ([integer]): If omitted (zero), there is a thin but visible
@@ -298,7 +298,7 @@ Circle:
 Unable to get arcs in exclusive “or” gate to line up.
 * `|OWNERINDEX`: Component part index
 * `|ISNOTACCESIBLE=T`
-* `|INDEXINSHEET`: Optional
+* `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
 * `|OWNERPARTDISPLAYMODE`: See [Component](#component) `|DISPLAYMODE`
 * `|LOCATION.X|LOCATION.Y`: Centre of circle
@@ -313,7 +313,7 @@ Unable to get arcs in exclusive “or” gate to line up.
 `|RECORD=13`: Line for component symbol
 * `|OWNERINDEX`: Component part index
 * `|ISNOTACCESIBLE=T`
-* `|INDEXINSHEET`: Optional
+* `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID=1`
 * `|OWNERPARTDISPLAYMODE`: See [Component](#component) `|DISPLAYMODE`
 * `|LOCATION.X|LOCATION.Y|CORNER.X|CORNER.Y`: Endpoints of the line
@@ -324,7 +324,7 @@ Unable to get arcs in exclusive “or” gate to line up.
 `|RECORD=14`: Rectangle for component symbol
 * `|OWNERINDEX`: Component part index
 * `|ISNOTACCESIBLE=T`: Non-English spelling of “accessible”!
-* `|INDEXINSHEET`: Optional
+* `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
 * `|OWNERPARTDISPLAYMODE`: Optional
 * `|LOCATION.X|LOCATION.Y`: Bottom left corner
@@ -338,7 +338,7 @@ Unable to get arcs in exclusive “or” gate to line up.
 
 ### Sheet symbol ###
 `|RECORD=15`: Box to go on a top-level schematic
-* `|INDEXINSHEET`: Optional
+* `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.Y`: Top left corner (not bottom left like
     other objects!)
@@ -348,7 +348,7 @@ Unable to get arcs in exclusive “or” gate to line up.
 
 ### Power port ###
 `|RECORD=17`: Connection to power rail, ground, etc
-* `|INDEXINSHEET`: Optional
+* `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID=-1`
 * `|STYLE`: Marker symbol:
     * 0: Default, if `|ISCROSSSHEETCONNECTOR=T`
@@ -368,7 +368,7 @@ Unable to get arcs in exclusive “or” gate to line up.
 
 ### Port ###
 `|RECORD=18`: Labelled connection
-* `|INDEXINSHEET`: Optional
+* `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID=-1`
 * `|STYLE` ([integer]):
     * 3: Extends from the specified location towards the right
@@ -392,13 +392,13 @@ Unable to get arcs in exclusive “or” gate to line up.
 
 ### No ERC ###
 `|RECORD=22`: Cross indicating intentional non-connection
-* `|INDEXINSHEET`: Optional
+* `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID=-1|LOCATION.X|LOCATION.Y`
 * `|COLOR`
 
 ### Net label ###
 `|RECORD=25`: Net label
-* `|INDEXINSHEET`: Optional
+* `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.Y`: Point of net connection
 * `|COLOR`
@@ -416,7 +416,7 @@ Unable to get arcs in exclusive “or” gate to line up.
 
 ### Wire ###
 `|RECORD=27`: Polyline wire connection
-* `|INDEXINSHEET`: Optional
+* `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID=-1`
 * `|LINEWIDTH=1`
 * `|COLOR`
@@ -545,9 +545,9 @@ Labels on top-level schematic
 `|RECORD=41`: Label, such as component value. Probably should not
 display label if the record is a child of record [48](#48), even if
 `|ISHIDDEN=T` not specified.
-* `|INDEXINSHEET`: Optional
+* `|INDEXINSHEET`: [Integer]
 * `|OWNERINDEX` ([integer]): May be zero (omitted) for sheet parameters
-* `|OWNERPARTID=-1`
+* `|OWNERPARTID`
 * `|LOCATION.X|LOCATION.X_FRAC|LOCATION.Y|LOCATION.Y_FRAC`
 * `|ORIENTATION` ([integer]):
     * 0: Text is aligned at the bottom-left corner
@@ -603,7 +603,7 @@ Child of RECORD=45 ([Implementation](#implementation))
 ### 47 ###
 `|RECORD=47`
 * `|OWNERINDEX`
-* `|INDEXINSHEET`: Optional
+* `|INDEXINSHEET`: [Integer]
 * `|DESINTF|DESIMPCOUNT=1|DESIMP0`
 
 ### 48 ###

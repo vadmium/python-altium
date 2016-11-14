@@ -457,9 +457,9 @@ def handle_junction(renderer, objects, obj):
 
 @_setitem(handlers, Record.PORT)
 def handle_port(renderer, objects, obj):
-    obj.get("INDEXINSHEET")
+    obj.get_int("INDEXINSHEET")
     obj.check("OWNERPARTID", b"-1")
-    obj["UNIQUEID"]
+    obj.get("UNIQUEID")
     
     width = obj.get_int("WIDTH")
     if obj.get_int("IOTYPE"):
@@ -499,7 +499,7 @@ def handle_port(renderer, objects, obj):
 
 @_setitem(handlers, Record.WIRE)
 def handle_wire(renderer, objects, obj):
-    obj.get("INDEXINSHEET")
+    obj.get_int("INDEXINSHEET")
     obj.check("OWNERPARTID", b"-1")
     obj.check("LINEWIDTH", b"1")
     
@@ -560,7 +560,7 @@ def parse_header(obj):
 
 @_setitem(handlers, 47)
 def handle_unknown(renderer, objects, obj):
-    obj.get("INDEXINSHEET")
+    obj.get_int("INDEXINSHEET")
     for property in ("DESIMP0", "DESINTF"):
         obj[property]
     obj.check("DESIMPCOUNT", b"1")
@@ -598,7 +598,7 @@ def handle_parameter(renderer, objects, obj):
         "READONLYSTATE", "INDEXINSHEET", "UNIQUEID", "ISMIRRORED",
     ):
         obj.get(property)
-    obj.check("OWNERPARTID", b"-1")
+    obj.check("OWNERPARTID", b"-1", b"1")
     obj["NAME"]
     
     text_colour = colour(obj)
@@ -663,7 +663,7 @@ def handle_designator(renderer, objects, obj):
 
 @_setitem(handlers, Record.POLYLINE)
 def handle_polyline(renderer, objects, obj):
-    obj.get("INDEXINSHEET")
+    obj.get_int("INDEXINSHEET")
     obj.get_bool("ISNOTACCESIBLE")
     linewidth = obj.get_int("LINEWIDTH")
     
@@ -682,7 +682,7 @@ def handle_polyline(renderer, objects, obj):
 
 @_setitem(handlers, Record.LINE)
 def handle_line(renderer, objects, obj):
-    obj.get("INDEXINSHEET")
+    obj.get_int("INDEXINSHEET")
     obj.check("ISNOTACCESIBLE", b"T")
     
     kw = dict(
@@ -749,7 +749,7 @@ def handle_pin(renderer, objects, obj):
 
 @_setitem(handlers, Record.POWER_PORT)
 def handle_power_port(renderer, objects, obj):
-    obj.get("INDEXINSHEET")
+    obj.get_int("INDEXINSHEET")
     obj.check("OWNERPARTID", b"-1")
     
     orient = obj.get_int("ORIENTATION")
@@ -782,7 +782,7 @@ def handle_power_port(renderer, objects, obj):
 @_setitem(handlers, Record.RECTANGLE)
 @_setitem(handlers, Record.ROUND_RECTANGLE)
 def handle_rectangle(renderer, objects, obj):
-    obj.get("INDEXINSHEET")
+    obj.get_int("INDEXINSHEET")
     obj.get("TRANSPARENT")
     obj.check("ISNOTACCESIBLE", b"T")
     
@@ -807,7 +807,7 @@ def handle_rectangle(renderer, objects, obj):
 
 @_setitem(handlers, Record.NET_LABEL)
 def handle_net_label(renderer, objects, obj):
-    obj.get("INDEXINSHEET")
+    obj.get_int("INDEXINSHEET")
     obj.check("OWNERPARTID", b"-1")
     
     orient = obj.get_int("ORIENTATION")
@@ -829,7 +829,7 @@ def handle_net_label(renderer, objects, obj):
 @_setitem(handlers, Record.ARC)
 @_setitem(handlers, Record.ELLIPTICAL_ARC)
 def handle_arc(renderer, objects, obj):
-    obj.get("INDEXINSHEET")
+    obj.get_int("INDEXINSHEET")
     obj.check("ISNOTACCESIBLE", b"T")
     obj.check("LINEWIDTH", b"1")
     
@@ -850,7 +850,7 @@ def handle_arc(renderer, objects, obj):
 
 @_setitem(handlers, Record.POLYGON)
 def handle_polygon(renderer, objects, obj):
-    obj.get("INDEXINSHEET")
+    obj.get_int("INDEXINSHEET")
     obj.check("ISNOTACCESIBLE", b"T")
     obj.check("ISSOLID", b"T")
     obj.check("OWNERPARTID", b"1")
@@ -884,7 +884,7 @@ def handle_label(renderer, objects, obj):
 
 @_setitem(handlers, Record.NO_ERC)
 def handle_no_erc(renderer, objects, obj):
-    obj.get("INDEXINSHEET")
+    obj.get_int("INDEXINSHEET")
     obj.check("OWNERPARTID", b"-1")
     
     col = colour(obj)
@@ -943,7 +943,7 @@ def handle_ellipse(renderer, objects, obj):
 
 @_setitem(handlers, Record.SHEET_SYMBOL)
 def handle_sheet_symbol(renderer, objects, obj):
-    obj.get("INDEXINSHEET")
+    obj.get_int("INDEXINSHEET")
     obj["UNIQUEID"]
     obj.check("OWNERPARTID", b"-1")
     obj.check("ISSOLID", b"T")
@@ -965,7 +965,7 @@ def handle_sheet_name(renderer, objects, obj):
 
 @_setitem(handlers, Record.IMAGE)
 def handle_image(renderer, objects, obj):
-    obj["INDEXINSHEET"]
+    obj.get_int("INDEXINSHEET")
     obj["FILENAME"]
     obj.check("OWNERPARTID", b"-1")
     obj.get_bool("EMBEDIMAGE")
