@@ -690,9 +690,8 @@ def handle_polyline(renderer, objects, obj):
     kw.update(colour=colour(obj))
     
     if obj["OWNERPARTID"] == b"-1" or display_part(objects, obj):
-        assert linewidth
         if linewidth != 1:
-            kw.update(width=linewidth)
+            kw.update(width=linewidth or 0.6)
         renderer.polyline(**kw)
 
 @_setitem(handlers, Record.LINE)
