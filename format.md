@@ -39,6 +39,7 @@ Contents:
     * [31: Sheet](#sheet)
     * [32, 33: Sheet name and file name](#sheet-name-and-file-name)
     * [34: Designator](#designator)
+    * [37: Bus entry](#bus-entry)
     * [39: Template](#template)
     * [41: Parameter](#parameter)
     * [43: Warning sign](#warning-sign)
@@ -410,16 +411,16 @@ Unable to get arcs in exclusive “or” gate to line up.
     * 3: Bottom-left alignment, then rotated 90° clockwise
 
 ### Bus ###
-`|RECORD=26`: Bus
-
-`|OWNERPARTID=-1|LINEWIDTH=1|COLOR=8388608|LOCATIONCOUNT=2|X1|Y1|X2|Y2`
-
-### Wire ###
-`|RECORD=27`: Polyline wire connection
+`|RECORD=26`: Bus polyline
 * `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID=-1`
-* `|LINEWIDTH=1`
-* `|COLOR`
+* `|LINEWIDTH|COLOR`
+* `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .
+
+### Wire ###
+`|RECORD=27`: Wire connection polyline
+* `|INDEXINSHEET`: [Integer]
+* `|OWNERPARTID=-1|LINEWIDTH|COLOR`
 * `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .
 
 ### Text frame ###
@@ -536,6 +537,11 @@ Labels on top-level schematic
 * `|ORIENTATION` ([integer]): Probably the same as for [Parameter]
     (#parameter)
 * `|ISHIDDEN`: Optional
+
+### Bus entry ###
+`|RECORD=37`: Bus entry line
+
+`|COLOR=8388608|CORNER.X|CORNER.Y|LINEWIDTH=2|LOCATION.X|LOCATION.Y|OWNERPARTID=-1`
 
 ### Template ###
 `|RECORD=39`: Sheet template, owning custom title block lines and labels

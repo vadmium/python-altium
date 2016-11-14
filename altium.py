@@ -222,6 +222,7 @@ class Record:
     PORT = 18
     NO_ERC = 22
     NET_LABEL = 25
+    BUS = 26
     WIRE = 27
     TEXT_FRAME = 28
     JUNCTION = 29
@@ -230,6 +231,7 @@ class Record:
     SHEET_NAME = 32
     SHEET_FILE_NAME = 33
     DESIGNATOR = 34
+    BUS_ENTRY = 37
     TEMPLATE = 39
     PARAMETER = 41
     IMPLEMENTATION_LIST = 44
@@ -498,17 +500,30 @@ def handle_port(renderer, objects, obj):
             )
 
 @_setitem(handlers, Record.WIRE)
+@_setitem(handlers, Record.BUS)
 def handle_wire(renderer, objects, obj):
     obj.get_int("INDEXINSHEET")
     obj.check("OWNERPARTID", b"-1")
-    obj.check("LINEWIDTH", b"1")
     
     points = list()
     for location in range(obj.get_int("LOCATIONCOUNT")):
         location = format(1 + location)
         point = tuple(obj.get_int(x + location) for x in "XY")
         points.append(point)
-    renderer.polyline(points, colour=colour(obj))
+    renderer.polyline(points,
+        colour=colour(obj),
+        width=obj.get_int("LINEWIDTH"),
+    )
+
+@_setitem(handlers, Record.BUS_ENTRY)
+def handle_bus_entry(renderer, objects, obj):
+    obj.check("LINEWIDTH", b"2")
+    obj.check("OWNERPARTID", b"-1")
+    renderer.line(
+        get_location(obj), tuple(obj.get_int("CORNER." + x) for x in "XY"),
+        colour=colour(obj),
+        width=obj.get_int("LINEWIDTH"),
+    )
 
 @_setitem(handlers, Record.IMPLEMENTATION_LIST)
 @_setitem(handlers, 46)
