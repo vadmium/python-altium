@@ -6,8 +6,10 @@ from sys import argv
 def main(file):
     with open(file, "rb") as file:
         file = altium.OleFileIO(file)
-        objects = altium.iter_records(file.openstream("FileHeader"))
+        stream = file.openstream("FileHeader")
+        objects = altium.iter_records(stream)
         for [i, o] in enumerate(objects):
+            o = altium.parse_properties(stream, o)
             if not i:
                 i = "Header"
             else:

@@ -1,7 +1,6 @@
 #! /usr/bin/env python3
 
 import struct
-from io import SEEK_CUR
 from warnings import warn
 
 try:
@@ -29,7 +28,9 @@ def read(file):
     """
     ole = OleFileIO(file)
     
-    records = iter_records(ole.openstream("FileHeader"))
+    stream = ole.openstream("FileHeader")
+    records = iter_records(stream)
+    records = (parse_properties(stream, record) for record in records)
     header = next(records)
     parse_header(header)
     header.check_unknown()
@@ -44,7 +45,7 @@ def read(file):
     if ole.exists("Additional"):
         stream = ole.openstream("Additional")
         records = iter_records(stream)
-        header = next(records)
+        header = parse_properties(stream, next(records))
         parse_header(header)
         header.check_unknown()
         try:
@@ -52,8 +53,9 @@ def read(file):
         except ValueError:
             warn("Extra record(s) in Additional stream")
     
-    records = iter_records(ole.openstream("Storage"))
-    header = next(records)
+    storage_stream = ole.openstream("Storage")
+    records = iter_records(storage_stream)
+    header = parse_properties(storage_stream, next(records))
     header.check("HEADER", b"Icon storage")
     header.get_int("WEIGHT")
     header.check_unknown()
@@ -66,37 +68,57 @@ def read(file):
     return sheet
 
 def iter_records(stream):
-    """Yields object records from a stream in an Altium ".SchDoc" file
+    """Finds object records from a stream in an Altium ".SchDoc" file
     """
     while True:
-        length = stream.read(4)
+        length = stream.read(2)
         if not length:
             break
-        (length,) = struct.unpack("<I", length)
+        (length,) = struct.unpack("<H", length)
         
-        properties = stream.read(length - 1)
-        obj = Properties()
-        seen = dict()
-        for property in properties.split(b"|"):
-            if not property:
-                # Most (but not all) property lists are
-                # prefixed with a pipe "|",
-                # so ignore an empty property before the prefix
-                continue
-            
-            (name, value) = property.split(b"=", 1)
-            name = name.decode("ascii")
-            existing = seen.get(name)
-            if existing not in (None, value):
-                msg = "Conflicting duplicate: {!r}, was {!r}"
-                warn(msg.format(property, existing))
-            obj[name] = value
-            seen[name] = value
+        byte = stream.read(1)
+        if byte != b"\x00":
+            warn("Expected 0x00 byte after record length")
         
-        yield obj
+        [type] = stream.read(1)
+        if type > 1:
+            warn("Unexpected record type " + format(type))
         
-        # Skip over null terminator byte
-        stream.seek(+1, SEEK_CUR)
+        end = stream.tell() + length
+        yield (type, length)
+        if stream.tell() > end:
+            warn("Read past end of record")
+        stream.seek(end)
+
+def parse_properties(stream, header):
+    [type, length] = header
+    if type != 0:
+        warn("Expected properties record, not type " + format(type))
+        return None
+    
+    properties = stream.read(length - 1)
+    obj = Properties()
+    seen = dict()
+    for property in properties.split(b"|"):
+        if not property:
+            # Most (but not all) property lists are
+            # prefixed with a pipe "|",
+            # so ignore an empty property before the prefix
+            continue
+        
+        (name, value) = property.split(b"=", 1)
+        name = name.decode("ascii")
+        existing = seen.get(name)
+        if existing not in (None, value):
+            msg = "Conflicting duplicate: {!r}, was {!r}"
+            warn(msg.format(property, existing))
+        obj[name] = value
+        seen[name] = value
+    
+    if stream.read(1) != b"\x00":
+        warn("Properties record not null-terminated")
+    
+    return obj
 
 class Properties:
     '''Holds the |NAME=value properties of a schematic object'''

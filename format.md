@@ -77,10 +77,14 @@ Upverter calls them parts.
 
 Record format:
 
-* Length of the rest of the record (including null terminator).
-    Little endian encoding, 4 bytes.
-* Property list
-* Null terminator byte
+* Length of the payload:
+    (little endian encoding, 2 bytes)
+* 0 (1 byte)
+* Record type (1 byte)
+
+If the record type is 0, it is a property list, followed by a
+null terminator byte. Records in the Storage stream, after the
+initial header record, have type 1.
 
 ## Property list ##
 
