@@ -61,7 +61,7 @@ class ConversionTest(TestCase):
                 patch("altium.OleFileIO", MockOle), \
                 patch("altium.os", mock_os), \
                 redirect_stdout(output):
-            altium.convert("dummy.SchDoc", svg.Renderer)
+            altium.render("dummy.SchDoc", svg.Renderer)
         return output.getvalue()
     
     def test_svg(self):

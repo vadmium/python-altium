@@ -168,6 +168,11 @@ class Properties:
     def get_real(self, property):
         return float(self.get(property, 0))
 
+def parse_header(obj):
+    obj.check("HEADER",
+        b"Protel for Windows - Schematic Capture Binary File Version 5.0")
+    obj.get_int("WEIGHT")
+
 def get_sheet_style(sheet):
     '''Returns the size of the sheet: (name, (width, height))'''
     STYLES = {
@@ -331,127 +336,19 @@ from argparse import ArgumentParser
 from warnings import warn
 
 def main():
-    parser = ArgumentParser(description=getdoc(convert))
+    parser = ArgumentParser(description=getdoc(render))
     parser.add_argument("file")
     parser.add_argument("--renderer", choices={"svg", "tk"}, default="svg",
-        help=convert.__annotations__["Renderer"])
+        help=render.__init__.__annotations__["Renderer"])
     args = parser.parse_args()
     renderer = import_module("." + args.renderer, "vector")
-    convert(args.file, renderer.Renderer)
+    render(args.file, renderer.Renderer)
 
-def convert(filename,
-Renderer: """By default, the schematic is converted to an SVG file,
-    written to the standard output. It may also be rendered using TK.""",
-):
-    """Convert an Altium *.SchDoc schematic file"""
-    
-    with open(filename, "rb") as file:
-        objects = read(file)
-        stat = os.stat(file.fileno())
-    
-    sheet = objects.properties
-    [sheetstyle, size] = get_sheet_style(sheet)
-    renderer = Renderer(size, "in", 1 / INCH_SIZE,
-        margin=0.3, line=1, down=-1, textbottom=True)
-    
-    for font in iter_fonts(sheet):
-        name = font_name(font["id"])
-        
-        # Not sure if line spacing to font em size fudge factor is
-        # specific to Times New Roman, or to Altium
-        fontsize = font["line"] * 0.875
-        
-        renderer.addfont(name, fontsize, font["family"],
-            italic=font["italic"], bold=font["bold"],
-            underline=font["underline"],
-        )
-    renderer.setdefaultfont(font_name(sheet.get_int("SYSTEMFONT")))
-    renderer.start()
-    renderer.addobjects((gnd, rail, arrowconn, dchevron, nc, clock))
-    
-    with renderer.view(offset=(0, size[1])) as base:
-        base.rectangle((size[0], -size[1]), outline=True, width=0.6,
-            fill=colour(sheet, "AREACOLOR"))
-        base.rectangle((20, -20), (size[0] - 20, 20 - size[1]), width=0.6)
-        for axis in range(2):
-            for side in range(2):
-                for n in range(4):
-                    translate = [None] * 2
-                    translate[axis] = size[axis] / 4 * (n + 0.5)
-                    translate[axis ^ 1] = 10
-                    if side:
-                        translate[axis ^ 1] += size[axis ^ 1] - 20
-                    translate[1] *= -1
-                    with base.view(offset=translate) as ref:
-                        label = chr(ord("1A"[axis]) + n)
-                        ref.text(label, horiz=ref.CENTRE, vert=ref.CENTRE)
-                        if n + 1 < 4:
-                            x = size[axis] / 4 / 2
-                            if axis:
-                                ref.hline(-10, +10, offset=(0, -x),
-                                    width=0.6)
-                            else:
-                                ref.vline(-10, +10, offset=(x, 0), width=0.6)
-        
-        if sheet.get_bool("TITLEBLOCKON"):
-            if not os.path.isabs(filename):
-                cwd = os.getcwd()
-                pwd = os.getenv("PWD")
-                if os.path.samefile(pwd, cwd):
-                    cwd = pwd
-                filename = os.path.join(pwd, filename)
-            with base.view(offset=(size[0] - 20, 20 - size[1])) as block:
-                points = ((-350, 0), (-350, 80), (-0, 80))
-                block.polyline(points, width=0.6)
-                block.hline(-350, 0, offset=(0, 50), width=0.6)
-                block.vline(-30, offset=(-300, 50), width=0.6)
-                block.vline(-30, offset=(-100, 50), width=0.6)
-                block.hline(-350, 0, offset=(0, 20), width=0.6)
-                block.hline(-350, 0, offset=(0, 10), width=0.6)
-                block.vline(20, 0, offset=(-150, 0), width=0.6)
-                
-                block.text("Title", (-345, 70))
-                block.text("Size", (-345, 40))
-                block.text(sheetstyle, (-340, 30), vert=block.CENTRE)
-                block.text("Number", (-295, 40))
-                block.text("Revision", (-95, 40))
-                block.text("Date", (-345, 10))
-                d = format(date.fromtimestamp(stat.st_mtime), "%x")
-                block.text(d, (-300, 10))
-                block.text("File", (-345, 0))
-                block.text(filename, (-300, 0))
-                block.text("Sheet", (-145, 10))
-                block.text("of", (-117, 10))
-                block.text("Drawn By:", (-145, 0))
-    check_sheet(sheet)
-    
-    handle_children(renderer, objects)
-    renderer.finish()
-
-def handle_children(renderer, owner):
-    for child in owner.children:
-        obj = child.properties
-        record = obj.get_int("RECORD")
-        handler = handlers.get(record)
-        if handler:
-            handler(renderer, owner, obj)
-            obj.check_unknown()
-        else:
-            warn("Unhandled record type: {}".format(obj))
-    
-        handle_children(renderer, child)
-
-arrowhead = dict(base=5, shoulder=7, radius=3)
-arrowtail = dict(base=7, shoulder=0, radius=2.5)
-diamond = dict(base=10, shoulder=5, radius=2.5)
-
-pinmarkers = {
-    PinElectrical.INPUT: arrowhead,
-    PinElectrical.IO: diamond,
-    PinElectrical.OUTPUT: arrowtail,
-    PinElectrical.PASSIVE: None,
-    PinElectrical.POWER: None,
-}
+def _setitem(dict, key):
+    def decorator(func):
+        dict[key] = func
+        return func
+    return decorator
 
 def gnd(renderer):
     renderer.hline(10)
@@ -462,16 +359,11 @@ def rail(renderer):
     renderer.hline(10)
     renderer.vline(-7, +7, offset=(10, 0), width=1.5)
 def arrowconn(renderer):
-    renderer.hline(10, endarrow=arrowhead)
+    renderer.hline(10, endarrow=render.arrowhead)
 def dchevron(renderer):
     renderer.hline(5)
     renderer.polyline(((8, +4), (5, 0), (8, -4)))
     renderer.polyline(((11, +4), (8, 0), (11, -4)))
-connmarkers = {
-    PowerObjectStyle.ARROW: (arrowconn, 12),
-    PowerObjectStyle.BAR: (rail, 12),
-    PowerObjectStyle.GND: (gnd, 20),
-}
 
 def nc(renderer):
     renderer.line((+3, +3), (-3, -3), width=0.6)
@@ -480,569 +372,691 @@ def nc(renderer):
 def clock(renderer):
     renderer.polyline(((0, +3), (-5, 0), (0, -3)), width=0.6)
 
-# Mapping of record type numbers to handler functions. The handler functions
-# should remove all recognized properties from the "obj" dictionary, so that
-# unhandled properties can be detected.
-handlers = dict()
-
-def _setitem(dict, key):
-    def decorator(func):
-        dict[key] = func
-        return func
-    return decorator
-
-@_setitem(handlers, Record.JUNCTION)
-def handle_junction(renderer, objects, obj):
-    obj.check("INDEXINSHEET", None, b"-1")
-    obj.check("OWNERPARTID", b"-1")
+class render:
+    """Render an Altium ".SchDoc" schematic file"""
+    def __init__(self, filename,
+        Renderer: """By default, the schematic is converted to an SVG file,
+            written to the standard output. It may also be rendered using TK.
+            """,
+    ):
+        with open(filename, "rb") as file:
+            objects = read(file)
+            stat = os.stat(file.fileno())
+        
+        sheet = objects.properties
+        [sheetstyle, size] = get_sheet_style(sheet)
+        self.renderer = Renderer(size, "in", 1 / INCH_SIZE,
+            margin=0.3, line=1, down=-1, textbottom=True)
+        
+        for font in iter_fonts(sheet):
+            name = font_name(font["id"])
+            
+            # Not sure if line spacing to font em size fudge factor is
+            # specific to Times New Roman, or to Altium
+            fontsize = font["line"] * 0.875
+            
+            self.renderer.addfont(name, fontsize, font["family"],
+                italic=font["italic"], bold=font["bold"],
+                underline=font["underline"],
+            )
+        self.renderer.setdefaultfont(font_name(sheet.get_int("SYSTEMFONT")))
+        self.renderer.start()
+        self.renderer.addobjects((gnd, rail, arrowconn, dchevron, nc, clock))
+        
+        with self.renderer.view(offset=(0, size[1])) as base:
+            base.rectangle((size[0], -size[1]), outline=True, width=0.6,
+                fill=colour(sheet, "AREACOLOR"))
+            base.rectangle((20, -20), (size[0] - 20, 20 - size[1]),
+                width=0.6)
+            for axis in range(2):
+                for side in range(2):
+                    for n in range(4):
+                        translate = [None] * 2
+                        translate[axis] = size[axis] / 4 * (n + 0.5)
+                        translate[axis ^ 1] = 10
+                        if side:
+                            translate[axis ^ 1] += size[axis ^ 1] - 20
+                        translate[1] *= -1
+                        with base.view(offset=translate) as ref:
+                            label = chr(ord("1A"[axis]) + n)
+                            ref.text(label,
+                                horiz=ref.CENTRE, vert=ref.CENTRE)
+                            if n + 1 < 4:
+                                x = size[axis] / 4 / 2
+                                if axis:
+                                    ref.hline(-10, +10, offset=(0, -x),
+                                        width=0.6)
+                                else:
+                                    ref.vline(-10, +10, offset=(x, 0),
+                                        width=0.6)
+            
+            if sheet.get_bool("TITLEBLOCKON"):
+                if not os.path.isabs(filename):
+                    cwd = os.getcwd()
+                    pwd = os.getenv("PWD")
+                    if os.path.samefile(pwd, cwd):
+                        cwd = pwd
+                    filename = os.path.join(pwd, filename)
+                with base.view(offset=(size[0] - 20, 20 - size[1])) as block:
+                    points = ((-350, 0), (-350, 80), (-0, 80))
+                    block.polyline(points, width=0.6)
+                    block.hline(-350, 0, offset=(0, 50), width=0.6)
+                    block.vline(-30, offset=(-300, 50), width=0.6)
+                    block.vline(-30, offset=(-100, 50), width=0.6)
+                    block.hline(-350, 0, offset=(0, 20), width=0.6)
+                    block.hline(-350, 0, offset=(0, 10), width=0.6)
+                    block.vline(20, 0, offset=(-150, 0), width=0.6)
+                    
+                    block.text("Title", (-345, 70))
+                    block.text("Size", (-345, 40))
+                    block.text(sheetstyle, (-340, 30), vert=block.CENTRE)
+                    block.text("Number", (-295, 40))
+                    block.text("Revision", (-95, 40))
+                    block.text("Date", (-345, 10))
+                    d = format(date.fromtimestamp(stat.st_mtime), "%x")
+                    block.text(d, (-300, 10))
+                    block.text("File", (-345, 0))
+                    block.text(filename, (-300, 0))
+                    block.text("Sheet", (-145, 10))
+                    block.text("of", (-117, 10))
+                    block.text("Drawn By:", (-145, 0))
+        self.check_sheet(sheet)
+        
+        self.handle_children(objects)
+        self.renderer.finish()
     
-    col = colour(obj)
-    renderer.circle(2, get_location(obj), fill=col)
-
-@_setitem(handlers, Record.PORT)
-def handle_port(renderer, objects, obj):
-    obj.get_int("INDEXINSHEET")
-    obj.check("OWNERPARTID", b"-1")
-    obj.get("UNIQUEID")
+    def check_sheet(self, obj):
+        assert obj.get_int("RECORD") == Record.SHEET
+        
+        obj.check("BORDERON", b"T")
+        for property in (
+            "CUSTOMX", "CUSTOMY", "HOTSPOTGRIDSIZE", "SNAPGRIDSIZE",
+        ):
+            obj[property]
+        obj.check("CUSTOMMARGINWIDTH", None, b"20")
+        obj.check("CUSTOMXZONES", None, b"6")
+        obj.check("CUSTOMYZONES", None, b"4")
+        obj.check("DISPLAY_UNIT", b"4")
+        obj.check("HOTSPOTGRIDON", b"T")
+        obj.check("ISBOC", b"T")
+        obj.check("SHEETNUMBERSPACESIZE", b"4")
+        obj.check("SNAPGRIDON", b"T")
+        obj.check("USEMBCS", b"T")
+        obj.check("VISIBLEGRIDON", b"T")
+        obj.check("VISIBLEGRIDSIZE", b"10")
+        obj.get_bool("SHOWTEMPLATEGRAPHICS")
+        obj.get("TEMPLATEFILENAME")
+        
+        obj.check_unknown()
     
-    width = obj.get_int("WIDTH")
-    if obj.get_int("IOTYPE"):
-        points = ((0, 0), (5, -5), (width - 5, -5),
-            (width, 0), (width - 5, +5), (5, +5))
-    else:
-        points = ((0, -5), (width - 5, -5),
-            (width, 0), (width - 5, +5), (0, +5))
-    left_aligned = obj.get_int("ALIGNMENT") == 2
-    upwards = obj.get_int("STYLE") == 7
-    if left_aligned ^ (not upwards):
-        labelpoint = (10, 0)
-        horiz = renderer.LEFT
-    else:
-        labelpoint = (width - 10, 0)
-        horiz = renderer.RIGHT
-    if upwards:
-        shapekw = dict(rotate=+90, offset=(0, +width))
-    else:
-        shapekw = dict()
-    with renderer.view(offset=get_location(obj)) as view:
-        view.polygon(points,
-            width=0.6,
+    def handle_children(self, owner):
+        for child in owner.children:
+            obj = child.properties
+            record = obj.get_int("RECORD")
+            handler = self.handlers.get(record)
+            if handler:
+                handler(self, owner, obj)
+                obj.check_unknown()
+            else:
+                warn("Unhandled record type: {}".format(obj))
+        
+            self.handle_children(child)
+    
+    arrowhead = dict(base=5, shoulder=7, radius=3)
+    arrowtail = dict(base=7, shoulder=0, radius=2.5)
+    diamond = dict(base=10, shoulder=5, radius=2.5)
+    
+    pinmarkers = {
+        PinElectrical.INPUT: arrowhead,
+        PinElectrical.IO: diamond,
+        PinElectrical.OUTPUT: arrowtail,
+        PinElectrical.PASSIVE: None,
+        PinElectrical.POWER: None,
+    }
+    
+    connmarkers = {
+        PowerObjectStyle.ARROW: (arrowconn, 12),
+        PowerObjectStyle.BAR: (rail, 12),
+        PowerObjectStyle.GND: (gnd, 20),
+    }
+    
+    # Mapping of record type numbers to handler method nanes. The handlers
+    # should read all recognized properties from the "obj" dictionary, so
+    # that unhandled properties can be detected.
+    handlers = dict()
+    
+    @_setitem(handlers, Record.LINE)
+    def handle_line(self, objects, obj):
+        obj.get_int("INDEXINSHEET")
+        obj.check("ISNOTACCESIBLE", b"T")
+        
+        kw = dict(
+            colour=colour(obj),
+            width=obj.get_int("LINEWIDTH"),
+            a=get_location(obj),
+            b=tuple(obj.get_int("CORNER." + x) for x in "XY"),
+        )
+        if display_part(objects, obj):
+            self.renderer.line(**kw)
+    
+    @_setitem(handlers, Record.POLYLINE)
+    def handle_polyline(self, objects, obj):
+        obj.get_int("INDEXINSHEET")
+        obj.get_bool("ISNOTACCESIBLE")
+        linewidth = obj.get_int("LINEWIDTH")
+        
+        points = list()
+        for i in range(obj.get_int("LOCATIONCOUNT")):
+            location = (get_int_frac(obj, "{}{}".format(x, 1 + i))
+                for x in "XY")
+            points.append(tuple(location))
+        kw = dict(points=points)
+        kw.update(colour=colour(obj))
+        
+        if obj["OWNERPARTID"] == b"-1" or display_part(objects, obj):
+            if linewidth != 1:
+                kw.update(width=linewidth or 0.6)
+            self.renderer.polyline(**kw)
+    
+    @_setitem(handlers, Record.ARC)
+    @_setitem(handlers, Record.ELLIPTICAL_ARC)
+    def handle_arc(self, objects, obj):
+        obj.get_int("INDEXINSHEET")
+        obj.check("ISNOTACCESIBLE", b"T")
+        obj.check("LINEWIDTH", b"1")
+        
+        r = obj.get_int("RADIUS")
+        if obj.get_int("RECORD") == Record.ELLIPTICAL_ARC:
+            r2 = get_int_frac(obj, "SECONDARYRADIUS")
+        else:
+            r2 = r
+        start = obj.get_real("STARTANGLE")
+        end = obj.get_real("ENDANGLE")
+        location = get_location(obj)
+        col = colour(obj)
+        if display_part(objects, obj):
+            if end == start:  # Full circle rather than a zero-length arc
+                start = 0
+                end = 360
+            self.renderer.arc((r, r2), start, end, location, colour=col)
+    
+    @_setitem(handlers, Record.BEZIER)
+    def handle_bezier(self, objects, obj):
+        obj.get_bool("ISNOTACCESIBLE")
+        obj.get_int("OWNERPARTID")
+        obj.check("LOCATIONCOUNT", b"4")
+        obj.get_int("INDEXINSHEET")
+        
+        kw = dict(colour=colour(obj))
+        points = list()
+        for n in range(4):
+            n = format(1 + n)
+            points.append(tuple(obj.get_int(x + n) for x in "XY"))
+        width = obj.get_int("LINEWIDTH")
+        if width != 1:
+            kw.update(width=width)
+        self.renderer.cubicbezier(*points, **kw)
+    
+    @_setitem(handlers, Record.RECTANGLE)
+    @_setitem(handlers, Record.ROUND_RECTANGLE)
+    def handle_rectangle(self, objects, obj):
+        obj.get_int("INDEXINSHEET")
+        obj.get("TRANSPARENT")
+        obj.check("ISNOTACCESIBLE", b"T")
+        
+        kw = dict(
+            width=obj.get_int("LINEWIDTH") or 0.6,
+            outline=colour(obj),
+        )
+        fill = colour(obj, "AREACOLOR")
+        if obj.get_bool("ISSOLID"):
+            kw.update(fill=fill)
+        a = get_location(obj)
+        b = tuple(obj.get_int("CORNER." + x) for x in "XY")
+        if display_part(objects, obj):
+            if obj.get_int("RECORD") == Record.ROUND_RECTANGLE:
+                r = list()
+                for x in "XY":
+                    radius = obj.get_int("CORNER{}RADIUS".format(x))
+                    r.append(int(radius))
+                self.renderer.roundrect(r, a, b, **kw)
+            else:
+                self.renderer.rectangle(a, b, **kw)
+    
+    @_setitem(handlers, Record.LABEL)
+    def handle_label(self, objects, obj):
+        for property in (
+            "INDEXINSHEET", "ISNOTACCESIBLE", "ORIENTATION", "JUSTIFICATION",
+        ):
+            obj.get(property)
+        
+        colour(obj)
+        obj["TEXT"]
+        get_location(obj)
+        obj.get_int("FONTID")
+        
+        part = obj["OWNERPARTID"]
+        if part == b"-1" or part == objects.properties["CURRENTPARTID"]:
+            self.text(obj)
+    
+    @_setitem(handlers, Record.POLYGON)
+    def handle_polygon(self, objects, obj):
+        obj.get_int("INDEXINSHEET")
+        obj.check("ISNOTACCESIBLE", b"T")
+        obj.check("ISSOLID", b"T")
+        obj.check("OWNERPARTID", b"1")
+        obj.get("OWNERPARTDISPLAYMODE")
+        
+        points = list()
+        for location in range(obj.get_int("LOCATIONCOUNT")):
+            location = format(1 + location)
+            point = tuple(obj.get_int(x + location) for x in "XY")
+            points.append(point)
+        self.renderer.polygon(
             outline=colour(obj),
             fill=colour(obj, "AREACOLOR"),
-        **shapekw)
+            points=points,
+            width=obj.get_int("LINEWIDTH") or 0.6,
+        )
+    
+    @_setitem(handlers, Record.ELLIPSE)
+    def handle_ellipse(self, objects, obj):
+        obj["OWNERPARTID"]
+        obj.check("ISNOTACCESIBLE", b"T")
+        obj.check("SECONDARYRADIUS", obj["RADIUS"])
+        obj.get_int("SECONDARYRADIUS_FRAC")
+        obj.check("ISSOLID", b"T")
+        obj.get_int("INDEXINSHEET")
         
-        with contextlib.ExitStack() as context:
-            if upwards:
-                view = context.enter_context(view.view(rotate=+1))
-            view.text(
-                overline(obj["NAME"]),
-                colour=colour(obj, "TEXTCOLOR"),
-                offset=labelpoint,
-                vert=view.CENTRE, horiz=horiz,
-            )
-
-@_setitem(handlers, Record.WIRE)
-@_setitem(handlers, Record.BUS)
-def handle_wire(renderer, objects, obj):
-    obj.get_int("INDEXINSHEET")
-    obj.check("OWNERPARTID", b"-1")
+        self.renderer.circle(
+            r=get_int_frac(obj, "RADIUS"),
+            width=0.6,
+            outline=colour(obj), fill=colour(obj, "AREACOLOR"),
+            offset=get_location(obj),
+        )
     
-    points = list()
-    for location in range(obj.get_int("LOCATIONCOUNT")):
-        location = format(1 + location)
-        point = tuple(obj.get_int(x + location) for x in "XY")
-        points.append(point)
-    renderer.polyline(points,
-        colour=colour(obj),
-        width=obj.get_int("LINEWIDTH"),
-    )
+    @_setitem(handlers, Record.TEXT_FRAME)
+    def handle_text_frame(self, objects, obj):
+        obj.get("CLIPTORECT")
+        obj.check("ALIGNMENT", b"1")
+        obj.check("AREACOLOR", b"16777215")
+        obj.check("ISSOLID", b"T")
+        obj.check("OWNERPARTID", b"-1")
+        obj.check("WORDWRAP", b"T")
+        
+        [lhs, _] = get_location(obj)
+        self.renderer.text(
+            font=font_name(obj.get_int("FONTID")),
+            offset=(lhs, obj.get_int("CORNER.Y")),
+            width=obj.get_int("CORNER.X") - lhs,
+            text=obj["Text"].decode("ascii").replace("~1", "\n"),
+            vert=self.renderer.TOP,
+        )
 
-@_setitem(handlers, Record.BUS_ENTRY)
-def handle_bus_entry(renderer, objects, obj):
-    obj.check("LINEWIDTH", b"2")
-    obj.check("OWNERPARTID", b"-1")
-    renderer.line(
-        get_location(obj), tuple(obj.get_int("CORNER." + x) for x in "XY"),
-        colour=colour(obj),
-        width=obj.get_int("LINEWIDTH"),
-    )
-
-@_setitem(handlers, Record.IMPLEMENTATION_LIST)
-@_setitem(handlers, 46)
-@_setitem(handlers, 48)
-def handle_simple(renderer, objects, obj):
-    pass
-
-@_setitem(handlers, Record.IMPLEMENTATION)
-def handle_implementation(renderer, objects, obj):
-    for property in (
-        "USECOMPONENTLIBRARY", "DESCRIPTION", "MODELDATAFILEENTITY0",
-        "MODELDATAFILEKIND0", "DATALINKSLOCKED", "DATABASEDATALINKSLOCKED",
-        "ISCURRENT", "INTEGRATEDMODEL", "DATABASEMODEL",
-    ):
-        obj.get(property)
-    obj.check("INDEXINSHEET", None, b"-1")
-    obj["MODELNAME"]
-    obj.check("MODELTYPE", b"PCBLIB", b"SI", b"SIM", b"PCB3DLib")
-    obj.check("DATAFILECOUNT", None, b"1")
-
-def check_sheet(obj):
-    assert obj.get_int("RECORD") == Record.SHEET
+    @_setitem(handlers, Record.IMAGE)
+    def handle_image(self, objects, obj):
+        obj.get_int("INDEXINSHEET")
+        obj["FILENAME"]
+        obj.check("OWNERPARTID", b"-1")
+        obj.get_bool("EMBEDIMAGE")
+        obj.get_bool("KEEPASPECT")
+        
+        corner = list()
+        for x in "XY":
+            corner.append(get_int_frac(obj, "CORNER." + x))
+        self.renderer.rectangle(get_location(obj), corner, width=0.6)
     
-    obj.check("BORDERON", b"T")
-    for property in (
-        "CUSTOMX", "CUSTOMY", "HOTSPOTGRIDSIZE", "SNAPGRIDSIZE",
-    ):
-        obj[property]
-    obj.check("CUSTOMMARGINWIDTH", None, b"20")
-    obj.check("CUSTOMXZONES", None, b"6")
-    obj.check("CUSTOMYZONES", None, b"4")
-    obj.check("DISPLAY_UNIT", b"4")
-    obj.check("HOTSPOTGRIDON", b"T")
-    obj.check("ISBOC", b"T")
-    obj.check("SHEETNUMBERSPACESIZE", b"4")
-    obj.check("SNAPGRIDON", b"T")
-    obj.check("USEMBCS", b"T")
-    obj.check("VISIBLEGRIDON", b"T")
-    obj.check("VISIBLEGRIDSIZE", b"10")
-    obj.get_bool("SHOWTEMPLATEGRAPHICS")
-    obj.get("TEMPLATEFILENAME")
+    @_setitem(handlers, Record.IMPLEMENTATION_LIST)
+    @_setitem(handlers, 46)
+    @_setitem(handlers, 48)
+    def handle_simple(self, objects, obj):
+        pass
     
-    obj.check_unknown()
-
-def parse_header(obj):
-    obj.check("HEADER",
-        b"Protel for Windows - Schematic Capture Binary File Version 5.0")
-    obj.get_int("WEIGHT")
-
-@_setitem(handlers, 47)
-def handle_unknown(renderer, objects, obj):
-    obj.get_int("INDEXINSHEET")
-    for property in ("DESIMP0", "DESINTF"):
-        obj[property]
-    obj.check("DESIMPCOUNT", b"1")
-
-@_setitem(handlers, Record.TEMPLATE)
-def handle_template(renderer, objects, obj):
-    obj.check("ISNOTACCESIBLE", b"T")
-    obj.check("OWNERPARTID", b"-1")
-    obj["FILENAME"]
-
-@_setitem(handlers, Record.COMPONENT)
-def handle_component(renderer, objects, obj):
-    for property in (
-        "ISMIRRORED", "ORIENTATION", "INDEXINSHEET", "COMPONENTDESCRIPTION",
-        "SHEETPARTFILENAME", "DESIGNITEMID", "DISPLAYMODE",
-        "NOTUSEDBTABLENAME", "LIBRARYPATH",
-    ):
-        obj.get(property)
-    obj.check("OWNERPARTID", b"-1")
-    for property in (
-        "UNIQUEID", "CURRENTPARTID", "DISPLAYMODECOUNT",
-        "LIBREFERENCE", "LOCATION.X", "LOCATION.Y",
-        "PARTCOUNT", "SOURCELIBRARYNAME",
-    ):
-        obj[property]
-    obj.check("AREACOLOR", b"11599871")
-    obj.check("COLOR", b"128")
-    obj.get_bool("PARTIDLOCKED")
-    obj.check("TARGETFILENAME", b"*")
-    obj.get_bool("PINSMOVEABLE")
-
-@_setitem(handlers, Record.PARAMETER)
-def handle_parameter(renderer, objects, obj):
-    for property in (
-        "READONLYSTATE", "INDEXINSHEET", "UNIQUEID", "ISMIRRORED",
-    ):
-        obj.get(property)
-    obj.check("OWNERPARTID", b"-1", b"1")
-    obj["NAME"]
+    @_setitem(handlers, Record.IMPLEMENTATION)
+    def handle_implementation(self, objects, obj):
+        for property in (
+            "USECOMPONENTLIBRARY", "DESCRIPTION", "MODELDATAFILEENTITY0",
+            "MODELDATAFILEKIND0",
+            "DATALINKSLOCKED", "DATABASEDATALINKSLOCKED",
+            "ISCURRENT", "INTEGRATEDMODEL", "DATABASEMODEL",
+        ):
+            obj.get(property)
+        obj.check("INDEXINSHEET", None, b"-1")
+        obj["MODELNAME"]
+        obj.check("MODELTYPE", b"PCBLIB", b"SI", b"SIM", b"PCB3DLib")
+        obj.check("DATAFILECOUNT", None, b"1")
     
-    text_colour = colour(obj)
-    val = obj.get("TEXT")
-    offset = get_location(obj)
-    font = obj.get_int("FONTID")
+    @_setitem(handlers, 47)
+    def handle_unknown(self, objects, obj):
+        obj.get_int("INDEXINSHEET")
+        for property in ("DESIMP0", "DESINTF"):
+            obj[property]
+        obj.check("DESIMPCOUNT", b"1")
     
-    if objects.properties.get_int("RECORD") == 48:
-        return
-    if not obj.get_bool("ISHIDDEN") and val:
-        kw =  dict()
+    @_setitem(handlers, Record.TEMPLATE)
+    def handle_template(self, objects, obj):
+        obj.check("ISNOTACCESIBLE", b"T")
+        obj.check("OWNERPARTID", b"-1")
+        obj["FILENAME"]
+    
+    @_setitem(handlers, Record.COMPONENT)
+    def handle_component(self, objects, obj):
+        for property in (
+            "ISMIRRORED", "ORIENTATION",
+            "INDEXINSHEET", "COMPONENTDESCRIPTION",
+            "SHEETPARTFILENAME", "DESIGNITEMID", "DISPLAYMODE",
+            "NOTUSEDBTABLENAME", "LIBRARYPATH",
+        ):
+            obj.get(property)
+        obj.check("OWNERPARTID", b"-1")
+        for property in (
+            "UNIQUEID", "CURRENTPARTID", "DISPLAYMODECOUNT",
+            "LIBREFERENCE", "LOCATION.X", "LOCATION.Y",
+            "PARTCOUNT", "SOURCELIBRARYNAME",
+        ):
+            obj[property]
+        obj.check("AREACOLOR", b"11599871")
+        obj.check("COLOR", b"128")
+        obj.get_bool("PARTIDLOCKED")
+        obj.check("TARGETFILENAME", b"*")
+        obj.get_bool("PINSMOVEABLE")
+
+    @_setitem(handlers, Record.PARAMETER)
+    def handle_parameter(self, objects, obj):
+        for property in (
+            "READONLYSTATE", "INDEXINSHEET", "UNIQUEID", "ISMIRRORED",
+        ):
+            obj.get(property)
+        obj.check("OWNERPARTID", b"-1", b"1")
+        obj["NAME"]
+        
+        text_colour = colour(obj)
+        val = obj.get("TEXT")
+        offset = get_location(obj)
+        font = obj.get_int("FONTID")
+        
+        if objects.properties.get_int("RECORD") == 48:
+            return
+        if not obj.get_bool("ISHIDDEN") and val:
+            kw =  dict()
+            orient = obj.get_int("ORIENTATION")
+            if orient & 1:
+                kw.update(angle=+90)
+            if orient & 2:
+                kw.update(vert=self.renderer.TOP, horiz=self.renderer.RIGHT)
+            if val.startswith(b"="):
+                match = val[1:].lower()
+                for o in objects.children:
+                    o = o.properties
+                    if o.get_int("RECORD") != Record.PARAMETER:
+                        continue
+                    if o["NAME"].lower() != match:
+                        continue
+                    val = o["TEXT"]
+                    break
+                else:
+                    msg = "Parameter value for |TEXT={} in {!r}"
+                    msg = msg.format(val.decode("ascii"), objects)
+                    raise LookupError(msg)
+                self.renderer.text(val.decode("ascii"),
+                    colour=text_colour,
+                    offset=offset,
+                    font=font_name(font),
+                **kw)
+            else:
+                self.text(obj, **kw)
+    
+    @_setitem(handlers, Record.DESIGNATOR)
+    def handle_designator(self, objects, obj):
+        obj.get("ISMIRRORED")
+        obj.check("OWNERPARTID", b"-1")
+        obj.check("INDEXINSHEET", None, b"-1")
+        obj.check("NAME", b"Designator")
+        obj.check("READONLYSTATE", b"1")
+        
+        desig = obj["TEXT"].decode("ascii")
+        owner = objects.properties
+        if owner.get_int("PARTCOUNT") > 2:
+            desig += chr(ord("A") + owner.get_int("CURRENTPARTID") - 1)
+        
+        kw = dict()
         orient = obj.get_int("ORIENTATION")
         if orient & 1:
             kw.update(angle=+90)
         if orient & 2:
-            kw.update(vert=renderer.TOP, horiz=renderer.RIGHT)
-        if val.startswith(b"="):
-            match = val[1:].lower()
-            for o in objects.children:
-                o = o.properties
-                if o.get_int("RECORD") != Record.PARAMETER:
-                    continue
-                if o["NAME"].lower() != match:
-                    continue
-                val = o["TEXT"]
-                break
-            else:
-                msg = "Parameter value for |TEXT={} in {!r}"
-                raise LookupError(msg.format(val.decode("ascii"), objects))
-            renderer.text(val.decode("ascii"),
-                colour=text_colour,
-                offset=offset,
-                font=font_name(font),
-            **kw)
-        else:
-            text(renderer, obj, **kw)
-
-@_setitem(handlers, Record.DESIGNATOR)
-def handle_designator(renderer, objects, obj):
-    obj.get("ISMIRRORED")
-    obj.check("OWNERPARTID", b"-1")
-    obj.check("INDEXINSHEET", None, b"-1")
-    obj.check("NAME", b"Designator")
-    obj.check("READONLYSTATE", b"1")
-    
-    desig = obj["TEXT"].decode("ascii")
-    owner = objects.properties
-    if owner.get_int("PARTCOUNT") > 2:
-        desig += chr(ord("A") + owner.get_int("CURRENTPARTID") - 1)
-    
-    kw = dict()
-    orient = obj.get_int("ORIENTATION")
-    if orient & 1:
-        kw.update(angle=+90)
-    if orient & 2:
-        kw.update(vert=renderer.TOP, horiz=renderer.RIGHT)
-    
-    renderer.text(desig, get_location(obj),
-        colour=colour(obj),
-        font=font_name(obj.get_int("FONTID")),
-    **kw)
-
-@_setitem(handlers, Record.POLYLINE)
-def handle_polyline(renderer, objects, obj):
-    obj.get_int("INDEXINSHEET")
-    obj.get_bool("ISNOTACCESIBLE")
-    linewidth = obj.get_int("LINEWIDTH")
-    
-    points = list()
-    for i in range(obj.get_int("LOCATIONCOUNT")):
-        location = (get_int_frac(obj, "{}{}".format(x, 1 + i)) for x in "XY")
-        points.append(tuple(location))
-    kw = dict(points=points)
-    kw.update(colour=colour(obj))
-    
-    if obj["OWNERPARTID"] == b"-1" or display_part(objects, obj):
-        if linewidth != 1:
-            kw.update(width=linewidth or 0.6)
-        renderer.polyline(**kw)
-
-@_setitem(handlers, Record.LINE)
-def handle_line(renderer, objects, obj):
-    obj.get_int("INDEXINSHEET")
-    obj.check("ISNOTACCESIBLE", b"T")
-    
-    kw = dict(
-        colour=colour(obj),
-        width=obj.get_int("LINEWIDTH"),
-        a=get_location(obj),
-        b=tuple(obj.get_int("CORNER." + x) for x in "XY"),
-    )
-    if display_part(objects, obj):
-        renderer.line(**kw)
-
-@_setitem(handlers, Record.PIN)
-def handle_pin(renderer, objects, obj):
-    for property in (
-        "SWAPIDPIN", "OWNERPARTDISPLAYMODE", "DESCRIPTION", "SWAPIDPART",
-    ):
-        obj.get(property)
-    obj.check("FORMALTYPE", b"1")
-    
-    pinlength = obj.get_int("PINLENGTH")
-    pinconglomerate = obj.get_int("PINCONGLOMERATE")
-    offset = get_location(obj)
-    outer_edge = obj.get_int("SYMBOL_OUTEREDGE")
-    inner_edge = obj.get_int("SYMBOL_INNEREDGE")
-    electrical = obj.get_int("ELECTRICAL")
-    name = obj.get("NAME")
-    designator = obj["DESIGNATOR"].decode("ascii")
-    if obj.get("OWNERPARTID") in {None, objects.properties["CURRENTPARTID"]}:
-        rotate = pinconglomerate & 3
-        with renderer.view(offset=offset, rotate=rotate) as view:
-            kw = dict()
-            points = list()
-            if outer_edge:
-                view.circle(2.85, (3.15, 0), width=0.6)
-                points.append(6)
-            points.append(pinlength)
-            marker = pinmarkers[electrical]
-            if marker:
-                kw.update(startarrow=marker)
-            view.hline(*points, **kw)
-            
-            if inner_edge == 3:
-                view.draw(clock)
-            elif inner_edge:
-                warn("Unexpected SYMBOL_INNEREDGE in {}".format(obj))
-            
-            if pinconglomerate >> 1 & 1:
-                invert = -1
-                kw = dict(angle=180)
-            else:
-                invert = +1
-                kw = dict()
-            if pinconglomerate & 8 and name is not None:
-                view.text(overline(name),
-                    vert=view.CENTRE,
-                    horiz=view.RIGHT * invert,
-                    offset=(-7, 0),
-                **kw)
-            if pinconglomerate & 16:
-                view.text(designator,
-                    horiz=view.LEFT * invert,
-                    offset=(+9, 0),
-                **kw)
-
-@_setitem(handlers, Record.POWER_PORT)
-def handle_power_port(renderer, objects, obj):
-    obj.get_int("INDEXINSHEET")
-    obj.check("OWNERPARTID", b"-1")
-    
-    orient = obj.get_int("ORIENTATION")
-    if obj.get_bool("ISCROSSSHEETCONNECTOR"):
-        marker = dchevron
-        offset = 14
-    else:
-        marker = obj.get_int("STYLE")
-        (marker, offset) = connmarkers.get(marker, (None, 0))
-    
-    col = colour(obj)
-    with renderer.view(colour=col, offset=get_location(obj)) as view:
-        kw = dict()
-        if orient:
-            kw.update(rotate=orient)
-        view.draw(marker, **kw)
+            kw.update(vert=self.renderer.TOP, horiz=self.renderer.RIGHT)
         
-        text = obj["TEXT"].decode("ascii")
-        if obj.get_bool("SHOWNETNAME"):
-            orients = {
-                0: (renderer.LEFT, renderer.CENTRE, (+1, 0)),
-                1: (renderer.CENTRE, renderer.BOTTOM, (0, +1)),
-                2: (renderer.RIGHT, renderer.CENTRE, (-1, 0)),
-                3: (renderer.CENTRE, renderer.TOP, (0, -1)),
-            }
-            (horiz, vert, pos) = orients[orient]
-            pos = (p * offset for p in pos)
-            view.text(text, pos, horiz=horiz, vert=vert)
-
-@_setitem(handlers, Record.RECTANGLE)
-@_setitem(handlers, Record.ROUND_RECTANGLE)
-def handle_rectangle(renderer, objects, obj):
-    obj.get_int("INDEXINSHEET")
-    obj.get("TRANSPARENT")
-    obj.check("ISNOTACCESIBLE", b"T")
+        self.renderer.text(desig, get_location(obj),
+            colour=colour(obj),
+            font=font_name(obj.get_int("FONTID")),
+        **kw)
     
-    kw = dict(
-        width=obj.get_int("LINEWIDTH") or 0.6,
-        outline=colour(obj),
-    )
-    fill = colour(obj, "AREACOLOR")
-    if obj.get_bool("ISSOLID"):
-        kw.update(fill=fill)
-    a = get_location(obj)
-    b = tuple(obj.get_int("CORNER." + x) for x in "XY")
-    if display_part(objects, obj):
-        if obj.get_int("RECORD") == Record.ROUND_RECTANGLE:
-            r = list()
-            for x in "XY":
-                radius = obj.get_int("CORNER{}RADIUS".format(x))
-                r.append(int(radius))
-            renderer.roundrect(r, a, b, **kw)
+    @_setitem(handlers, Record.PIN)
+    def handle_pin(self, objects, obj):
+        for property in (
+            "SWAPIDPIN", "OWNERPARTDISPLAYMODE", "DESCRIPTION", "SWAPIDPART",
+        ):
+            obj.get(property)
+        obj.check("FORMALTYPE", b"1")
+        
+        pinlength = obj.get_int("PINLENGTH")
+        pinconglomerate = obj.get_int("PINCONGLOMERATE")
+        offset = get_location(obj)
+        outer_edge = obj.get_int("SYMBOL_OUTEREDGE")
+        inner_edge = obj.get_int("SYMBOL_INNEREDGE")
+        electrical = obj.get_int("ELECTRICAL")
+        name = obj.get("NAME")
+        designator = obj["DESIGNATOR"].decode("ascii")
+        part = objects.properties["CURRENTPARTID"]
+        if obj.get("OWNERPARTID") in {None, part}:
+            rotate = pinconglomerate & 3
+            with self.renderer.view(offset=offset, rotate=rotate) as view:
+                kw = dict()
+                points = list()
+                if outer_edge:
+                    view.circle(2.85, (3.15, 0), width=0.6)
+                    points.append(6)
+                points.append(pinlength)
+                marker = self.pinmarkers[electrical]
+                if marker:
+                    kw.update(startarrow=marker)
+                view.hline(*points, **kw)
+                
+                if inner_edge == 3:
+                    view.draw(clock)
+                elif inner_edge:
+                    warn("Unexpected SYMBOL_INNEREDGE in {}".format(obj))
+                
+                if pinconglomerate >> 1 & 1:
+                    invert = -1
+                    kw = dict(angle=180)
+                else:
+                    invert = +1
+                    kw = dict()
+                if pinconglomerate & 8 and name is not None:
+                    view.text(overline(name),
+                        vert=view.CENTRE,
+                        horiz=view.RIGHT * invert,
+                        offset=(-7, 0),
+                    **kw)
+                if pinconglomerate & 16:
+                    view.text(designator,
+                        horiz=view.LEFT * invert,
+                        offset=(+9, 0),
+                    **kw)
+    
+    @_setitem(handlers, Record.WIRE)
+    @_setitem(handlers, Record.BUS)
+    def handle_wire(self, objects, obj):
+        obj.get_int("INDEXINSHEET")
+        obj.check("OWNERPARTID", b"-1")
+        
+        points = list()
+        for location in range(obj.get_int("LOCATIONCOUNT")):
+            location = format(1 + location)
+            point = tuple(obj.get_int(x + location) for x in "XY")
+            points.append(point)
+        self.renderer.polyline(points,
+            colour=colour(obj),
+            width=obj.get_int("LINEWIDTH"),
+        )
+
+    @_setitem(handlers, Record.BUS_ENTRY)
+    def handle_bus_entry(self, objects, obj):
+        obj.check("LINEWIDTH", b"2")
+        obj.check("OWNERPARTID", b"-1")
+        self.renderer.line(
+            get_location(obj),
+            tuple(obj.get_int("CORNER." + x) for x in "XY"),
+            colour=colour(obj),
+            width=obj.get_int("LINEWIDTH"),
+        )
+    
+    @_setitem(handlers, Record.JUNCTION)
+    def handle_junction(self, objects, obj):
+        obj.check("INDEXINSHEET", None, b"-1")
+        obj.check("OWNERPARTID", b"-1")
+        
+        col = colour(obj)
+        self.renderer.circle(2, get_location(obj), fill=col)
+    
+    @_setitem(handlers, Record.PORT)
+    def handle_port(self, objects, obj):
+        obj.get_int("INDEXINSHEET")
+        obj.check("OWNERPARTID", b"-1")
+        obj.get("UNIQUEID")
+        
+        width = obj.get_int("WIDTH")
+        if obj.get_int("IOTYPE"):
+            points = ((0, 0), (5, -5), (width - 5, -5),
+                (width, 0), (width - 5, +5), (5, +5))
         else:
-            renderer.rectangle(a, b, **kw)
-
-@_setitem(handlers, Record.NET_LABEL)
-def handle_net_label(renderer, objects, obj):
-    obj.get_int("INDEXINSHEET")
-    obj.check("OWNERPARTID", b"-1")
+            points = ((0, -5), (width - 5, -5),
+                (width, 0), (width - 5, +5), (0, +5))
+        left_aligned = obj.get_int("ALIGNMENT") == 2
+        upwards = obj.get_int("STYLE") == 7
+        if left_aligned ^ (not upwards):
+            labelpoint = (10, 0)
+            horiz = self.renderer.LEFT
+        else:
+            labelpoint = (width - 10, 0)
+            horiz = self.renderer.RIGHT
+        if upwards:
+            shapekw = dict(rotate=+90, offset=(0, +width))
+        else:
+            shapekw = dict()
+        with self.renderer.view(offset=get_location(obj)) as view:
+            view.polygon(points,
+                width=0.6,
+                outline=colour(obj),
+                fill=colour(obj, "AREACOLOR"),
+            **shapekw)
+            
+            with contextlib.ExitStack() as context:
+                if upwards:
+                    view = context.enter_context(view.view(rotate=+1))
+                view.text(
+                    overline(obj["NAME"]),
+                    colour=colour(obj, "TEXTCOLOR"),
+                    offset=labelpoint,
+                    vert=view.CENTRE, horiz=horiz,
+                )
     
-    orient = obj.get_int("ORIENTATION")
-    try:
-        kw = {
-            0: dict(),
-            1: dict(angle=+90),
-            3: dict(angle=-90),
-        }[orient]
-    except LookupError:
-        warn("Unexpected ORIENTATION in {}".format(orient, obj))
-        kw = dict()
-    renderer.text(overline(obj["TEXT"]),
-        colour=colour(obj),
-        offset=get_location(obj),
-        font=font_name(obj.get_int("FONTID")),
-    **kw)
-
-@_setitem(handlers, Record.ARC)
-@_setitem(handlers, Record.ELLIPTICAL_ARC)
-def handle_arc(renderer, objects, obj):
-    obj.get_int("INDEXINSHEET")
-    obj.check("ISNOTACCESIBLE", b"T")
-    obj.check("LINEWIDTH", b"1")
+    @_setitem(handlers, Record.POWER_PORT)
+    def handle_power_port(self, objects, obj):
+        obj.get_int("INDEXINSHEET")
+        obj.check("OWNERPARTID", b"-1")
+        
+        orient = obj.get_int("ORIENTATION")
+        if obj.get_bool("ISCROSSSHEETCONNECTOR"):
+            marker = dchevron
+            offset = 14
+        else:
+            marker = obj.get_int("STYLE")
+            (marker, offset) = self.connmarkers.get(marker, (None, 0))
+        
+        col = colour(obj)
+        with self.renderer.view(colour=col, offset=get_location(obj)) as \
+                view:
+            kw = dict()
+            if orient:
+                kw.update(rotate=orient)
+            view.draw(marker, **kw)
+            
+            text = obj["TEXT"].decode("ascii")
+            if obj.get_bool("SHOWNETNAME"):
+                orients = {
+                    0: (self.renderer.LEFT, self.renderer.CENTRE, (+1, 0)),
+                    1: (self.renderer.CENTRE, self.renderer.BOTTOM, (0, +1)),
+                    2: (self.renderer.RIGHT, self.renderer.CENTRE, (-1, 0)),
+                    3: (self.renderer.CENTRE, self.renderer.TOP, (0, -1)),
+                }
+                (horiz, vert, pos) = orients[orient]
+                pos = (p * offset for p in pos)
+                view.text(text, pos, horiz=horiz, vert=vert)
     
-    r = obj.get_int("RADIUS")
-    if obj.get_int("RECORD") == Record.ELLIPTICAL_ARC:
-        r2 = get_int_frac(obj, "SECONDARYRADIUS")
-    else:
-        r2 = r
-    start = obj.get_real("STARTANGLE")
-    end = obj.get_real("ENDANGLE")
-    location = get_location(obj)
-    col = colour(obj)
-    if display_part(objects, obj):
-        if end == start:  # Full circle rather than a zero-length arc
-            start = 0
-            end = 360
-        renderer.arc((r, r2), start, end, location, colour=col)
-
-@_setitem(handlers, Record.POLYGON)
-def handle_polygon(renderer, objects, obj):
-    obj.get_int("INDEXINSHEET")
-    obj.check("ISNOTACCESIBLE", b"T")
-    obj.check("ISSOLID", b"T")
-    obj.check("OWNERPARTID", b"1")
-    obj.get("OWNERPARTDISPLAYMODE")
+    @_setitem(handlers, Record.NET_LABEL)
+    def handle_net_label(self, objects, obj):
+        obj.get_int("INDEXINSHEET")
+        obj.check("OWNERPARTID", b"-1")
+        
+        orient = obj.get_int("ORIENTATION")
+        try:
+            kw = {
+                0: dict(),
+                1: dict(angle=+90),
+                3: dict(angle=-90),
+            }[orient]
+        except LookupError:
+            warn("Unexpected ORIENTATION in {}".format(orient, obj))
+            kw = dict()
+        self.renderer.text(overline(obj["TEXT"]),
+            colour=colour(obj),
+            offset=get_location(obj),
+            font=font_name(obj.get_int("FONTID")),
+        **kw)
     
-    points = list()
-    for location in range(obj.get_int("LOCATIONCOUNT")):
-        location = format(1 + location)
-        point = tuple(obj.get_int(x + location) for x in "XY")
-        points.append(point)
-    renderer.polygon(outline=colour(obj), fill=colour(obj, "AREACOLOR"),
-        points=points,
-        width=obj.get_int("LINEWIDTH") or 0.6,
-    )
-
-@_setitem(handlers, Record.LABEL)
-def handle_label(renderer, objects, obj):
-    for property in (
-        "INDEXINSHEET", "ISNOTACCESIBLE", "ORIENTATION", "JUSTIFICATION",
-    ):
-        obj.get(property)
+    @_setitem(handlers, Record.NO_ERC)
+    def handle_no_erc(self, objects, obj):
+        obj.get_int("INDEXINSHEET")
+        obj.check("OWNERPARTID", b"-1")
+        
+        col = colour(obj)
+        self.renderer.draw(nc, get_location(obj), colour=col)
     
-    colour(obj)
-    obj["TEXT"]
-    get_location(obj)
-    obj.get_int("FONTID")
-    
-    part = obj["OWNERPARTID"]
-    if part == b"-1" or part == objects.properties["CURRENTPARTID"]:
-        text(renderer, obj)
+    @_setitem(handlers, Record.SHEET_SYMBOL)
+    def handle_sheet_symbol(self, objects, obj):
+        obj.get_int("INDEXINSHEET")
+        obj["UNIQUEID"]
+        obj.check("OWNERPARTID", b"-1")
+        obj.check("ISSOLID", b"T")
+        obj.check("SYMBOLTYPE", None, b"Normal")
+        
+        corner = (obj.get_int("XSIZE"), -obj.get_int("YSIZE"))
+        self.renderer.rectangle(corner,
+            width=0.6,
+            outline=colour(obj), fill=colour(obj, "AREACOLOR"),
+            offset=get_location(obj),
+        )
 
-@_setitem(handlers, Record.NO_ERC)
-def handle_no_erc(renderer, objects, obj):
-    obj.get_int("INDEXINSHEET")
-    obj.check("OWNERPARTID", b"-1")
+    @_setitem(handlers, Record.SHEET_NAME)
+    @_setitem(handlers, Record.SHEET_FILE_NAME)
+    def handle_sheet_name(self, objects, obj):
+        obj.check("INDEXINSHEET", None, b"-1")
+        obj.check("OWNERPARTID", b"-1")
+        self.text(obj)
     
-    col = colour(obj)
-    renderer.draw(nc, get_location(obj), colour=col)
-
-@_setitem(handlers, Record.TEXT_FRAME)
-def handle_text_frame(renderer, objects, obj):
-    obj.get("CLIPTORECT")
-    obj.check("ALIGNMENT", b"1")
-    obj.check("AREACOLOR", b"16777215")
-    obj.check("ISSOLID", b"T")
-    obj.check("OWNERPARTID", b"-1")
-    obj.check("WORDWRAP", b"T")
-    
-    [lhs, _] = get_location(obj)
-    renderer.text(
-        font=font_name(obj.get_int("FONTID")),
-        offset=(lhs, obj.get_int("CORNER.Y")),
-        width=obj.get_int("CORNER.X") - lhs,
-        text=obj["Text"].decode("ascii").replace("~1", "\n"),
-        vert=renderer.TOP,
-    )
-
-@_setitem(handlers, Record.BEZIER)
-def handle_bezier(renderer, objects, obj):
-    obj.get_bool("ISNOTACCESIBLE")
-    obj.get_int("OWNERPARTID")
-    obj.check("LOCATIONCOUNT", b"4")
-    obj.get_int("INDEXINSHEET")
-    
-    kw = dict(colour=colour(obj))
-    points = list()
-    for n in range(4):
-        n = format(1 + n)
-        points.append(tuple(obj.get_int(x + n) for x in "XY"))
-    width = obj.get_int("LINEWIDTH")
-    if width != 1:
-        kw.update(width=width)
-    renderer.cubicbezier(*points, **kw)
-
-@_setitem(handlers, Record.ELLIPSE)
-def handle_ellipse(renderer, objects, obj):
-    obj["OWNERPARTID"]
-    obj.check("ISNOTACCESIBLE", b"T")
-    obj.check("SECONDARYRADIUS", obj["RADIUS"])
-    obj.get_int("SECONDARYRADIUS_FRAC")
-    obj.check("ISSOLID", b"T")
-    obj.get_int("INDEXINSHEET")
-    
-    renderer.circle(
-        r=get_int_frac(obj, "RADIUS"),
-        width=0.6,
-        outline=colour(obj), fill=colour(obj, "AREACOLOR"),
-        offset=get_location(obj),
-    )
-
-@_setitem(handlers, Record.SHEET_SYMBOL)
-def handle_sheet_symbol(renderer, objects, obj):
-    obj.get_int("INDEXINSHEET")
-    obj["UNIQUEID"]
-    obj.check("OWNERPARTID", b"-1")
-    obj.check("ISSOLID", b"T")
-    obj.check("SYMBOLTYPE", None, b"Normal")
-    
-    corner = (obj.get_int("XSIZE"), -obj.get_int("YSIZE"))
-    renderer.rectangle(corner,
-        width=0.6,
-        outline=colour(obj), fill=colour(obj, "AREACOLOR"),
-        offset=get_location(obj),
-    )
-
-@_setitem(handlers, Record.SHEET_NAME)
-@_setitem(handlers, Record.SHEET_FILE_NAME)
-def handle_sheet_name(renderer, objects, obj):
-    obj.check("INDEXINSHEET", None, b"-1")
-    obj.check("OWNERPARTID", b"-1")
-    text(renderer, obj)
-
-@_setitem(handlers, Record.IMAGE)
-def handle_image(renderer, objects, obj):
-    obj.get_int("INDEXINSHEET")
-    obj["FILENAME"]
-    obj.check("OWNERPARTID", b"-1")
-    obj.get_bool("EMBEDIMAGE")
-    obj.get_bool("KEEPASPECT")
-    
-    corner = list()
-    for x in "XY":
-        corner.append(get_int_frac(obj, "CORNER." + x))
-    renderer.rectangle(get_location(obj), corner, width=0.6)
+    def text(self, obj, **kw):
+        kw["colour"] = colour(obj)
+        self.renderer.text(obj["TEXT"].decode("ascii"),
+            offset=get_location(obj),
+            font=font_name(obj.get_int("FONTID")),
+        **kw)
 
 def colour(obj, property="COLOR"):
     '''Convert a TColor property value to a fractional RGB tuple'''
     c = obj.get_int(property)
     return (x / 0xFF for x in int(c).to_bytes(3, "little"))
-
-def text(renderer, obj, **kw):
-    kw["colour"] = colour(obj)
-    renderer.text(obj["TEXT"].decode("ascii"),
-        offset=get_location(obj),
-        font=font_name(obj.get_int("FONTID")),
-    **kw)
 
 def font_name(id):
     '''Convert Altium font number to text name for renderer'''
