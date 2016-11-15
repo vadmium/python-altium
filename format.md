@@ -65,7 +65,8 @@ FileHeader, Storage, and Additional.
 The schematic data is in the FileHeader stream.
 
 The Storage stream has a similar header to FileHeader's [header](#header),
-except that the text is `|HEADER=Icon storage`.
+except that the text is `|HEADER=Icon storage`. It contains embedded files
+for [Image](#image) objects.
 
 The Additional stream is not always present. It has the same header as
 FileHeader, but no other records have been seen in it.
@@ -82,9 +83,15 @@ Record format:
 * 0 (1 byte)
 * Record type (1 byte)
 
-If the record type is 0, it is a property list, followed by a
-null terminator byte. Records in the Storage stream, after the
-initial header record, have type 1.
+If the record type is 0, it is a [property list](#property-list), followed
+by a null terminator byte. Records in the Storage stream, after the
+initial header record, have type 1, and the following format:
+
+* 0xD0 (1 byte)
+* Filename length (1 byte)
+* Filename
+* Compressed size (little-endian encoding, 4 bytes)
+* zlib-compressed data (including a zlib header)
 
 ## Property list ##
 

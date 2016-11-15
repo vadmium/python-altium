@@ -4,6 +4,7 @@ from . import base
 from tkinter.font import Font
 from math import sin, cos, radians
 import tkinter.font
+from io import BytesIO
 
 class _RawRenderer(base.Renderer):
     """Implements basic TK renderer except for default offsets, colour, etc
@@ -27,6 +28,7 @@ class _RawRenderer(base.Renderer):
         )
         self.canvas.pack(fill=tkinter.BOTH, expand=True)
         self.fonts = dict()
+        self._images = list()
     
     def line(self, a, b=None, *, offset=(0, 0), **kw):
         (ox, oy) = offset
@@ -211,6 +213,24 @@ class _RawRenderer(base.Renderer):
                 self.canvas.create_line(x + dx, y + dy, nx, ny, fill=colour)
             
             pos = newpos
+    
+    def image(self, a, b=None, *, file=None, data=None, offset=(0, 0)):
+        from PIL import ImageTk, Image
+        if b:
+            size = (bx - ax for [ax, bx] in zip(a, b))
+            centre = (o + (ax + bx) / 2 for [o, ax, bx] in zip(offset, a, b))
+        else:
+            size = a
+            centre = (o / 2 for o in offset)
+        if data is not None:
+            file = BytesIO(data)
+        orig = Image.open(file)
+        size = tuple(round(abs(z * c)) for [z, c] in zip(size, self.scaling))
+        obj = ImageTk.PhotoImage(orig.resize(size, Image.BICUBIC))
+        orig.close()
+        self._images.append(obj)  # Avoid garbage collection
+        centre = (x * c for [x, c] in zip(centre, self.scaling))
+        self.canvas.create_image(*centre, image=obj)
     
     def _colour(self, colour):
         colour = (min(int(x * 0x1000), 0xFFF) for x in colour)

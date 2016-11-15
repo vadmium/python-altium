@@ -228,6 +228,11 @@ class Subview(View):
         return self._parent.text(text, *pos,
             angle=angle, colour=colour, **kw)
     
+    def image(self, *pos, **kw):
+        pos = map(self._rotate, pos)
+        self._map_offset(kw)
+        return self._parent.image(*pos, **kw)
+    
     def _map_offset(self, kw):
         offset = kw.get("offset")
         if offset:

@@ -16,10 +16,12 @@ Sam Hocevar. See the [COPYING](COPYING) file for details.
 ## Dependencies ##
 
 * Python 3, from <https://www.python.org/>
-* The OleFileIO library. Either version 0.30 of the OleFileIO_PL fork, from
-    <http://www.decalage.info/python/olefileio>, or version 2.4 of the Pillow
-    fork, from <http://python-pillow.github.io/>. The PL fork would be
-    simpler to install, but Pillow is probably more widely used.
+* The OleFileIO library. Version 2.4+ of the Pillow
+    fork, from <http://python-pillow.github.io/>, is recommended.
+    If a schematic contains bitmap images, Pillow is
+    also needed to display the schematic in a window.
+    You can also use version 0.30 of the OleFileIO_PL fork, from
+    <http://www.decalage.info/python/olefileio>, if Pillow is not needed.
 * TK (Only required to display schematics in a window)
 
 ## Usage ##

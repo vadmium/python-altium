@@ -9,6 +9,7 @@ from math import copysign
 from textwrap import TextWrapper
 from io import StringIO
 from contextlib import ExitStack
+from base64 import b64encode
 
 class Renderer(base.Renderer):
     def __init__(self, size, units, unitmult=1, *, margin=0,
@@ -362,6 +363,34 @@ class Renderer(base.Renderer):
                     }
                     self.tree(("tspan", lineattrs, (softline,)))
                     line += 1
+    
+    def image(self, a, b=None, *, file=None, data=None, offset=None):
+        """
+        image(a) -> <image width=a />
+        image(a, b) -> <rect x=a width=(b - a) />
+        
+        Offset implemented independently using transform="translate(offset)"
+        """
+        
+        if data is None:
+            with open(file, "rb") as file:
+                data = file.read()
+        data = "data:image/bmp;base64," + b64encode(data).decode("ascii")
+        attrs = {"xlink:href": data}
+        if b:
+            (x, y) = a
+            attrs["x"] = format(x)
+            (bx, by) = b
+            w = bx - x
+            h = by - y
+            if self.flip[1] < 0:
+                y = -by
+            attrs["y"] = format(y)
+        else:
+            (w, h) = a
+        attrs["width"] = format(w)
+        attrs["height"] = format(h)
+        self.emptyelement("image", attrs, transform=self._offset(offset))
     
     def addobjects(self, objects):
         with self.element("defs"):

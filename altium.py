@@ -2,6 +2,10 @@
 
 import struct
 from warnings import warn
+import zlib
+from pathlib import PureWindowsPath, Path
+import os
+from io import BytesIO
 
 try:
     from OleFileIO_PL import OleFileIO
@@ -59,13 +63,27 @@ def read(file):
     header.check("HEADER", b"Icon storage")
     header.get_int("WEIGHT")
     header.check_unknown()
+    storage_files = dict()
+    for [type, length] in records:
+        if type != 1:
+            warn("Unexpected record type {} in Storage".format(type))
+            continue
+        header = storage_stream.read(1)
+        if header != b"\xD0":
+            warn("Unexpected Storage record header byte " + repr(header))
+            continue
+        [length] = storage_stream.read(1)
+        filename = storage_stream.read(length)
+        pos = storage_stream.tell()
+        if storage_files.setdefault(filename, pos) != pos:
+            warn("Duplicate Storage record for " + repr(filename))
     
     streams = set(map(tuple, ole.listdir()))
     streams -= {("FileHeader",), ("Additional",), ("Storage",)}
     if streams:
         warn("Extra OLE file streams: " + ", ".join(map("/".join, streams)))
     
-    return sheet
+    return (sheet, storage_stream, storage_files)
 
 def iter_records(stream):
     """Finds object records from a stream in an Altium ".SchDoc" file
@@ -380,8 +398,9 @@ class render:
             """,
     ):
         with open(filename, "rb") as file:
-            objects = read(file)
+            [objects, self.storage_stream, self.storage_files] = read(file)
             stat = os.stat(file.fileno())
+        self.files_used = set()
         
         sheet = objects.properties
         [sheetstyle, size] = get_sheet_style(sheet)
@@ -463,6 +482,10 @@ class render:
         self.check_sheet(sheet)
         
         self.handle_children(objects)
+        unused = self.storage_files.keys() - self.files_used
+        if unused:
+            unused = ", ".join(map(repr, unused))
+            warn("Unreferenced embedded files: " + unused)
         self.renderer.finish()
     
     def check_sheet(self, obj):
@@ -696,15 +719,45 @@ class render:
     @_setitem(handlers, Record.IMAGE)
     def handle_image(self, objects, obj):
         obj.get_int("INDEXINSHEET")
-        obj["FILENAME"]
         obj.check("OWNERPARTID", b"-1")
-        obj.get_bool("EMBEDIMAGE")
         obj.get_bool("KEEPASPECT")
         
+        location = get_location(obj)
         corner = list()
         for x in "XY":
             corner.append(get_int_frac(obj, "CORNER." + x))
-        self.renderer.rectangle(get_location(obj), corner, width=0.6)
+        
+        kw = dict()
+        name = obj["FILENAME"]
+        if obj.get_bool("EMBEDIMAGE"):
+            file = self.storage_files.get(name)
+            if file is None:
+                warn("Embedded file {!r} not found".format(name))
+            else:
+                self.storage_stream.seek(file)
+                [length] = struct.unpack("<L", self.storage_stream.read(4))
+                file = zlib.decompress(self.storage_stream.read(length))
+                kw.update(data=file)
+                self.files_used.add(name)
+        else:
+            path = PureWindowsPath(os.fsdecode(name))
+            if not issubclass(Path, PureWindowsPath) and path.drive:
+                warn("Cannot use file {} with drive".format(path))
+            else:
+                path = Path(path.as_posix())
+                if path.is_reserved():
+                    warn("Cannot use reserved file name " + format(path))
+                elif path.exists():
+                    kw.update(file=str(path))
+                else:
+                    warn("External file {} does not exist".format(path))
+        if kw:
+            self.renderer.image(location, corner, **kw)
+        else:
+            self.renderer.rectangle(location, corner, width=0.6)
+            self.renderer.line(location, corner, width=0.6)
+            self.renderer.line((location[0], corner[1]),
+                (corner[0], location[1]), width=0.6)
     
     @_setitem(handlers, Record.IMPLEMENTATION_LIST)
     @_setitem(handlers, 46)
