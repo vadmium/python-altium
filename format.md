@@ -1,15 +1,14 @@
 ﻿# Altium schematic file format #
 
-Altium *.SchDoc files use the OLE compound document format.
-Inside the OLE container is a stream (embedded file)
-containing schematic object records.
+Altium ".SchDoc" files use the OLE compound document format.
+Inside the OLE container are streams (embedded files).
+The main stream containings schematic object records.
 Each record is a collection of properties,
 encoded as ASCII or byte strings.
 
 Contents:
 
 * [OLE compound document](#ole-compound-document)
-* [FileHeader](#fileheader)
 * [Property list](#property-list)
 * [Data types](#data-types): [Integer], [Colour], [Real], [Boolean]
 * [Object records](#object-records)
@@ -61,13 +60,17 @@ Related references:
 
 ## OLE compound document ##
 
-The OLE root directory (called Root Entry) lists three streams:
+The OLE root directory lists up to three streams:
 FileHeader, Storage, and Additional.
 The schematic data is in the FileHeader stream.
 
-## FileHeader ##
+The Storage stream has a similar header to FileHeader's [header](#header),
+except that the text is `|HEADER=Icon storage`.
 
-A sequence of object records.
+The Additional stream is not always present. It has the same header as
+FileHeader, but no other records have been seen in it.
+
+Each stream seems to be a sequence of object records.
 Pluciński calls them primitives;
 Protel calls specific PCB objects either primitives or group objects.
 Upverter calls them parts.

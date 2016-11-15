@@ -25,10 +25,11 @@ class Object:
         return "{}({})".format(type(self).__name__, properties)
 
 def read(file):
-    """Parses an Altium *.SchDoc schematic file and returns a Sheet object
+    """Parses an Altium ".SchDoc" schematic file and returns a Sheet object
     """
-    records = iter_records(file)
+    ole = OleFileIO(file)
     
+    records = iter_records(ole.openstream("FileHeader"))
     header = next(records)
     parse_header(header)
     header.check_unknown()
@@ -39,15 +40,34 @@ def read(file):
         obj = Object(properties=properties)
         objects[obj.properties.get_int("OWNERINDEX")].children.append(obj)
         objects.append(obj)
+    
+    if ole.exists("Additional"):
+        stream = ole.openstream("Additional")
+        records = iter_records(stream)
+        header = next(records)
+        parse_header(header)
+        header.check_unknown()
+        try:
+            [] = records
+        except ValueError:
+            warn("Extra record(s) in Additional stream")
+    
+    records = iter_records(ole.openstream("Storage"))
+    header = next(records)
+    header.check("HEADER", b"Icon storage")
+    header.get_int("WEIGHT")
+    header.check_unknown()
+    
+    streams = set(map(tuple, ole.listdir()))
+    streams -= {("FileHeader",), ("Additional",), ("Storage",)}
+    if streams:
+        warn("Extra OLE file streams: " + ", ".join(map("/".join, streams)))
+    
     return sheet
 
-def iter_records(file):
-    """Yields object records from an Altium *.SchDoc schematic file
+def iter_records(stream):
+    """Yields object records from a stream in an Altium ".SchDoc" file
     """
-    
-    ole = OleFileIO(file)
-    stream = ole.openstream("FileHeader")
-    
     while True:
         length = stream.read(4)
         if not length:

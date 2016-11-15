@@ -17,7 +17,18 @@ class ConversionTest(TestCase):
                 self.assertIs(file, stream)
                 super().__init__()
             
+            def listdir(ole):
+                return [["FileHeader"], ["Storage"]]
+            
+            def exists(ole, name):
+                return name in {"FileHeader", "Storage"}
+            
             def openstream(ole, name):
+                if name == "Storage":
+                    return BytesIO(
+                        b"\x15\x00\x00\x00"
+                        b"|HEADER=Icon storage\x00"
+                    )
                 self.assertEqual(name, "FileHeader")
                 return stream
         
