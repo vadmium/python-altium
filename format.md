@@ -47,6 +47,7 @@ Contents:
     * [46](#46)
     * [47](#47)
     * [48](#48)
+    * [218](#218)
 
 Related references:
 
@@ -662,3 +663,8 @@ Child of RECORD=45 ([Implementation](#implementation))
 Child of RECORD=45 ([Implementation])(#implementation))
 
 `|RECORD=48|OWNERINDEX`
+
+### 218 ###
+Child of [sheet])(#sheet), seen in the Additional stream
+
+`COLOR=15187117|INDEXINSHEET|LINEWIDTH=2|LOCATIONCOUNT=2|OWNERPARTID=-1|X1|X2|Y1|Y2`

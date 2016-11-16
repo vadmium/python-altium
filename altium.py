@@ -991,6 +991,7 @@ class render:
     
     @_setitem(handlers, Record.WIRE)
     @_setitem(handlers, Record.BUS)
+    @_setitem(handlers, 218)
     def handle_wire(self, objects, obj):
         obj.get_int("INDEXINSHEET")
         obj.check("OWNERPARTID", b"-1")
