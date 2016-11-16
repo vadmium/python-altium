@@ -635,9 +635,8 @@ display label if the record is a child of record [48](#48), even if
 ### Warning sign ###
 `|RECORD=43`: Warning sign for differential tracks, clock lines, ...
 * `|OWNERPARTID=-1`
-* `|LOCATION.X|LOCATION.Y`: Each optional.
-* `|NAME=-1`
-    * DIFFPAIR: a differential pair of wires
+* `|LOCATION.X|LOCATION.Y|COLOR`
+* `|NAME=DIFFPAIR`: A differential pair of wires
 * `|ORIENTATION` ([integer]):
     * 0: Text is aligned at the bottom-left corner
     * 1: Bottom-left alignment, then rotated 90° anticlockwise

@@ -323,6 +323,7 @@ class Record:
     BUS_ENTRY = 37
     TEMPLATE = 39
     PARAMETER = 41
+    WARNING_SIGN = 43
     IMPLEMENTATION_LIST = 44
     IMPLEMENTATION = 45
 
@@ -1172,6 +1173,23 @@ class render:
         
         col = colour(obj)
         self.renderer.draw(nc, get_location(obj), colour=col)
+    
+    @_setitem(handlers, Record.WARNING_SIGN)
+    def handle_warning(self, objects, obj):
+        obj.get_int("INDEXINSHEET")
+        obj.check("OWNERPARTID", b"-1")
+        
+        name = obj["NAME"].decode("ascii")
+        kw = dict()
+        orient = obj.get_int("ORIENTATION")
+        if orient & 1:
+            kw.update(angle=+90)
+        if orient & 2:
+            kw.update(vert=self.renderer.TOP, horiz=self.renderer.RIGHT)
+        
+        self.renderer.text(name, get_location(obj),
+            colour=colour(obj),
+        **kw)
     
     @_setitem(handlers, Record.SHEET_SYMBOL)
     @_setitem(handlers, 215)
