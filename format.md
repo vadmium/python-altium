@@ -355,7 +355,9 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|AREACOLOR`: Fill colour
 * `|ISSOLID` ([boolean]):
     If false, rectangle is not filled in, despite `|AREACOLOR`.
-* `|TRANSPARENT`: [Boolean]
+* `|TRANSPARENT` ([boolean]): Seen this and `|ISSOLID=T` both set, and
+    the rectangle object covering already-drawn objects, so in this case
+    the rectangle should probably not obscure other objects
 
 ### Sheet symbol ###
 `|RECORD=15`: Box to go on a top-level schematic

@@ -646,7 +646,6 @@ class render:
     @_setitem(handlers, Record.ROUND_RECTANGLE)
     def handle_rectangle(self, objects, obj):
         obj.get_int("INDEXINSHEET")
-        obj.get("TRANSPARENT")
         obj.get_bool("ISNOTACCESIBLE")
         
         kw = dict(
@@ -654,7 +653,8 @@ class render:
             outline=colour(obj),
         )
         fill = colour(obj, "AREACOLOR")
-        if obj.get_bool("ISSOLID"):
+        transparent = obj.get_bool("TRANSPARENT")
+        if obj.get_bool("ISSOLID") and not transparent:
             kw.update(fill=fill)
         a = get_location(obj)
         b = tuple(obj.get_int("CORNER." + x) for x in "XY")
