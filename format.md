@@ -311,7 +311,8 @@ Circle:
 
 ### Elliptical arc ###
 `|RECORD=11`: Inherits [Arc](#arc) properties
-* `|SECONDARYRADIUS`: Radius along _x_ axis; `|RADIUS` is along _y_ axis
+* `|SECONDARYRADIUS|SECONDARYRADIUS_FRAC`: Radius along _x_ axis;
+    `|RADIUS` is along _y_ axis
 
 ### Arc ###
 `|RECORD=12`: Circle or arc for component symbol.
@@ -322,7 +323,7 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
 * `|OWNERPARTDISPLAYMODE`: See [Component](#component) `|DISPLAYMODE`
 * `|LOCATION.X|LOCATION.Y`: Centre of circle
-* `|RADIUS`: [Integer]
+* `|RADIUS|RADIUS_FRAC`: [Integer]s
 * `|LINEWIDTH=1`
 * `|STARTANGLE` ([real]): Default 0; 0 for full circle
 * `|ENDANGLE` ([real]): 360 for full circle. Setting both to zero may

@@ -609,7 +609,7 @@ class render:
         obj.check("ISNOTACCESIBLE", b"T")
         obj.check("LINEWIDTH", b"1")
         
-        r = obj.get_int("RADIUS")
+        r = get_int_frac(obj, "RADIUS")
         if obj.get_int("RECORD") == Record.ELLIPTICAL_ARC:
             r2 = get_int_frac(obj, "SECONDARYRADIUS")
         else:
