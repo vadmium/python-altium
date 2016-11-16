@@ -210,10 +210,10 @@ The component object seems to occur before any of its child objects.
 * `|LIBRARYPATH`: Optional
 * `|SOURCELIBRARYNAME`
 * `|SHEETPARTFILENAME=*`: Optional
-* `|TARGETFILENAME=*|UNIQUEID`
+* `|TARGETFILENAME|UNIQUEID`
 * `|AREACOLOR=11599871|COLOR=128` (= #FFFFB0, #800000)
-* `|PARTIDLOCKED`: [Boolean]
-* `|NOTUSEDBTABLENAME|DESIGNITEMID|DATABASETABLENAME`: Optional
+* `|PARTIDLOCKED|DESIGNATORLOCKED`: [Boolean]
+* `|NOTUSEDBTABLENAME|DESIGNITEMID|DATABASETABLENAME|ALIASLIST`: Optional
 * `|PINSMOVEABLE`: [Boolean]
 
 ### Pin ###
@@ -221,6 +221,9 @@ The component object seems to occur before any of its child objects.
 * `|OWNERINDEX`: Component part index
 * `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
 * `|OWNERPARTDISPLAYMODE|DESCRIPTION`: Optional
+* `|SYMBOL_OUTER` ([integer]):
+    * 0: No symbol
+    * 33
 * `|SYMBOL_OUTEREDGE` ([integer]): Optional symbol between component and pin.
     * 0: No symbol
     * 1: A bubble (dot), indicating negative logic
@@ -305,6 +308,7 @@ The component object seems to occur before any of its child objects.
 * `|EXTRALOCATIONCOUNT|E(X/Y)<n>[_FRAC]`:
     Seen with `LOCATIONCOUNT=50`, where this gives an extra count, and
     the extra points are numbered from 51 to 50 + _n_
+* `|IGNOREONLOAD`: [Boolean]
 
 ### Ellipse ###
 `|RECORD=8`: Inherits Circle properties
@@ -388,6 +392,8 @@ Child of [sheet symbol](#sheet-symbol)
 * `|DISTANCEFROMTOP|NAME|OWNERPARTID=-1|STYLE=3`
 * `|TEXTCOLOR=128|TEXTFONTID=1|TEXTSTYLE=Full|INDEXINSHEET`
 * `|HARNESSTYPE|SIDE=1`: Optional
+* `|STYLE` ([integer]): 2 or 3
+* `|IOTYPE` ([integer]): 0 or 2
 
 ### Power port ###
 `|RECORD=17`: Connection to power rail, ground, etc
@@ -479,14 +485,14 @@ Child of [sheet symbol](#sheet-symbol)
 
 ### Text frame ###
 `RECORD=28`: Text box
-* `|OWNERPARTID=-1`
+* `|OWNERPARTID`
 * `|LOCATION.X`: Lefthand side of box
 * `|LOCATION.Y`
 * `|CORNER.X[_FRAC]`: Righthand boundary for word wrapping
 * `|CORNER.Y[_FRAC]`: Top text line
 * `|AREACOLOR=16777215` (= #FFFFFF)
-* `|FONTID|ISSOLID=T|ALIGNMENT=1|WORDWRAP=T`
-* `|CLIPTORECT`: [Boolean]
+* `|FONTID|ALIGNMENT=1|WORDWRAP=T|COLOR`
+* `|ISSOLID|CLIPTORECT|ISNOTACCESIBLE`: [Boolean]
 * `|ORIENTATION|TEXTMARGIN_FRAC|INDEXINSHEET`: Optional
 * `|TEXT`: Special code “`~1`” starts a new line. Property name is
     often seen in title case: `|Text`.
@@ -632,7 +638,7 @@ display label if the record is a child of record [48](#48), even if
 * `|READONLYSTATE`: Same as for [Designator](#designator)?
 * `|UNIQUEID`: Optional. Eight uppercase letters from A–Y (25 letters), meant
     to be unique across a whole project (not just a single schematic)
-* `|ISMIRRORED`: [Boolean]
+* `|ISMIRRORED|NOTAUTOPOSITION`: [Boolean]
 * `|SHOWNAME=T`: Optional
 
 ### Warning sign ###

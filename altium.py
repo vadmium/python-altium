@@ -692,6 +692,7 @@ class render:
         obj.check("ISNOTACCESIBLE", b"T")
         obj.check("OWNERPARTID", b"1")
         obj.get("OWNERPARTDISPLAYMODE")
+        obj.get_bool("IGNOREONLOAD")
         
         points = list()
         count = obj.get_int("LOCATIONCOUNT")
@@ -739,10 +740,11 @@ class render:
         obj.check("ALIGNMENT", b"1")
         obj.check("AREACOLOR", b"16777215")
         obj.check("ISSOLID", b"T")
-        obj.check("OWNERPARTID", b"-1")
+        obj.get_int("OWNERPARTID")
         obj.check("WORDWRAP", b"T")
         obj.get_int("INDEXINSHEET")
         obj.get_int("TEXTMARGIN_FRAC")
+        obj.get_bool("ISNOTACCESIBLE")
         
         [lhs, _] = get_location(obj)
         self.renderer.text(
@@ -828,7 +830,7 @@ class render:
         for [name, value] in (
             ("AREACOLOR", b"8454143"), ("ARROWKIND", b"Block & Triangle"),
             ("COLOR", b"128"), ("OWNERPARTID", b"-1"),
-            ("STYLE", b"3"), ("TEXTCOLOR", b"128"), ("TEXTFONTID", b"1"),
+            ("TEXTCOLOR", b"128"), ("TEXTFONTID", b"1"),
             ("TEXTSTYLE", b"Full"),
         ):
             obj.check(name, value)
@@ -836,6 +838,8 @@ class render:
         obj.check("SIDE", None, b"1")
         obj.get_int("INDEXINSHEET")
         obj.get_int("DISTANCEFROMTOP")
+        obj.get_int("STYLE")
+        obj.get_int("IOTYPE")
         obj.get("NAME")
     
     @_setitem(handlers, 216)
@@ -861,6 +865,7 @@ class render:
             "ISMIRRORED", "ORIENTATION", "INDEXINSHEET",
             "SHEETPARTFILENAME", "DESIGNITEMID", "DISPLAYMODE",
             "NOTUSEDBTABLENAME", "LIBRARYPATH", "DATABASETABLENAME",
+            "TARGETFILENAME", "ALIASLIST",
         ):
             obj.get(property)
         if obj.get("COMPONENTDESCRIPTION"):
@@ -875,7 +880,7 @@ class render:
         obj.check("AREACOLOR", b"11599871")
         obj.check("COLOR", b"128")
         obj.get_bool("PARTIDLOCKED")
-        obj.check("TARGETFILENAME", b"*")
+        obj.get_bool("DESIGNATORLOCKED")
         obj.get_bool("PINSMOVEABLE")
         obj.check("COMPONENTKIND", None, b"3")
 
@@ -888,6 +893,7 @@ class render:
         obj.check("OWNERPARTID", b"-1", b"1")
         get_utf8(obj, "NAME")
         obj.get_bool("SHOWNAME")
+        obj.get_bool("NOTAUTOPOSITION")
         
         text_colour = colour(obj)
         val = obj.get("TEXT")
@@ -896,9 +902,9 @@ class render:
         
         if objects.properties.get_int("RECORD") == 48:
             return
+        orient = obj.get_int("ORIENTATION")
         if not obj.get_bool("ISHIDDEN") and val:
             kw =  dict()
-            orient = obj.get_int("ORIENTATION")
             if orient & 1:
                 kw.update(angle=+90)
             if orient & 2:
