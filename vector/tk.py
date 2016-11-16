@@ -4,7 +4,6 @@ from . import base
 from tkinter.font import Font
 from math import sin, cos, radians
 import tkinter.font
-import operator
 
 class _RawRenderer(base.Renderer):
     """Implements basic TK renderer except for default offsets, colour, etc
