@@ -1041,12 +1041,16 @@ class render:
             with contextlib.ExitStack() as context:
                 if upwards:
                     view = context.enter_context(view.view(rotate=+1))
+                kw = dict()
+                font = obj.get_int("FONTID")
+                if font:
+                    kw.update(font=font_name(font))
                 view.text(
                     overline(obj["NAME"]),
                     colour=colour(obj, "TEXTCOLOR"),
                     offset=labelpoint,
                     vert=view.CENTRE, horiz=horiz,
-                )
+                **kw)
     
     @_setitem(handlers, Record.POWER_PORT)
     def handle_power_port(self, objects, obj):
@@ -1074,6 +1078,7 @@ class render:
                 warn("Unhandled power port marker STYLE=" + format(style))
             
             text = obj["TEXT"].decode("ascii")
+            font = obj.get_int("FONTID")
             if obj.get_bool("SHOWNETNAME"):
                 orients = {
                     0: (self.renderer.LEFT, self.renderer.CENTRE, (+1, 0)),
@@ -1083,7 +1088,10 @@ class render:
                 }
                 (horiz, vert, pos) = orients[orient]
                 pos = (p * offset for p in pos)
-                view.text(text, pos, horiz=horiz, vert=vert)
+                kw = dict()
+                if font:
+                    kw.update(font=font_name(font))
+                view.text(text, pos, horiz=horiz, vert=vert, **kw)
     
     @_setitem(handlers, Record.NET_LABEL)
     def handle_net_label(self, objects, obj):

@@ -260,7 +260,7 @@ The component object seems to occur before any of its child objects.
 * `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
 * `|LOCATION.X|LOCATION.Y`
 * `|ORIENTATION=3|JUSTIFICATION=2|COLOR`: Each optional
-* `|FONTID` ([integer]): Probably selects from the font table in the
+* `|FONTID` ([integer]): Selects from the font table in the
     [Sheet](#sheet) object
 * `|TEXT`
 
@@ -390,6 +390,8 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|ISCROSSSHEETCONNECTOR` ([boolean]):
     Marker symbol is a double chevron pointing towards the connection.
 * `|UNIQUEID`: Optional
+* `|FONTID` ([integer]): If omitted (zero), maybe use the default
+    (`|SYSTEMFONT`)
 
 ### Port ###
 `|RECORD=18`: Labelled connection
@@ -414,6 +416,8 @@ Unable to get arcs in exclusive “or” gate to line up.
     The whole string may also be prefixed with a backslash;
     every character is still suffixed with one.
 * `|UNIQUEID`
+* `|FONTID` ([integer]): If omitted (zero), maybe use the default
+    (`|SYSTEMFONT`)
 * `|HEIGHT=10|HARNESSTYPE=Inter-board_Connector`: Optional
 
 ### No ERC ###
