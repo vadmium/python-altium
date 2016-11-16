@@ -814,6 +814,32 @@ class render:
             obj.get(property)
         obj.check("DESIMPCOUNT", b"1", None)
     
+    @_setitem(handlers, 16)
+    def handle_unknown(self, objects, obj):
+        for [name, value] in (
+            ("AREACOLOR", b"8454143"), ("ARROWKIND", b"Block & Triangle"),
+            ("COLOR", b"128"), ("OWNERPARTID", b"-1"),
+            ("STYLE", b"3"), ("TEXTCOLOR", b"128"), ("TEXTFONTID", b"1"),
+            ("TEXTSTYLE", b"Full"),
+        ):
+            obj.check(name, value)
+        obj.get("HARNESSTYPE")
+        obj.check("SIDE", None, b"1")
+        obj.get_int("INDEXINSHEET")
+        obj.get_int("DISTANCEFROMTOP")
+        obj.get("NAME")
+    
+    @_setitem(handlers, 216)
+    def handle_unknown(self, objects, obj):
+        for property in (
+            "AREACOLOR", "COLOR", "DISTANCEFROMTOP", "NAME",
+            "OWNERINDEXADDITIONALLIST", "OWNERPARTID", "TEXTCOLOR",
+            "TEXTFONTID", "TEXTSTYLE",
+        ):
+            obj[property]
+        obj.get_int("INDEXINSHEET")
+        obj.get_int("SIDE")
+    
     @_setitem(handlers, Record.TEMPLATE)
     def handle_template(self, objects, obj):
         obj.check("ISNOTACCESIBLE", b"T")
@@ -1145,25 +1171,31 @@ class render:
         self.renderer.draw(nc, get_location(obj), colour=col)
     
     @_setitem(handlers, Record.SHEET_SYMBOL)
+    @_setitem(handlers, 215)
     def handle_sheet_symbol(self, objects, obj):
         obj.get_int("INDEXINSHEET")
-        obj["UNIQUEID"]
+        for name in (
+            "UNIQUEID", "HARNESSCONNECTORSIDE", "PRIMARYCONNECTIONPOSITION"
+        ):
+            obj.get(name)
         obj.check("OWNERPARTID", b"-1")
-        obj.check("ISSOLID", b"T")
+        obj.get_bool("ISSOLID")
         obj.check("SYMBOLTYPE", None, b"Normal")
         
         corner = (obj.get_int("XSIZE"), -obj.get_int("YSIZE"))
         self.renderer.rectangle(corner,
-            width=0.6,
+            width=obj.get_int("LINEWIDTH") or 0.6,
             outline=colour(obj), fill=colour(obj, "AREACOLOR"),
             offset=get_location(obj),
         )
 
     @_setitem(handlers, Record.SHEET_NAME)
     @_setitem(handlers, Record.SHEET_FILE_NAME)
+    @_setitem(handlers, 217)
     def handle_sheet_name(self, objects, obj):
         obj.check("INDEXINSHEET", None, b"-1")
         obj.check("OWNERPARTID", b"-1")
+        obj.get_bool("OWNERINDEXADDITIONALLIST")
         self.text(obj)
     
     def text(self, obj, **kw):
