@@ -69,7 +69,8 @@ except that the text is `|HEADER=Icon storage`. It contains embedded files
 for [Image](#image) objects.
 
 The Additional stream is not always present. It has the same header as
-FileHeader, but no other records have been seen in it.
+FileHeader, and it seems any extra records belong after the sequence of
+records from the FileHeader stream.
 
 Each stream seems to be a sequence of object records.
 Pluciński calls them primitives;

@@ -49,13 +49,15 @@ def read(file):
     if ole.exists("Additional"):
         stream = ole.openstream("Additional")
         records = iter_records(stream)
-        header = parse_properties(stream, next(records))
+        records = (parse_properties(stream, record) for record in records)
+        header = next(records)
         parse_header(header)
         header.check_unknown()
-        try:
-            [] = records
-        except ValueError:
-            warn("Extra record(s) in Additional stream")
+        for properties in records:
+            obj = Object(properties=properties)
+            owner = obj.properties.get_int("OWNERINDEX")
+            objects[owner].children.append(obj)
+            objects.append(obj)
     
     storage_stream = ole.openstream("Storage")
     records = iter_records(storage_stream)
