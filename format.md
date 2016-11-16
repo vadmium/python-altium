@@ -302,6 +302,9 @@ The component object seems to occur before any of its child objects.
     outline
 * `|COLOR|AREACOLOR|ISSOLID`
 * `|LOCATIONCOUNT|X`_n_`|X`_n_`_FRAC|Y`_n_`Y`_n_`_FRAC|`. . .
+* `|EXTRALOCATIONCOUNT|E(X/Y)<n>[_FRAC]`:
+    Seen with `LOCATIONCOUNT=50`, where this gives an extra count, and
+    the extra points are numbered from 51 to 50 + _n_
 
 ### Ellipse ###
 `|RECORD=8`: Inherits Circle properties

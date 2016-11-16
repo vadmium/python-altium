@@ -694,10 +694,15 @@ class render:
         obj.get("OWNERPARTDISPLAYMODE")
         
         points = list()
-        for location in range(obj.get_int("LOCATIONCOUNT")):
+        count = obj.get_int("LOCATIONCOUNT")
+        for location in range(count):
             location = format(1 + location)
             point = tuple(get_int_frac(obj, x + location) for x in "XY")
             points.append(point)
+        for location in range(obj.get_int("EXTRALOCATIONCOUNT")):
+            location = format(count + 1 + location)
+            point = (get_int_frac(obj, "E" + x + location) for x in "XY")
+            points.append(tuple(point))
         fill = colour(obj, "AREACOLOR")
         
         kw = dict()
