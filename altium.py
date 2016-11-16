@@ -284,8 +284,9 @@ def get_location(obj):
 def display_part(objects, obj):
     '''Determine if obj is in the component's current part and display mode
     '''
+    part = obj["OWNERPARTID"]
     owner = objects.properties
-    return (obj["OWNERPARTID"] == owner["CURRENTPARTID"] and
+    return ((part == b"-1" or part == owner["CURRENTPARTID"]) and
         obj.get_int("OWNERPARTDISPLAYMODE") == owner.get_int("DISPLAYMODE"))
 
 class Record:
@@ -597,7 +598,7 @@ class render:
         kw = dict(points=points)
         kw.update(colour=colour(obj))
         
-        if obj["OWNERPARTID"] == b"-1" or display_part(objects, obj):
+        if display_part(objects, obj):
             if linewidth != 1:
                 kw.update(width=linewidth or 0.6)
             self.renderer.polyline(**kw)
@@ -679,8 +680,7 @@ class render:
         get_location(obj)
         obj.get_int("FONTID")
         
-        part = obj["OWNERPARTID"]
-        if part == b"-1" or part == objects.properties["CURRENTPARTID"]:
+        if display_part(objects, obj):
             self.text(obj)
     
     @_setitem(handlers, Record.POLYGON)
