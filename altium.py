@@ -130,7 +130,7 @@ def parse_properties(stream, header):
         if existing not in (None, value):
             msg = "Conflicting duplicate: {!r}, was {!r}"
             warn(msg.format(property, existing))
-        obj[name] = value
+        obj[name.upper()] = value
         seen[name] = value
     
     if stream.read(1) != b"\x00":
@@ -735,7 +735,7 @@ class render:
             font=font_name(obj.get_int("FONTID")),
             offset=(lhs, obj.get_int("CORNER.Y")),
             width=obj.get_int("CORNER.X") - lhs,
-            text=obj["Text"].decode("ascii").replace("~1", "\n"),
+            text=obj["TEXT"].decode("ascii").replace("~1", "\n"),
             vert=self.renderer.TOP,
         )
 

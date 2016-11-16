@@ -101,8 +101,9 @@ For most records the list starts with pipe character as well
 (except for RECORD=28).
 Most property names are in all capitals,
 with words run together without underscores or any other punctuation.
-Exceptions include `|Text` for text frame objects,
+Exceptions include
 `|DISPLAY_UNIT` for sheet objects, and some properties for co-ordinates.
+Property names are probably case-insensitive.
 
 Sometimes properties are repeated, such as `|HOTSPOTGRIDON=T` in the
 [Sheet](#sheet) record.
@@ -462,7 +463,8 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|FONTID|ISSOLID=T|ALIGNMENT=1|WORDWRAP=T`
 * `|CLIPTORECT`: [Boolean]
 * `|ORIENTATION|TEXTMARGIN_FRAC|INDEXINSHEET`: Optional
-* `|Text`: Special code “`~1`” starts a new line
+* `|TEXT`: Special code “`~1`” starts a new line. Property name is
+    often seen in title case: `|Text`.
 
 ### Junction ###
 `|RECORD=29`:
