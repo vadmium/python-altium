@@ -961,16 +961,31 @@ class render:
                     invert = +1
                     kw = dict()
                 if pinconglomerate & 8 and name is not None:
+                    margin = obj.get_int("NAME_CUSTOMPOSITION_MARGIN") or -7
+                    copy = dict(kw)
+                    font = obj.get_int("NAME_CUSTOMFONTID")
+                    if font:
+                        copy.update(font=font_name(font))
                     view.text(overline(name),
                         vert=view.CENTRE,
                         horiz=view.RIGHT * invert,
-                        offset=(-7, 0),
-                    **kw)
+                        offset=(margin, 0),
+                    **copy)
+                    obj.check("PINNAME_POSITIONCONGLOMERATE",
+                        None, b"16", b"21")
                 if pinconglomerate & 16:
+                    margin = \
+                        obj.get_int("DESIGNATOR_CUSTOMPOSITION_MARGIN") or +9
+                    copy = dict(kw)
+                    font = obj.get_int("DESIGNATOR_CUSTOMFONTID")
+                    if font:
+                        copy.update(font=font_name(font))
                     view.text(designator,
                         horiz=view.LEFT * invert,
-                        offset=(+9, 0),
-                    **kw)
+                        offset=(margin, 0),
+                    **copy)
+                    obj.check("PINDESIGNATOR_POSITIONCONGLOMERATE",
+                        None, b"1", b"16")
     
     @_setitem(handlers, Record.WIRE)
     @_setitem(handlers, Record.BUS)

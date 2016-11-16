@@ -247,7 +247,12 @@ The component object seems to occur before any of its child objects.
 * `|LOCATION.X|LOCATION.Y`: Point where pin line extends from component
 * `|NAME`: Pin function, shown inside component, opposite the pin line.
     May not be present even if the flag is set in `|PINCONGLOMERATE`.
+* `|NAME_CUSTOMFONTID=4`
+* `|NAME_CUSTOMPOSITION_MARGIN=-2`: Default is −7
+* `|PINNAME_POSITIONCONGLOMERATE` ([integer]): 0, 16 or 21
 * `|DESIGNATOR`: Pin “number”, shown outside component, against pin line
+* `|DESIGNATOR_CUSTOMPOSITION_MARGIN=5`: Default is +9
+* `|PINDESIGNATOR_POSITIONCONGLOMERATE` ([integer]): 0, 1 or 16
 * `|SWAPIDPIN`: Optional
 * `|SWAPINPART|%UTF8%SWAPIDPART` (optional): Seen containing broken bars
     (U+00A6, ¦), the non-UTF-8 encoding of one being the single byte 0x8E
