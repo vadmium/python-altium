@@ -687,7 +687,6 @@ class render:
     def handle_polygon(self, objects, obj):
         obj.get_int("INDEXINSHEET")
         obj.check("ISNOTACCESIBLE", b"T")
-        obj.check("ISSOLID", b"T")
         obj.check("OWNERPARTID", b"1")
         obj.get("OWNERPARTDISPLAYMODE")
         
@@ -696,12 +695,16 @@ class render:
             location = format(1 + location)
             point = tuple(obj.get_int(x + location) for x in "XY")
             points.append(point)
+        fill = colour(obj, "AREACOLOR")
+        
+        kw = dict()
+        if obj.get_bool("ISSOLID"):
+            kw.update(fill=fill)
         self.renderer.polygon(
             outline=colour(obj),
-            fill=colour(obj, "AREACOLOR"),
             points=points,
             width=obj.get_int("LINEWIDTH") or 0.6,
-        )
+        **kw)
     
     @_setitem(handlers, Record.ELLIPSE)
     def handle_ellipse(self, objects, obj):

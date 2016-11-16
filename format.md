@@ -292,8 +292,7 @@ The component object seems to occur before any of its child objects.
 * `|OWNERPARTDISPLAYMODE`: Optional
 * `|LINEWIDTH` ([integer]): If omitted (zero), there is a thin but visible
     outline
-* `|COLOR|AREACOLOR`
-* `|ISSOLID=T`
+* `|COLOR|AREACOLOR|ISSOLID`
 * `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .
 
 ### Ellipse ###
