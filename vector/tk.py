@@ -149,6 +149,8 @@ class _RawRenderer(base.Renderer):
                 kw.update(width=width or self.linewidth)
             else:
                 kw.update(width=0)
+        else:
+            kw.update(fill="")
         if outline:
             kw.update(outline=self._colour(outline))
         return kw
