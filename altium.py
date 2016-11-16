@@ -714,15 +714,18 @@ class render:
         obj.check("ISNOTACCESIBLE", b"T")
         obj.check("SECONDARYRADIUS", obj["RADIUS"])
         obj.get_int("SECONDARYRADIUS_FRAC")
-        obj.check("ISSOLID", b"T")
         obj.get_int("INDEXINSHEET")
+        fill = colour(obj, "AREACOLOR")
         
+        kw = dict()
+        if obj.get_bool("ISSOLID"):
+            kw.update(fill=fill)
         self.renderer.circle(
             r=get_int_frac(obj, "RADIUS"),
-            width=0.6,
-            outline=colour(obj), fill=colour(obj, "AREACOLOR"),
+            width=obj.get_int("LINEWIDTH") or 0.6,
+            outline=colour(obj),
             offset=get_location(obj),
-        )
+        **kw)
     
     @_setitem(handlers, Record.TEXT_FRAME)
     def handle_text_frame(self, objects, obj):

@@ -307,8 +307,9 @@ The component object seems to occur before any of its child objects.
 `|RECORD=8`: Inherits Circle properties
 * `|RADIUS|RADIUS_FRAC`
 * `|SECONDARYRADIUS|SECONDARYRADIUS_FRAC`
-* `|COLOR|AREACOLOR|ISSOLID=T`
+* `|COLOR|AREACOLOR|ISSOLID`
 * `|INDEXINSHEET`: [Integer]
+* `|LINEWIDTH=1`: Optional
 
 Circle:
 * `|OWNERINDEX|ISNOTACCESIBLE=T|OWNERPARTID=1|LOCATION.X|LOCATION.Y`
