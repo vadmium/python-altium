@@ -258,6 +258,25 @@ def get_int_frac(obj, property):
     value += obj.get_int(property + "_FRAC") / FRAC_DENOM
     return value
 
+def get_utf8(obj, property):
+    text = obj[property]
+    try:
+        text = text.decode("windows-1252")
+    except UnicodeDecodeError as err:
+        warn(err)
+        text = text.decode("windows-1252", "backslashreplace")
+    utf8 = obj.get("%UTF8%" + property)
+    if utf8 is None:
+        return text
+    utf8 = utf8.decode("utf-8")
+    subst = utf8.translate({
+        ord("\N{GREEK SMALL LETTER MU}"): "\N{MICRO SIGN}",
+        0x00A6: "\N{LATIN CAPITAL LETTER Z WITH CARON}",
+    })
+    if text != subst:
+        warn("UTF-8 and CP-1252 text differ in " + format(obj))
+    return utf8
+
 def get_location(obj):
     '''Return location property co-ordinates as a tuple'''
     return tuple(get_int_frac(obj, "LOCATION." + x) for x in "XY")
@@ -799,12 +818,13 @@ class render:
     @_setitem(handlers, Record.COMPONENT)
     def handle_component(self, objects, obj):
         for property in (
-            "ISMIRRORED", "ORIENTATION",
-            "INDEXINSHEET", "COMPONENTDESCRIPTION",
+            "ISMIRRORED", "ORIENTATION", "INDEXINSHEET",
             "SHEETPARTFILENAME", "DESIGNITEMID", "DISPLAYMODE",
             "NOTUSEDBTABLENAME", "LIBRARYPATH", "DATABASETABLENAME",
         ):
             obj.get(property)
+        if obj.get("COMPONENTDESCRIPTION"):
+            get_utf8(obj, "COMPONENTDESCRIPTION")
         obj.check("OWNERPARTID", b"-1")
         for property in (
             "UNIQUEID", "CURRENTPARTID", "DISPLAYMODECOUNT",
@@ -826,7 +846,7 @@ class render:
         ):
             obj.get(property)
         obj.check("OWNERPARTID", b"-1", b"1")
-        obj["NAME"]
+        get_utf8(obj, "NAME")
         obj.get_bool("SHOWNAME")
         
         text_colour = colour(obj)
@@ -851,19 +871,21 @@ class render:
                         continue
                     if o["NAME"].lower() != match:
                         continue
-                    val = o["TEXT"]
+                    val = get_utf8(o, "TEXT")
                     break
                 else:
                     msg = "Parameter value for |TEXT={} in {!r}"
                     msg = msg.format(val.decode("ascii"), objects)
                     raise LookupError(msg)
-                self.renderer.text(val.decode("ascii"),
+                self.renderer.text(val,
                     colour=text_colour,
                     offset=offset,
                     font=font_name(font),
                 **kw)
             else:
                 self.text(obj, **kw)
+        else:
+            obj.get("%UTF8%TEXT")
     
     @_setitem(handlers, Record.DESIGNATOR)
     def handle_designator(self, objects, obj):
@@ -893,11 +915,13 @@ class render:
     
     @_setitem(handlers, Record.PIN)
     def handle_pin(self, objects, obj):
-        for property in (
-            "SWAPIDPIN", "OWNERPARTDISPLAYMODE", "DESCRIPTION", "SWAPIDPART",
-        ):
+        for property in ("SWAPIDPIN", "OWNERPARTDISPLAYMODE"):
             obj.get(property)
         obj.check("FORMALTYPE", b"1")
+        if obj.get("DESCRIPTION") is not None:
+            get_utf8(obj, "DESCRIPTION")
+        if obj.get("SWAPIDPART") is not None:
+            get_utf8(obj, "SWAPIDPART")
         
         pinlength = obj.get_int("PINLENGTH")
         pinconglomerate = obj.get_int("PINCONGLOMERATE")
@@ -1115,7 +1139,7 @@ class render:
     
     def text(self, obj, **kw):
         kw["colour"] = colour(obj)
-        self.renderer.text(obj["TEXT"].decode("ascii"),
+        self.renderer.text(get_utf8(obj, "TEXT"),
             offset=get_location(obj),
             font=font_name(obj.get_int("FONTID")),
         **kw)

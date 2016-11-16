@@ -111,8 +111,9 @@ Sometimes properties are repeated, such as `|HOTSPOTGRIDON=T` in the
 
 Some simple common data types represented by properties:
 
-* Strings: Most properties are directly decodable as ASCII strings,
-    although the byte 0x8E has been seen bracketing parts of some strings
+* Strings: Most properties are directly decodable as ASCII strings.
+    Non-ASCII strings often use Windows CP-1252 or some similar encoding,
+    and are often accompanied by another property encoded in UTF-8.
 * Co-ordinate pairs (points): `|LOCATION.X=200|LOCATION.Y=100`
 * Lists:
     `|FONTIDCOUNT=2|SIZE1=10|FONTNAME1=`. . .`|SIZE2=10|FONTNAME2=`. . .
@@ -184,7 +185,8 @@ Other objects, such as lines, pins and labels exist,
 which are “owned” by the component.
 The component object seems to occur before any of its child objects.
 * `|LIBREFERENCE`
-* `|COMPONENTDESCRIPTION|COMPONENTKIND=3`: Each optional
+* `|COMPONENTDESCRIPTION|%UTF8%COMPONENTDESCRIPTION|COMPONENTKIND=3`:
+    Each optional
 * `|PARTCOUNT` ([integer]): Number of separated parts within component
     (e.g. there might be four parts in a quad op-amp component).
     The value seems to be one more than you would expect,
@@ -245,7 +247,9 @@ The component object seems to occur before any of its child objects.
 * `|NAME`: Pin function, shown inside component, opposite the pin line.
     May not be present even if the flag is set in `|PINCONGLOMERATE`.
 * `|DESIGNATOR`: Pin “number”, shown outside component, against pin line
-* `|SWAPIDPIN|SWAPINPART`: Optional
+* `|SWAPIDPIN`: Optional
+* `|SWAPINPART|%UTF8%SWAPIDPART` (optional): Seen containing broken bars
+    (U+00A6, ¦), the non-UTF-8 encoding of one being the single byte 0x8E
 
 ### Label ###
 `|RECORD=4`: Text note
@@ -586,13 +590,17 @@ display label if the record is a child of record [48](#48), even if
 * `|COLOR`
 * `|FONTID`
 * `|ISHIDDEN`: [Boolean]
-* `|TEXT`: If omitted, there is no label.
-    If it starts with “`=`”,
+* `|TEXT`:
+    If omitted, there is no label. Probably encoded in
+    Windows CP-1252, with substitutions like U+03BC
+    (lowercase mu) → U+00B5 (Micro sign). If it starts with “`=`”,
     it names another parameter with the same `|OWNERINDEX`,
     whose `|NAME` matches the rest of the text,
     and the actual text is taken
     from the referenced parameter’s `|TEXT` property.
 * `|NAME`
+* `|%UTF8%TEXT|%UTF8%NAME`: Optional UTF-8-encoded version of the `|TEXT` or
+    `|NAME` property, which is also included (presumably for compatibility)
 * `|READONLYSTATE`: Same as for [Designator](#designator)?
 * `|UNIQUEID`: Optional. Eight uppercase letters from A–Y (25 letters), meant
     to be unique across a whole project (not just a single schematic)
