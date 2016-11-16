@@ -660,12 +660,12 @@ class render:
         if obj.get_bool("ISSOLID") and not transparent:
             kw.update(fill=fill)
         a = get_location(obj)
-        b = tuple(obj.get_int("CORNER." + x) for x in "XY")
+        b = tuple(get_int_frac(obj, "CORNER." + x) for x in "XY")
         if display_part(objects, obj):
             if obj.get_int("RECORD") == Record.ROUND_RECTANGLE:
                 r = list()
                 for x in "XY":
-                    radius = obj.get_int("CORNER{}RADIUS".format(x))
+                    radius = get_int_frac(obj, "CORNER{}RADIUS".format(x))
                     r.append(int(radius))
                 self.renderer.roundrect(r, a, b, **kw)
             else:
@@ -696,7 +696,7 @@ class render:
         points = list()
         for location in range(obj.get_int("LOCATIONCOUNT")):
             location = format(1 + location)
-            point = tuple(obj.get_int(x + location) for x in "XY")
+            point = tuple(get_int_frac(obj, x + location) for x in "XY")
             points.append(point)
         fill = colour(obj, "AREACOLOR")
         
@@ -742,8 +742,8 @@ class render:
         [lhs, _] = get_location(obj)
         self.renderer.text(
             font=font_name(obj.get_int("FONTID")),
-            offset=(lhs, obj.get_int("CORNER.Y")),
-            width=obj.get_int("CORNER.X") - lhs,
+            offset=(lhs, get_int_frac(obj, "CORNER.Y")),
+            width=get_int_frac(obj, "CORNER.X") - lhs,
             text=obj["TEXT"].decode("ascii").replace("~1", "\n"),
             vert=self.renderer.TOP,
         )

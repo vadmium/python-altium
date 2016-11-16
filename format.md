@@ -301,7 +301,7 @@ The component object seems to occur before any of its child objects.
 * `|LINEWIDTH` ([integer]): If omitted (zero), there is a thin but visible
     outline
 * `|COLOR|AREACOLOR|ISSOLID`
-* `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .
+* `|LOCATIONCOUNT|X`_n_`|X`_n_`_FRAC|Y`_n_`Y`_n_`_FRAC|`. . .
 
 ### Ellipse ###
 `|RECORD=8`: Inherits Circle properties
@@ -316,7 +316,7 @@ Circle:
 
 ### Round rectangle ###
 `|RECORD=10`: As for [Rectangle](#rectangle); additionally:
-* `|CORNERXRADIUS|CORNERYRADIUS`
+* `|CORNERXRADIUS[_FRAC]|CORNERYRADIUS[_FRAC]`
 
 ### Elliptical arc ###
 `|RECORD=11`: Inherits [Arc](#arc) properties
@@ -358,7 +358,7 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
 * `|OWNERPARTDISPLAYMODE`: Optional
 * `|LOCATION.X|LOCATION.Y`: Bottom left corner
-* `|CORNER.X|CORNER.Y`: Top right corner
+* `|CORNER.X[_FRAC]|CORNER.Y[_FRAC]`: Top right corner
 * `|LINEWIDTH`: [Integer]. If zero, there is still a thin visible outline.
 * `|COLOR`: Outline colour
 * `|AREACOLOR`: Fill colour
@@ -479,8 +479,8 @@ Child of [sheet symbol](#sheet-symbol)
 * `|OWNERPARTID=-1`
 * `|LOCATION.X`: Lefthand side of box
 * `|LOCATION.Y`
-* `|CORNER.X`: Righthand boundary for word wrapping
-* `|CORNER.Y`: Top text line
+* `|CORNER.X[_FRAC]`: Righthand boundary for word wrapping
+* `|CORNER.Y[_FRAC]`: Top text line
 * `|AREACOLOR=16777215` (= #FFFFFF)
 * `|FONTID|ISSOLID=T|ALIGNMENT=1|WORDWRAP=T`
 * `|CLIPTORECT`: [Boolean]

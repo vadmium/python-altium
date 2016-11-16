@@ -111,7 +111,7 @@ class ConversionTest(TestCase):
         
         self.assertEqual(triangle.tag, SVG + "polygon")
         self.assertCountEqual(triangle.items(), (
-            ("points", "100,-100 110,-120 120,-100"),
+            ("points", "100.0,-100.0 110.0,-120.0 120.0,-100.0"),
             ("class", "solid"), ("stroke-width", "0.6"),
             ("style", "fill: #FFFFFF; stroke: #0000FF"),
         ))
