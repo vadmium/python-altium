@@ -867,7 +867,7 @@ class render:
             if orient & 2:
                 kw.update(vert=self.renderer.TOP, horiz=self.renderer.RIGHT)
             if val.startswith(b"="):
-                match = val[1:].lower()
+                match = val[1:].lstrip().lower()
                 for o in objects.children:
                     o = o.properties
                     if o.get_int("RECORD") != Record.PARAMETER:
@@ -877,9 +877,9 @@ class render:
                     val = get_utf8(o, "TEXT")
                     break
                 else:
-                    msg = "Parameter value for |TEXT={} in {!r}"
-                    msg = msg.format(val.decode("ascii"), objects)
-                    raise LookupError(msg)
+                    msg = "Parameter value not found for |TEXT={} in {!r}"
+                    warn(msg.format(val.decode("ascii"), objects))
+                    return
                 self.renderer.text(val,
                     colour=text_colour,
                     offset=offset,

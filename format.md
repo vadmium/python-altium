@@ -603,8 +603,8 @@ display label if the record is a child of record [48](#48), even if
     Windows CP-1252, with substitutions like U+03BC
     (lowercase mu) → U+00B5 (Micro sign). If it starts with “`=`”,
     it names another parameter with the same `|OWNERINDEX`,
-    whose `|NAME` matches the rest of the text,
-    and the actual text is taken
+    whose `|NAME` matches the rest of the text, ignoring any space
+    following the equal sign, and the actual text is taken
     from the referenced parameter’s `|TEXT` property.
 * `|NAME`
 * `|%UTF8%TEXT|%UTF8%NAME`: Optional UTF-8-encoded version of the `|TEXT` or
