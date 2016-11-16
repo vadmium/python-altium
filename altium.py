@@ -190,6 +190,8 @@ def parse_header(obj):
     obj.check("HEADER",
         b"Protel for Windows - Schematic Capture Binary File Version 5.0")
     obj.get_int("WEIGHT")
+    obj.check("MINORVERSION", None, b"2")
+    obj.get("UNIQUEID")
 
 def get_sheet_style(sheet):
     '''Returns the size of the sheet: (name, (width, height))'''
@@ -625,7 +627,7 @@ class render:
     def handle_rectangle(self, objects, obj):
         obj.get_int("INDEXINSHEET")
         obj.get("TRANSPARENT")
-        obj.check("ISNOTACCESIBLE", b"T")
+        obj.get_bool("ISNOTACCESIBLE")
         
         kw = dict(
             width=obj.get_int("LINEWIDTH") or 0.6,
@@ -706,6 +708,8 @@ class render:
         obj.check("ISSOLID", b"T")
         obj.check("OWNERPARTID", b"-1")
         obj.check("WORDWRAP", b"T")
+        obj.get_int("INDEXINSHEET")
+        obj.get_int("TEXTMARGIN_FRAC")
         
         [lhs, _] = get_location(obj)
         self.renderer.text(
@@ -771,7 +775,7 @@ class render:
             "USECOMPONENTLIBRARY", "DESCRIPTION", "MODELDATAFILEENTITY0",
             "MODELDATAFILEKIND0",
             "DATALINKSLOCKED", "DATABASEDATALINKSLOCKED",
-            "ISCURRENT", "INTEGRATEDMODEL", "DATABASEMODEL",
+            "ISCURRENT", "INTEGRATEDMODEL", "DATABASEMODEL", "UNIQUEID",
         ):
             obj.get(property)
         obj.check("INDEXINSHEET", None, b"-1")
@@ -783,8 +787,8 @@ class render:
     def handle_unknown(self, objects, obj):
         obj.get_int("INDEXINSHEET")
         for property in ("DESIMP0", "DESINTF"):
-            obj[property]
-        obj.check("DESIMPCOUNT", b"1")
+            obj.get(property)
+        obj.check("DESIMPCOUNT", b"1", None)
     
     @_setitem(handlers, Record.TEMPLATE)
     def handle_template(self, objects, obj):
@@ -798,7 +802,7 @@ class render:
             "ISMIRRORED", "ORIENTATION",
             "INDEXINSHEET", "COMPONENTDESCRIPTION",
             "SHEETPARTFILENAME", "DESIGNITEMID", "DISPLAYMODE",
-            "NOTUSEDBTABLENAME", "LIBRARYPATH",
+            "NOTUSEDBTABLENAME", "LIBRARYPATH", "DATABASETABLENAME",
         ):
             obj.get(property)
         obj.check("OWNERPARTID", b"-1")
@@ -813,6 +817,7 @@ class render:
         obj.get_bool("PARTIDLOCKED")
         obj.check("TARGETFILENAME", b"*")
         obj.get_bool("PINSMOVEABLE")
+        obj.check("COMPONENTKIND", None, b"3")
 
     @_setitem(handlers, Record.PARAMETER)
     def handle_parameter(self, objects, obj):
@@ -822,6 +827,7 @@ class render:
             obj.get(property)
         obj.check("OWNERPARTID", b"-1", b"1")
         obj["NAME"]
+        obj.get_bool("SHOWNAME")
         
         text_colour = colour(obj)
         val = obj.get("TEXT")
@@ -866,6 +872,7 @@ class render:
         obj.check("INDEXINSHEET", None, b"-1")
         obj.check("NAME", b"Designator")
         obj.check("READONLYSTATE", b"1")
+        obj.get("UNIQUEID")
         
         desig = obj["TEXT"].decode("ascii")
         owner = objects.properties
@@ -943,6 +950,7 @@ class render:
     def handle_wire(self, objects, obj):
         obj.get_int("INDEXINSHEET")
         obj.check("OWNERPARTID", b"-1")
+        obj.get("UNIQUEID")
         
         points = list()
         for location in range(obj.get_int("LOCATIONCOUNT")):
@@ -978,6 +986,7 @@ class render:
         obj.get_int("INDEXINSHEET")
         obj.check("OWNERPARTID", b"-1")
         obj.get("UNIQUEID")
+        obj.get("HARNESSTYPE")
         
         width = obj.get_int("WIDTH")
         if obj.get_int("IOTYPE"):
@@ -1019,22 +1028,26 @@ class render:
     def handle_power_port(self, objects, obj):
         obj.get_int("INDEXINSHEET")
         obj.check("OWNERPARTID", b"-1")
+        obj.get("UNIQUEID")
         
         orient = obj.get_int("ORIENTATION")
         if obj.get_bool("ISCROSSSHEETCONNECTOR"):
             marker = dchevron
             offset = 14
         else:
-            marker = obj.get_int("STYLE")
-            (marker, offset) = self.connmarkers.get(marker, (None, 0))
+            style = obj.get_int("STYLE")
+            (marker, offset) = self.connmarkers.get(style, (None, 0))
         
         col = colour(obj)
         with self.renderer.view(colour=col, offset=get_location(obj)) as \
                 view:
-            kw = dict()
-            if orient:
-                kw.update(rotate=orient)
-            view.draw(marker, **kw)
+            if marker:
+                kw = dict()
+                if orient:
+                    kw.update(rotate=orient)
+                view.draw(marker, **kw)
+            else:
+                warn("Unhandled power port marker STYLE=" + format(style))
             
             text = obj["TEXT"].decode("ascii")
             if obj.get_bool("SHOWNETNAME"):
@@ -1052,6 +1065,7 @@ class render:
     def handle_net_label(self, objects, obj):
         obj.get_int("INDEXINSHEET")
         obj.check("OWNERPARTID", b"-1")
+        obj.get("UNIQUEID")
         
         orient = obj.get_int("ORIENTATION")
         try:

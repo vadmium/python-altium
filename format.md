@@ -176,6 +176,7 @@ as being equivalent to setting `|RECORD=0`.
 
 * `|HEADER=Protel for Windows - Schematic Capture Binary File Version 5.0`
 * `|WEIGHT` ([integer]): number of remaining objects
+* `|MINORVERSION=2|UNIQUEID`: Optional
 
 ### Component ###
 `|RECORD=1`: Set up schematic component part.
@@ -183,7 +184,7 @@ Other objects, such as lines, pins and labels exist,
 which are “owned” by the component.
 The component object seems to occur before any of its child objects.
 * `|LIBREFERENCE`
-* `|COMPONENTDESCRIPTION`: Optional
+* `|COMPONENTDESCRIPTION|COMPONENTKIND=3`: Each optional
 * `|PARTCOUNT` ([integer]): Number of separated parts within component
     (e.g. there might be four parts in a quad op-amp component).
     The value seems to be one more than you would expect,
@@ -206,7 +207,7 @@ The component object seems to occur before any of its child objects.
 * `|TARGETFILENAME=*|UNIQUEID`
 * `|AREACOLOR=11599871|COLOR=128` (= #FFFFB0, #800000)
 * `|PARTIDLOCKED`: [Boolean]
-* `|NOTUSEDBTABLENAME|DESIGNITEMID`: Optional
+* `|NOTUSEDBTABLENAME|DESIGNITEMID|DATABASETABLENAME`: Optional
 * `|PINSMOVEABLE`: [Boolean]
 
 ### Pin ###
@@ -338,7 +339,7 @@ Unable to get arcs in exclusive “or” gate to line up.
 ### Rectangle ###
 `|RECORD=14`: Rectangle for component symbol
 * `|OWNERINDEX`: Component part index
-* `|ISNOTACCESIBLE=T`: Non-English spelling of “accessible”!
+* `|ISNOTACCESIBLE` ([boolean]): Non-English spelling of “accessible”!
 * `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
 * `|OWNERPARTDISPLAYMODE`: Optional
@@ -372,7 +373,9 @@ Unable to get arcs in exclusive “or” gate to line up.
     * 2: Tee off rail (bar)
     * Wave (?)
     * 4: Ground (broken triangle, made of horizontal lines)
+    * 5: Used on ground connections
     * Power ground, earth ground, earth (?)
+    * 7: Used on power connections
 * `|SHOWNETNAME` ([boolean]): Show the `|TEXT` value
 * `|LOCATION.X|LOCATION.Y`: Point of connection
 * `|ORIENTATION` ([integer]): TRotateBy90: Direction the marker points
@@ -380,6 +383,7 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|TEXT`: Shown beyond the marker
 * `|ISCROSSSHEETCONNECTOR` ([boolean]):
     Marker symbol is a double chevron pointing towards the connection.
+* `|UNIQUEID`: Optional
 
 ### Port ###
 `|RECORD=18`: Labelled connection
@@ -404,12 +408,15 @@ Unable to get arcs in exclusive “or” gate to line up.
     The whole string may also be prefixed with a backslash;
     every character is still suffixed with one.
 * `|UNIQUEID`
+* `|HEIGHT=10|HARNESSTYPE=Inter-board_Connector`: Optional
 
 ### No ERC ###
 `|RECORD=22`: Cross indicating intentional non-connection
 * `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID=-1|LOCATION.X|LOCATION.Y`
 * `|COLOR`
+* `|ISACTIVE=T|ORIENTATION=1|SUPPRESSALL=T|SYMBOL=Thin Cross|UNIQUEID`:
+    Optional
 
 ### Net label ###
 `|RECORD=25`: Net label
@@ -423,6 +430,7 @@ Unable to get arcs in exclusive “or” gate to line up.
     * 0: Text is aligned at the bottom-left corner
     * 1: Bottom-left alignment, then rotated 90° anticlockwise
     * 3: Bottom-left alignment, then rotated 90° clockwise
+* `|UNIQUEID`: Optional
 
 ### Bus ###
 `|RECORD=26`: Bus polyline
@@ -436,6 +444,7 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID=-1|LINEWIDTH|COLOR`
 * `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .
+* `|UNIQUEID`: Optional
 
 ### Text frame ###
 `RECORD=28`: Text box
@@ -447,7 +456,7 @@ Unable to get arcs in exclusive “or” gate to line up.
 * `|AREACOLOR=16777215` (= #FFFFFF)
 * `|FONTID|ISSOLID=T|ALIGNMENT=1|WORDWRAP=T`
 * `|CLIPTORECT`: [Boolean]
-* `|ORIENTATION`: Optional
+* `|ORIENTATION|TEXTMARGIN_FRAC|INDEXINSHEET`: Optional
 * `|Text`: Special code “`~1`” starts a new line
 
 ### Junction ###
@@ -550,7 +559,7 @@ Labels on top-level schematic
 * `|ISMIRRORED`: [Boolean]
 * `|ORIENTATION` ([integer]): Probably the same as for [Parameter]
     (#parameter)
-* `|ISHIDDEN`: Optional
+* `|ISHIDDEN|UNIQUEID`: Optional
 
 ### Bus entry ###
 `|RECORD=37`: Bus entry line
@@ -588,6 +597,7 @@ display label if the record is a child of record [48](#48), even if
 * `|UNIQUEID`: Optional. Eight uppercase letters from A–Y (25 letters), meant
     to be unique across a whole project (not just a single schematic)
 * `|ISMIRRORED`: [Boolean]
+* `|SHOWNAME=T`: Optional
 
 ### Warning sign ###
 `|RECORD=43`: Warning sign for differential tracks, clock lines, ...
@@ -606,7 +616,7 @@ display label if the record is a child of record [48](#48), even if
 ### Implementation ###
 `|RECORD=45`: Implementation?
 * `|OWNERINDEX`
-* `|INDEXINSHEET=-1`: Optional
+* `|INDEXINSHEET=-1|UNIQUEID`: Optional
 * `|DESCRIPTION|USECOMPONENTLIBRARY=T`: Optional
 * `|MODELNAME|MODELTYPE=PCBLIB`/`SI`/`SIM`/`PCB3DLib`
 * `|DATAFILECOUNT=1|MODELDATAFILEENTITY0|MODELDATAFILEKIND0`:
@@ -624,7 +634,7 @@ Child of RECORD=45 ([Implementation](#implementation))
 `|RECORD=47`
 * `|OWNERINDEX`
 * `|INDEXINSHEET`: [Integer]
-* `|DESINTF|DESIMPCOUNT=1|DESIMP0`
+* `|DESINTF|DESIMPCOUNT=1|DESIMP0`: Optional
 
 ### 48 ###
 Child of RECORD=45 ([Implementation])(#implementation))
