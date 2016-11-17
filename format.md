@@ -224,7 +224,7 @@ The component object seems to occur before any of its child objects.
 * `|SYMBOL_OUTER` ([integer]):
     * 0: No symbol
     * 33
-* `|SYMBOL_OUTEREDGE` ([integer]): Optional symbol between component and pin.
+* `|SYMBOL_OUTEREDGE` ([integer]): Optional symbol between component and pin
     * 0: No symbol
     * 1: A bubble (dot), indicating negative logic
 * `|SYMBOL_INNEREDGE` ([integer]): Optional symbol touching inside edge of
