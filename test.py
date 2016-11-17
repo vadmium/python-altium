@@ -125,3 +125,11 @@ class ConversionTest(TestCase):
         )
         with self.assertWarnsRegex(Warning, "NEW-PROPERTY unhandled"):
             self.convert(sch)
+    
+    def test_dchevron(self):
+        sch = (
+            b"|RECORD=17|OWNERPARTID=-1|SHOWNETNAME=T"
+                b"|LOCATION.X=100|LOCATION.Y=100|TEXT=Connection"
+                b"|ISCROSSSHEETCONNECTOR=T\x00",
+        )
+        self.convert(sch)
