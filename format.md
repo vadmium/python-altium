@@ -484,7 +484,7 @@ Child of [sheet symbol](#sheet-symbol)
 * `|UNIQUEID`: Optional
 
 ### Text frame ###
-`RECORD=28`: Text box
+`RECORD=28`: Text box. Also `RECORD=209`.
 * `|OWNERPARTID`
 * `|LOCATION.X`: Lefthand side of box
 * `|LOCATION.Y`
