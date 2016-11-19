@@ -5,6 +5,9 @@ from vector import svg
 from io import BytesIO, StringIO
 from contextlib import redirect_stdout
 from xml.etree.ElementTree import XML
+import subprocess
+from tempfile import NamedTemporaryFile
+import os
 
 class ConversionTest(TestCase):
     def convert(self, sch):
@@ -133,3 +136,41 @@ class ConversionTest(TestCase):
                 b"|ISCROSSSHEETCONNECTOR=T\x00",
         )
         self.convert(sch)
+
+class VectorTest(TestCase):
+    def test_svg_rectangle(self):
+        svgfile = NamedTemporaryFile(delete=False,
+            suffix=".svg", mode="wt", encoding="ascii")
+        self.addCleanup(os.remove, svgfile.name)
+        with svgfile, redirect_stdout(svgfile):
+            renderer = svg.Renderer((3, 3), "in", margin=1)
+            renderer.start()
+            renderer.rectangle((2, 2),
+                offset=(0.5, 0.5), outline=True, fill=(1, 1, 1))
+            renderer.finish()
+        
+        with subprocess.Popen(
+            ("rsvg-convert",
+                "--dpi-x", "1", "--dpi-y", "1", "--background-color=white",
+                svgfile.name),
+            stdout=subprocess.PIPE,
+        ) as rsvg:
+            with rsvg.stdout:
+                png2pnm = subprocess.Popen(("png2pnm",),
+                    stdin=rsvg.stdout, stdout=subprocess.PIPE)
+            with png2pnm:
+                self.assertEqual(png2pnm.stdout.readline(), b"P6\n")
+                self.assertEqual(png2pnm.stdout.readline(), b"5 5\n")
+                self.assertEqual(png2pnm.stdout.readline(), b"255\n")
+                expected = (
+                    b"     "
+                    b" ### "
+                    b" # # "
+                    b" ### "
+                    b"     "
+                )
+                expected = expected.replace(b" ", b"\xFF\xFF\xFF")
+                expected = expected.replace(b"#", b"\x00\x00\x00")
+                self.assertEqual(png2pnm.stdout.read(), expected)
+        self.assertEqual(rsvg.returncode, 0)
+        self.assertEqual(png2pnm.returncode, 0)
