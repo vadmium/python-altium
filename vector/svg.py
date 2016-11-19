@@ -257,12 +257,13 @@ class Renderer(base.Renderer):
         return self.rectangle(*pos, _attrs=attrs, **kw)
     
     def _closed(self, attrs, style, outline=None, fill=None, width=None):
-        if fill:
+        if fill and (not outline or isinstance(outline, Iterable) or \
+                not isinstance(fill, Iterable)):
             attrs["class"] = "solid"
-            if isinstance(fill, Iterable):
-                style.extend(self._colour(fill, "fill"))
         else:
             attrs["class"] = "outline"
+        if isinstance(fill, Iterable):
+            style.extend(self._colour(fill, "fill"))
         if isinstance(outline, Iterable):
             style.extend(self._colour(outline, "stroke"))
         self._width(attrs, width)
