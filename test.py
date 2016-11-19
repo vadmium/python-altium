@@ -72,6 +72,10 @@ class ConversionTest(TestCase):
             b"|RECORD=15|LOCATION.X=100|LOCATION.Y=200|XSIZE=40|YSIZE=30"
                 b"|COLOR=7846673|AREACOLOR=3381725|ISSOLID=T|OWNERPARTID=-1"
                 b"|UNIQUEID=\x00",
+            b"|RECORD=7"
+                b"|LOCATIONCOUNT=3|X1=100|Y1=100|X2=110|Y2=120|X3=120|Y3=100"
+                b"|ISSOLID=T|COLOR=16711680|AREACOLOR=16777215"
+                b"|OWNERPARTID=1|ISNOTACCESIBLE=T\x00",
         )
         output = XML(self.convert(sch))
         SVG = "{http://www.w3.org/2000/svg}"
@@ -89,7 +93,7 @@ class ConversionTest(TestCase):
             with self.subTest(name):
                 self.assertEqual(output.get(name), value)
         
-        [style, defs, border, sheet] = output
+        [style, defs, border, sheet, triangle] = output
         self.assertEqual(style.tag, SVG + "style")
         self.assertEqual(defs.tag, SVG + "defs")
         self.assertEqual(border.tag, SVG + "g")
@@ -103,6 +107,13 @@ class ConversionTest(TestCase):
             ("width", "40"), ("height", "30"),
             ("stroke-width", "0.6"), ("class", "solid"),
             ("style", "fill: #DD9933; stroke: #11BB77"),
+        ))
+        
+        self.assertEqual(triangle.tag, SVG + "polygon")
+        self.assertCountEqual(triangle.items(), (
+            ("points", "100,-100 110,-120 120,-100"),
+            ("class", "solid"), ("stroke-width", "0.6"),
+            ("style", "fill: #FFFFFF; stroke: #0000FF"),
         ))
     
     def test_indirect_parameter(self):
