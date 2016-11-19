@@ -345,8 +345,7 @@ class Renderer(base.Renderer):
             # Very hacky approximation of the size of each character
             # as one en wide
             width /= self.textsize / 2
-            wrapper = TextWrapper(width=width,
-                replace_whitespace=False, drop_whitespace=False)
+            wrapper = TextWrapper(width=width, replace_whitespace=False)
             
             hardlines = text.splitlines(keepends=True)
             if not hardlines:
