@@ -2,7 +2,7 @@
 
 Altium ".SchDoc" files use the OLE compound document format.
 Inside the OLE container are streams (embedded files).
-The main stream containings schematic object records.
+The main stream contains schematic object records.
 Each record is a collection of properties,
 encoded as ASCII or byte strings.
 
@@ -48,7 +48,7 @@ Contents:
     * [46](#46)
     * [47](#47)
     * [48](#48)
-    * [215–218](#215–218)
+    * [215–218](#215218)
 
 Related references:
 
@@ -391,7 +391,7 @@ circ_angle = atan2( RADIUS * sin(angle), SECONDARYRADIUS * cos(angle) )
 * `|SYMBOLTYPE=Normal`: Optional
 
 ### 16 ###
-Child of [sheet symbol](#sheet-symbol)
+Child of [Sheet symbol](#sheet-symbol)
 
 * `|AREACOLOR=8454143|ARROWKIND=Block & Triangle|COLOR=128`
 * `|DISTANCEFROMTOP|NAME|OWNERPARTID=-1|STYLE=3`
@@ -683,18 +683,18 @@ Child of RECORD=45 ([Implementation](#implementation))
 * `|DESINTF|DESIMPCOUNT=1|DESIMP0`: Optional
 
 ### 48 ###
-Child of RECORD=45 ([Implementation])(#implementation))
+Child of RECORD=45 ([Implementation](#implementation))
 
 `|RECORD=48|OWNERINDEX`
 
 ### 215–218 ###
-Children of [sheet](#sheet), seen in the Additional stream
+Children of [Sheet](#sheet), seen in the Additional stream
 
-`|RECORD=215`: Similar to [sheet symbol](#sheet-symbol)
+`|RECORD=215`: Similar to [Sheet symbol](#sheet-symbol)
 
 `|RECORD=216`
 
-`|RECORD=217`: Similar to [sheet name and file name]
+`|RECORD=217`: Similar to [Sheet name and file name]
 (#sheet-name-and-file-name), also with `|OWNERINDEXADDITIONALLIST=T`
 
 `|RECORD=218|COLOR=15187117|INDEXINSHEET|LINEWIDTH=2|LOCATIONCOUNT=2|OWNERPARTID=-1|X1|X2|Y1|Y2`
