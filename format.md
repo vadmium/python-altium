@@ -331,8 +331,13 @@ Circle:
     `|RADIUS` is along _y_ axis
 
 ### Arc ###
-`|RECORD=12`: Circle or arc for component symbol.
-Unable to get arcs in exclusive “or” gate to line up.
+`|RECORD=12`: Circle or arc for component symbol. The angles are
+physical angles measured on the final ellipse. To calculate the
+corresponding angles in a circle, before it would be scaled to the ellipse’s
+aspect ratio:
+
+circ_angle = atan2( RADIUS * sin(angle), SECONDARYRADIUS * cos(angle) )
+
 * `|OWNERINDEX`: Component part index
 * `|ISNOTACCESIBLE=T`
 * `|INDEXINSHEET`: [Integer]

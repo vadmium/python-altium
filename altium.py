@@ -6,6 +6,7 @@ import zlib
 from pathlib import PureWindowsPath, Path
 import os
 from io import BytesIO
+from math import atan2, sin, cos, radians, degrees
 
 try:
     from OleFileIO_PL import OleFileIO
@@ -626,6 +627,11 @@ class render:
             if end == start:  # Full circle rather than a zero-length arc
                 start = 0
                 end = 360
+            if r2 != r:
+                start = radians(start)
+                start = degrees(atan2(r * sin(start), r2 * cos(start)))
+                end = radians(end)
+                end = degrees(atan2(r * sin(end), r2 * cos(end)))
             self.renderer.arc((r, r2), start, end, location, colour=col)
     
     @_setitem(handlers, Record.BEZIER)
