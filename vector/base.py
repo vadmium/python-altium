@@ -138,14 +138,8 @@ class Subview(View):
         self._rotatearg = rotate
         
         # Copy parameters in case they are generators or mutable
-        if offset:
-            self._offset = tuple(offset)
-        else:
-            self._offset = None
-        if colour:
-            self._colour = tuple(colour)
-        else:
-            self._colour = None
+        self._offset = offset and tuple(offset)
+        self._colour = colour and tuple(colour)
         
         self._rotation = self._rotatearg or 0
     
