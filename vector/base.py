@@ -260,4 +260,6 @@ class Subview(View):
             for param in ("fill", "outline"):
                 if kw.get(param) and not isinstance(kw[param], Iterable):
                     kw[param] = self._colour
+            if kw.get("fill") is kw.get("outline") is None:
+                kw.update(outline=self._colour)
         self._map_offset(kw)
