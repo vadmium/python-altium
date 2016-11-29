@@ -1246,7 +1246,7 @@ class render:
 def colour(obj, property="COLOR"):
     '''Convert a TColor property value to a fractional RGB tuple'''
     c = obj.get_int(property)
-    return (x / 0xFF for x in int(c).to_bytes(3, "little"))
+    return (x / 0xFF for x in int(c & 0xFFFFFF).to_bytes(3, "little"))
 
 def font_name(id):
     '''Convert Altium font number to text name for renderer'''
