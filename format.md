@@ -26,7 +26,7 @@ Contents:
     * [13: Line](#line)
     * [14: Rectangle](#rectangle)
     * [15: Sheet symbol](#sheet-symbol)
-    * [16](#16)
+    * [16: Sheet entry](#sheet-entry)
     * [17: Power port](#power-port)
     * [18: Port](#port)
     * [22: No ERC](#no-erc)
@@ -390,15 +390,19 @@ circ_angle = atan2( RADIUS * sin(angle), SECONDARYRADIUS * cos(angle) )
 * `|COLOR|AREACOLOR|ISSOLID=T|UNIQUEID`
 * `|SYMBOLTYPE=Normal`: Optional
 
-### 16 ###
+### Sheet entry ###
 Child of [Sheet symbol](#sheet-symbol)
-
+`|RECORD=16`: Sheet entries of boxes on a top-level schematic. Corresponds to a port object inside the sheet.
 * `|AREACOLOR=8454143|ARROWKIND=Block & Triangle|COLOR=128`
-* `|DISTANCEFROMTOP|NAME|OWNERPARTID=-1|STYLE=3`
+* `|DISTANCEFROMTOP` ([integer]): Distance from top-left coordinate. If SIDE==0/1 Y-Coordinate, else X-Coordinate in x10 units. DISTANCEFROMTOP=10 ==> 100 in Altium.
+* `|DISTANCEFROMTOP_FRAC1` ([integer]): Fractional distance from top-left coordinate. If SIDE==0/1 Y-Coordinate, else X-Coordinate in x10 units. DISTANCEFROMTOP_FRAC1=500000 ==> 5 in Altium.
+* `|NAME` (ASCII): Name of the sheet entry.
+* `|OWNERPARTID=-1`
 * `|TEXTCOLOR=128|TEXTFONTID=1|TEXTSTYLE=Full|INDEXINSHEET`
-* `|HARNESSTYPE|SIDE=1`: Optional
-* `|STYLE` ([integer]): 2 or 3
-* `|IOTYPE` ([integer]): 0 or 2
+* `|HARNESSTYPE` (ASCII): Name of the Harness type. Omitted if normal signal.
+* `|SIDE` ([integer]): Optional. Indicates on which side of the sheet symbol the entry resides. 0 (or ommitted): Left, 1: Right, 2: Top, 3: Bottom.
+* `|STYLE` ([integer]): Usually 2 or 3. Corresponds to "Style" ListBox in "Sheet Entry" dialog.
+* `|IOTYPE` ([integer]): Optional. Indicates signal flow direction. 0 (or omitted): Undefined, 1: Output, 2: Input, 3: Bidirectional.
 
 ### Power port ###
 `|RECORD=17`: Connection to power rail, ground, etc
