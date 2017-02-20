@@ -395,7 +395,7 @@ Child of [Sheet symbol](#sheet-symbol)
 `|RECORD=16`: Sheet entries of boxes on a top-level schematic. Corresponds to a port object inside the sheet.
 * `|AREACOLOR=8454143|ARROWKIND=Block & Triangle|COLOR=128`
 * `|DISTANCEFROMTOP` ([integer]): Distance from top-left coordinate. If SIDE==0/1 Y-Coordinate, else X-Coordinate in x10 units. DISTANCEFROMTOP=10 ==> 100 in Altium.
-* `|DISTANCEFROMTOP_FRAC1` ([integer]): Fractional distance from top-left coordinate. If SIDE==0/1 Y-Coordinate, else X-Coordinate in x10 units. DISTANCEFROMTOP_FRAC1=500000 ==> 5 in Altium.
+* `|DISTANCEFROMTOP_FRAC1` ([integer]): Fractional distance from top-left coordinate. If SIDE==0/1 Y-Coordinate, else X-Coordinate in x0.00001 units. DISTANCEFROMTOP_FRAC1=500000 ==> 5 in Altium.
 * `|NAME` (ASCII): Name of the sheet entry.
 * `|OWNERPARTID=-1`
 * `|TEXTCOLOR=128|TEXTFONTID=1|TEXTSTYLE=Full|INDEXINSHEET`
