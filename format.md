@@ -391,7 +391,10 @@ circ_angle = atan2( RADIUS * sin(angle), SECONDARYRADIUS * cos(angle) )
 * `|SYMBOLTYPE=Normal`: Optional
 
 ### Sheet entry ###
-Child of [Sheet symbol](#sheet-symbol)
+Child of [Sheet symbol](#sheet-symbol). In SchDoc files you will first see a RECORD=15 which defines a sheet symbol. 
+That record is directly followed by multiple RECORD=16 entries which define the sheet entries for the previously defined sheet symbol.
+Actually there is no other way to determine the parent-child relation. 
+
 `|RECORD=16`: Sheet entries of boxes on a top-level schematic. Corresponds to a port object inside the sheet.
 * `|AREACOLOR=8454143|ARROWKIND=Block & Triangle|COLOR=128`
 * `|DISTANCEFROMTOP` ([integer]): Distance from top-left coordinate. If SIDE==0/1 Y-Coordinate, else X-Coordinate in x10 units. DISTANCEFROMTOP=10 ==> 100 in Altium.
