@@ -835,6 +835,11 @@ class render:
     
     @_setitem(handlers, Record.SHEET_ENTRY) # id=16
     def handle_sheetport(self, objects, obj):
+        for property in (
+            "OWNERPARTID", "INDEXINSHEET", "ARROWKIND", "STYLE", "TEXTSTYLE"
+        ):
+            obj.get(property)
+            
         if self.last_sheet_symbol:
             with self.renderer.view(offset=get_location(self.last_sheet_symbol)) as view:
                 kw =  dict()
@@ -884,9 +889,9 @@ class render:
                 pointsx = tuple((x[0]*shape_x_factor+px, x[1]*shape_y_factor+py) for x in shape)
         
                 view.text(obj.get("NAME").decode("ascii"),
-                    colour=colour(obj),
+                    colour=colour(obj,"TEXTCOLOR"),
                     offset=(px,py),
-                    font=font_name(obj.get_int("FONTID")),
+                    font=font_name(obj.get_int("TEXTFONTID")),
                 **kw)
                 
                 areacolor = colour(obj, "AREACOLOR")
@@ -894,7 +899,7 @@ class render:
                     areacolor = (0.84, 0.89, 1)
                 
                 view.polygon(pointsx,
-                    outline=(0,0,0),
+                    outline=colour(obj),
                     width=1,
                     fill=areacolor
                 )
