@@ -290,7 +290,6 @@ def get_location(obj):
     '''Return location property co-ordinates as a tuple'''
     return tuple(get_int_frac(obj, "LOCATION." + x) for x in "XY")
 
-	
 def display_part(objects, obj):
     '''Determine if obj is in the component's current part and display mode
     '''
@@ -1272,25 +1271,21 @@ class render:
     @_setitem(handlers, Record.SHEET_SYMBOL)
     @_setitem(handlers, 215)
     def handle_sheet_symbol(self, objects, obj):
-        indexinsheet = obj.get_int("INDEXINSHEET")
+        obj.get_int("INDEXINSHEET")
         for name in (
             "UNIQUEID", "HARNESSCONNECTORSIDE", "PRIMARYCONNECTIONPOSITION"
         ):
             obj.get(name)
-            
-
         obj.check("OWNERPARTID", b"-1")
         obj.get_bool("ISSOLID")
         obj.check("SYMBOLTYPE", None, b"Normal")
 
-        offset = get_location(obj)      
         corner = (obj.get_int("XSIZE"), -obj.get_int("YSIZE"))
         self.renderer.rectangle(corner,
             width=obj.get_int("LINEWIDTH") or 0.6,
             outline=colour(obj), fill=colour(obj, "AREACOLOR"),
-            offset=offset,
+            offset=get_location(obj),
         )
-        
 
     @_setitem(handlers, Record.SHEET_NAME)
     @_setitem(handlers, Record.SHEET_FILE_NAME)
