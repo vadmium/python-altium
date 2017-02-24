@@ -393,7 +393,7 @@ circ_angle = atan2( RADIUS * sin(angle), SECONDARYRADIUS * cos(angle) )
 ### Sheet entry ###
 Child of [Sheet symbol](#sheet-symbol). In SchDoc files you will first see a RECORD=15 which defines a sheet symbol. 
 That record is directly followed by multiple RECORD=16 entries which define the sheet entries for the previously defined sheet symbol.
-Actually there is no other way to determine the parent-child relation. 
+ 
 
 `|RECORD=16`: Sheet entries of boxes on a top-level schematic. Corresponds to a port object inside the sheet.
 * `|AREACOLOR=8454143|ARROWKIND=Block & Triangle|COLOR=128`
@@ -401,6 +401,7 @@ Actually there is no other way to determine the parent-child relation.
 * `|DISTANCEFROMTOP_FRAC1` ([integer]): Fractional distance from top-left coordinate. If SIDE==0/1 Y-Coordinate, else X-Coordinate in x0.00001 units. DISTANCEFROMTOP_FRAC1=500000 ==> 5 in Altium.
 * `|NAME` (ASCII): Name of the sheet entry.
 * `|OWNERPARTID=-1`
+* `|OWNERINDEX=1234`([integer]): Link to parent element. Value directly references zero-oriented impicit number of record in SchDoc file. Use dump.py to see these numbers. 
 * `|TEXTCOLOR=128|TEXTFONTID=1|TEXTSTYLE=Full|INDEXINSHEET`
 * `|HARNESSTYPE` (ASCII): Name of the Harness type. Omitted if normal signal.
 * `|SIDE` ([integer]): Optional. Indicates on which side of the sheet symbol the entry resides. 0 (or ommitted): Left, 1: Right, 2: Top, 3: Bottom.
