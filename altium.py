@@ -258,7 +258,7 @@ def iter_fonts(sheet):
 def get_int_frac(obj, property):
     '''Return full value of a field with separate integer and fraction'''
     value = obj.get_int(property)
-    value += obj.get_int(property + "_FRAC1") / FRAC_DENOM 
+    value += obj.get_int(property + "_FRAC") / FRAC_DENOM 
     return value
 
 def get_int_frac1(obj, property):
