@@ -388,7 +388,7 @@ def main():
     parser.add_argument("--renderer", choices={"svg", "tk"}, default="svg",
         help=render.__init__.__annotations__["Renderer"])
     args = parser.parse_args()
-    renderer = import_module(".svg" , "vector")
+    renderer = import_module("." + args.renderer, "vector")
     render(args.file, renderer.Renderer)
 
 def _setitem(dict, key):
