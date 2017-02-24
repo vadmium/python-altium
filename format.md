@@ -641,7 +641,7 @@ display label if the record is a child of record [48](#48), even if
     whose `|NAME` matches the rest of the text, ignoring any space
     following the equal sign, and the actual text is taken
     from the referenced parameter’s `|TEXT` property.
-* `|NAME`
+* `|NAME`: Optional
 * `|%UTF8%TEXT|%UTF8%NAME`: Optional UTF-8-encoded version of the `|TEXT` or
     `|NAME` property, which is also included (presumably for compatibility)
 * `|READONLYSTATE`: Same as for [Designator](#designator)?

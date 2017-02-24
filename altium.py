@@ -897,7 +897,8 @@ class render:
         ):
             obj.get(property)
         obj.check("OWNERPARTID", b"-1", b"1")
-        get_utf8(obj, "NAME")
+        if obj.get("NAME") is not None:
+            get_utf8(obj, "NAME")
         obj.get_bool("SHOWNAME")
         obj.get_bool("NOTAUTOPOSITION")
         
