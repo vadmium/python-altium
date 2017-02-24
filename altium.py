@@ -560,6 +560,7 @@ class render:
         PinElectrical.IO: diamond,
         PinElectrical.OUTPUT: arrowtail,
         PinElectrical.PASSIVE: None,
+        PinElectrical.HI_Z: None,
         PinElectrical.POWER: None,
     }
     
@@ -686,12 +687,13 @@ class render:
             obj.get(property)
         
         colour(obj)
-        obj["TEXT"]
         get_location(obj)
         obj.get_int("FONTID")
         
         if display_part(objects, obj):
             self.text(obj)
+        else:
+            obj.get("TEXT")
     
     @_setitem(handlers, Record.POLYGON)
     def handle_polygon(self, objects, obj):

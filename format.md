@@ -273,7 +273,8 @@ The component object seems to occur before any of its child objects.
 * `|ORIENTATION=3|JUSTIFICATION=2|COLOR`: Each optional
 * `|FONTID` ([integer]): Selects from the font table in the
     [Sheet](#sheet) object
-* `|TEXT`
+* `|TEXT`:
+    Optional if not displayed due to being the wrong current component part
 
 ### Bezier ###
 `|RECORD=5`: Bezier curve for component symbol
