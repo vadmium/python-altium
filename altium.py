@@ -258,8 +258,13 @@ def iter_fonts(sheet):
 def get_int_frac(obj, property):
     '''Return full value of a field with separate integer and fraction'''
     value = obj.get_int(property)
-    value += obj.get_int(property + "_FRAC") / FRAC_DENOM
-    value += obj.get_int(property + "_FRAC1") / FRAC_DENOM #sometimes FRAC1 is used instead of FRAC. 
+    value += obj.get_int(property + "_FRAC1") / FRAC_DENOM 
+    return value
+
+def get_int_frac1(obj, property):
+    '''Return full value of a field with separate integer and fraction'''
+    value = obj.get_int(property)*10
+    value += obj.get_int(property + "_FRAC1") / FRAC_DENOM 
     return value
 
 def get_utf8(obj, property):
@@ -857,23 +862,23 @@ class render:
             shape_y_factor = 1
             
             if side==0: # Left side of sheet symbol
-                py=-get_int_frac(obj, "DISTANCEFROMTOP")*10 # in contrast to all other elements, DISTANCEFROMTOP uses x10 coordinates.
+                py=-get_int_frac1(obj, "DISTANCEFROMTOP") # in contrast to all other elements, DISTANCEFROMTOP uses x10 coordinates.
                 px=25 # set x-offset to 25 (the length of the shape) to get a starting point for both text and shape
                 kw.update(vert=view.CENTRE, horiz=self.renderer.LEFT)
 
             elif side==1: # Right side of sheet symbol
-                py=-get_int_frac(obj, "DISTANCEFROMTOP")*10 # in contrast to all other elements, DISTANCEFROMTOP uses x10 coordinates.
+                py=-get_int_frac1(obj, "DISTANCEFROMTOP") # in contrast to all other elements, DISTANCEFROMTOP uses x10 coordinates.
                 px=parent.properties.get_int("XSIZE")-25 
                 kw.update(vert=view.CENTRE, horiz=self.renderer.RIGHT)
                 shape_x_factor = -1 # mirror shape in x-direction because we are on the right side of our sheet symbol
 
             elif side==2: # Top edge of sheet symbol
-                px=get_int_frac(obj, "DISTANCEFROMTOP")*10
+                px=get_int_frac1(obj, "DISTANCEFROMTOP")
                 py=-25  # set y-offset to 25 (the length of the shape) to get a starting point for both text and shape
                 kw.update(vert=view.CENTRE, horiz=self.renderer.RIGHT)
 
             elif side==3: # Bottom edge of sheet symbol
-                px=get_int_frac(obj, "DISTANCEFROMTOP")*10
+                px=get_int_frac1(obj, "DISTANCEFROMTOP")
                 py=-parent.properties.get_int("YSIZE")+25   # set y-offset to 25 (the length of the shape) to get a starting point for both text and shape
                 kw.update(vert=view.CENTRE, horiz=self.renderer.LEFT)
                 shape_y_factor = -1
