@@ -15,6 +15,7 @@ Contents:
     * [0: Header](#header)
     * [1: Component](#component)
     * [2: Pin](#pin)
+    * [3](#3)
     * [4: Label](#label)
     * [5: Bezier](#bezier)
     * [6: Polyline](#polyline)
@@ -262,6 +263,15 @@ The component object seems to occur before any of its child objects.
 * `|SWAPIDPIN`: Optional
 * `|SWAPIDPART|%UTF8%SWAPIDPART` (optional): Seen containing broken bars
     (U+00A6, ¦), the non-UTF-8 encoding of one being the single byte 0x8E
+
+### 3 ###
+`|RECORD=3`: Located near some component pins
+* `|COLOR=255|LOCATION.X|LOCATION.Y`
+* `|SYMBOL`: 3, 4, 10, 17 or 19
+* `|ISNOTACCESIBLE=T`
+* `|SCALEFACTOR`: 4, 6, or 8
+* `|OWNERPARTID|OWNERPARTDISPLAYMODE`:
+    See [Component](#component) `|CURRENTPARTID` and `|DISPLAYMODE`
 
 ### Label ###
 `|RECORD=4`: Text note

@@ -1053,6 +1053,15 @@ class render:
                     obj.check("PINDESIGNATOR_POSITIONCONGLOMERATE",
                         None, b"1", b"16")
     
+    @_setitem(handlers, 3)
+    def handle_3(self, parent, obj):
+        obj.check("SYMBOL", b"3", b"4", b"10", b"17", b"19")
+        obj.check("SCALEFACTOR", b"4", b"6", b"8")
+        obj.check("ISNOTACCESIBLE", b"T")
+        display_part(parent, obj)
+        get_location(obj)
+        colour(obj)
+    
     @_setitem(handlers, Record.WIRE)
     @_setitem(handlers, Record.BUS)
     @_setitem(handlers, 218)
