@@ -627,7 +627,7 @@ display label if the record is a child of record [48](#48), even if
 `|ISHIDDEN=T` not specified.
 * `|INDEXINSHEET`: [Integer]
 * `|OWNERINDEX` ([integer]): May be zero (omitted) for sheet parameters
-* `|OWNERPARTID`
+* `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
 * `|LOCATION.X|LOCATION.X_FRAC|LOCATION.Y|LOCATION.Y_FRAC`
 * `|ORIENTATION` ([integer]):
     * 0: Text is aligned at the bottom-left corner

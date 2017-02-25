@@ -906,7 +906,6 @@ class render:
             "READONLYSTATE", "INDEXINSHEET", "UNIQUEID", "ISMIRRORED",
         ):
             obj.get(property)
-        obj.check("OWNERPARTID", b"-1", b"1")
         if obj.get("NAME") is not None:
             get_utf8(obj, "NAME")
         obj.get_bool("SHOWNAME")
@@ -917,11 +916,14 @@ class render:
         offset = get_location(obj)
         font = obj.get_int("FONTID")
         
+        part = obj["OWNERPARTID"]
+        if part != b"-1" and part != objects["CURRENTPARTID"]:
+            return
         if objects.properties.get_int("RECORD") == 48:
             return
         orient = obj.get_int("ORIENTATION")
         if not obj.get_bool("ISHIDDEN") and val:
-            kw =  dict()
+            kw = dict()
             if orient & 1:
                 kw.update(angle=+90)
             if orient & 2:
