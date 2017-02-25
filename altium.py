@@ -951,22 +951,26 @@ class render:
         obj.check("READONLYSTATE", b"1")
         obj.get("UNIQUEID")
         
+        location = get_location(obj)
+        kw = dict(
+            colour=colour(obj),
+            font=font_name(obj.get_int("FONTID")),
+        )
+        if obj.get_bool("ISHIDDEN"):
+            obj.check("TEXT", None)
+            return
         desig = obj["TEXT"].decode("ascii")
         owner = objects.properties
         if owner.get_int("PARTCOUNT") > 2:
             desig += chr(ord("A") + owner.get_int("CURRENTPARTID") - 1)
         
-        kw = dict()
         orient = obj.get_int("ORIENTATION")
         if orient & 1:
             kw.update(angle=+90)
         if orient & 2:
             kw.update(vert=self.renderer.TOP, horiz=self.renderer.RIGHT)
         
-        self.renderer.text(desig, get_location(obj),
-            colour=colour(obj),
-            font=font_name(obj.get_int("FONTID")),
-        **kw)
+        self.renderer.text(desig, location, **kw)
     
     @_setitem(handlers, Record.PIN)
     def handle_pin(self, objects, obj):

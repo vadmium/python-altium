@@ -608,7 +608,8 @@ Labels on top-level schematic
 * `|ISMIRRORED`: [Boolean]
 * `|ORIENTATION` ([integer]): Probably the same as for [Parameter]
     (#parameter)
-* `|ISHIDDEN|UNIQUEID`: Optional
+* `|ISHIDDEN` ([Boolean]): if true, `|TEXT` is omitted
+* `|UNIQUEID`: Optional
 
 ### Bus entry ###
 `|RECORD=37`: Bus entry line
