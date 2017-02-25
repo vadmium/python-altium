@@ -260,7 +260,7 @@ The component object seems to occur before any of its child objects.
 * `|DESIGNATOR_CUSTOMPOSITION_MARGIN=5`: Default is +9
 * `|PINDESIGNATOR_POSITIONCONGLOMERATE` ([integer]): 0, 1 or 16
 * `|SWAPIDPIN`: Optional
-* `|SWAPINPART|%UTF8%SWAPIDPART` (optional): Seen containing broken bars
+* `|SWAPIDPART|%UTF8%SWAPIDPART` (optional): Seen containing broken bars
     (U+00A6, ¦), the non-UTF-8 encoding of one being the single byte 0x8E
 
 ### Label ###
