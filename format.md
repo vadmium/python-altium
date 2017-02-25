@@ -400,7 +400,7 @@ That record is directly followed by multiple RECORD=16 entries which define the 
 * `|DISTANCEFROMTOP_FRAC1` ([integer]): Fractional distance from top-left coordinate. If SIDE==0/1 Y-Coordinate, else X-Coordinate in x0.00001 units. DISTANCEFROMTOP_FRAC1=500000 ==> 5 in Altium.
 * `|NAME` (ASCII): Name of the sheet entry.
 * `|OWNERPARTID=-1`
-* `|OWNERINDEX=1234`([integer]): Link to parent element. Value directly references zero-oriented impicit number of record in SchDoc file. Use dump.py to see these numbers. 
+* `|OWNERINDEX=1234` ([integer]): Link to parent element. Value directly references zero-oriented implicit number of record in SchDoc file. Use dump.py to see these numbers. 
 * `|TEXTCOLOR=128|TEXTFONTID=1|TEXTSTYLE=Full|INDEXINSHEET`
 * `|HARNESSTYPE` (ASCII): Name of the Harness type. Omitted if normal signal.
 * `|SIDE` ([integer]): Optional. Indicates on which side of the sheet symbol the entry resides. 0 (or ommitted): Left, 1: Right, 2: Top, 3: Bottom.
