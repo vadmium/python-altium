@@ -205,7 +205,7 @@ The component object seems to occur before any of its child objects.
 * `|ISMIRRORED=T|ORIENTATION`: Optional
 * `|CURRENTPARTID` ([integer]):
     Objects belonging to this part
-    with `|OWNERPARTID` set to a different number (other than −1 or 0)
+    with `|OWNERPARTID` set to a different number (other than −1)
     should probably be ignored, otherwise each part of a quad op amp
     will probably display four op-amps (sixteen total)
 * `|LIBRARYPATH`: Optional

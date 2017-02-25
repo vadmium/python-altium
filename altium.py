@@ -287,10 +287,10 @@ def get_location(obj):
 def display_part(objects, obj):
     '''Determine if obj is in the component's current part and display mode
     '''
-    part = obj["OWNERPARTID"]
+    part = obj.get("OWNERPARTID")
     owner = objects.properties
     mode = obj.get_int("OWNERPARTDISPLAYMODE")
-    return ((part == b"-1" or part == owner["CURRENTPARTID"]) and
+    return ((part == b"-1" or part == owner.get("CURRENTPARTID")) and
         mode == owner.get_int("DISPLAYMODE"))
 
 class Record:
@@ -985,8 +985,7 @@ class render:
     
     @_setitem(handlers, Record.PIN)
     def handle_pin(self, objects, obj):
-        for property in ("SWAPIDPIN", "OWNERPARTDISPLAYMODE"):
-            obj.get(property)
+        obj.get("SWAPIDPIN")
         obj.check("FORMALTYPE", b"1")
         if obj.get("DESCRIPTION") is not None:
             get_utf8(obj, "DESCRIPTION")
@@ -1001,8 +1000,7 @@ class render:
         electrical = obj.get_int("ELECTRICAL")
         name = obj.get("NAME")
         designator = obj["DESIGNATOR"].decode("ascii")
-        part = objects.properties["CURRENTPARTID"]
-        if obj.get("OWNERPARTID") in {None, part}:
+        if display_part(objects, obj):
             rotate = pinconglomerate & 3
             with self.renderer.view(offset=offset, rotate=rotate) as view:
                 kw = dict()
