@@ -745,8 +745,7 @@ class render:
     def handle_text_frame(self, objects, obj):
         obj.get("CLIPTORECT")
         obj.check("ALIGNMENT", b"1")
-        obj.check("AREACOLOR", b"16777215")
-        obj.check("ISSOLID", b"T")
+        obj.get_bool("ISSOLID")
         obj.get_int("OWNERPARTID")
         obj.check("WORDWRAP", b"T")
         obj.get_int("INDEXINSHEET")
@@ -754,13 +753,20 @@ class render:
         obj.get_bool("ISNOTACCESIBLE")
         obj.get_bool("SHOWBORDER")
         
-        [lhs, _] = get_location(obj)
+        location = get_location(obj)
+        [lhs, _] = location
+        cx = get_int_frac(obj, "CORNER.X")
+        cy = get_int_frac(obj, "CORNER.Y")
+        self.renderer.rectangle(location, (cx, cy),
+            fill=colour(obj, "AREACOLOR"),
+        )
         self.renderer.text(
             font=font_name(obj.get_int("FONTID")),
-            offset=(lhs, get_int_frac(obj, "CORNER.Y")),
-            width=get_int_frac(obj, "CORNER.X") - lhs,
+            offset=(lhs, cy),
+            width=cx - lhs,
             text=obj["TEXT"].decode("ascii").replace("~1", "\n"),
             vert=self.renderer.TOP,
+            colour=colour(obj),
         )
 
     @_setitem(handlers, Record.IMAGE)
