@@ -918,7 +918,7 @@ class render:
         font = obj.get_int("FONTID")
         
         part = obj["OWNERPARTID"]
-        if part != b"-1" and part != objects["CURRENTPARTID"]:
+        if part != b"-1" and part != objects.properties["CURRENTPARTID"]:
             return
         if objects.properties.get_int("RECORD") == 48:
             return
