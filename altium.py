@@ -1241,7 +1241,12 @@ class render:
         obj.check("INDEXINSHEET", None, b"-1")
         obj.check("OWNERPARTID", b"-1")
         obj.get_bool("OWNERINDEXADDITIONALLIST")
-        self.text(obj)
+        colour(obj)
+        get_utf8(obj, "TEXT")
+        get_location(obj)
+        obj.get_int("FONTID")
+        if not obj.get_bool("ISHIDDEN"):
+            self.text(obj)
     
     def text(self, obj, **kw):
         kw["colour"] = colour(obj)
