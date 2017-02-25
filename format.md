@@ -294,6 +294,7 @@ The component object seems to occur before any of its child objects.
     than expected
 * `|COLOR`
 * `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .: May also include `_FRAC` counterparts
+* `|ENDLINESHAPE=2`: Optional
 
 ### Polygon ###
 `|RECORD=7`: Polygon for component symbol
@@ -505,6 +506,7 @@ Child of [Sheet symbol](#sheet-symbol)
 * `|ORIENTATION|TEXTMARGIN_FRAC|INDEXINSHEET`: Optional
 * `|TEXT`: Special code “`~1`” starts a new line. Property name is
     often seen in title case: `|Text`.
+* `|SHOWBORDER=T`: Optional
 
 ### Junction ###
 `|RECORD=29`:

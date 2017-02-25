@@ -592,6 +592,7 @@ class render:
     def handle_polyline(self, objects, obj):
         obj.get_int("INDEXINSHEET")
         obj.get_bool("ISNOTACCESIBLE")
+        obj.check("ENDLINESHAPE", None, b"2")
         linewidth = obj.get_int("LINEWIDTH")
         
         points = list()
@@ -751,6 +752,7 @@ class render:
         obj.get_int("INDEXINSHEET")
         obj.get_int("TEXTMARGIN_FRAC")
         obj.get_bool("ISNOTACCESIBLE")
+        obj.get_bool("SHOWBORDER")
         
         [lhs, _] = get_location(obj)
         self.renderer.text(
