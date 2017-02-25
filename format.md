@@ -311,8 +311,8 @@ The component object seems to occur before any of its child objects.
 `|RECORD=7`: Polygon for component symbol
 * `|OWNERINDEX|ISNOTACCESIBLE=T`
 * `|INDEXINSHEET`: [Integer]
-* `|OWNERPARTID=1`
-* `|OWNERPARTDISPLAYMODE`: Optional
+* `|OWNERPARTID|OWNERPARTDISPLAYMODE`:
+    See [Component](#component) `|CURRENTPARTID` and `|DISPLAYMODE`
 * `|LINEWIDTH` ([integer]): If omitted (zero), there is a thin but visible
     outline
 * `|COLOR|AREACOLOR|ISSOLID`

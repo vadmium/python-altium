@@ -289,8 +289,9 @@ def display_part(objects, obj):
     '''
     part = obj["OWNERPARTID"]
     owner = objects.properties
+    mode = obj.get_int("OWNERPARTDISPLAYMODE")
     return ((part == b"-1" or part == owner["CURRENTPARTID"]) and
-        obj.get_int("OWNERPARTDISPLAYMODE") == owner.get_int("DISPLAYMODE"))
+        mode == owner.get_int("DISPLAYMODE"))
 
 class Record:
     """Schematic object record types"""
@@ -699,8 +700,6 @@ class render:
     def handle_polygon(self, objects, obj):
         obj.get_int("INDEXINSHEET")
         obj.check("ISNOTACCESIBLE", b"T")
-        obj.check("OWNERPARTID", b"1")
-        obj.get("OWNERPARTDISPLAYMODE")
         obj.get_bool("IGNOREONLOAD")
         
         points = list()
@@ -715,14 +714,16 @@ class render:
             points.append(tuple(point))
         fill = colour(obj, "AREACOLOR")
         
-        kw = dict()
+        kw = dict(
+            outline=colour(obj),
+            width=obj.get_int("LINEWIDTH") or 0.6,
+        )
         if obj.get_bool("ISSOLID"):
             kw.update(fill=fill)
-        self.renderer.polygon(
-            outline=colour(obj),
-            points=points,
-            width=obj.get_int("LINEWIDTH") or 0.6,
-        **kw)
+        if display_part(objects, obj):
+            self.renderer.polygon(
+                points=points,
+            **kw)
     
     @_setitem(handlers, Record.ELLIPSE)
     def handle_ellipse(self, objects, obj):
