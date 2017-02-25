@@ -258,7 +258,13 @@ def iter_fonts(sheet):
 def get_int_frac(obj, property):
     '''Return full value of a field with separate integer and fraction'''
     value = obj.get_int(property)
-    value += obj.get_int(property + "_FRAC") / FRAC_DENOM
+    value += obj.get_int(property + "_FRAC") / FRAC_DENOM 
+    return value
+
+def get_int_frac1(obj, property):
+    '''Return full value of a field with separate integer and fraction'''
+    value = obj.get_int(property)*10
+    value += obj.get_int(property + "_FRAC1") / FRAC_DENOM 
     return value
 
 def get_utf8(obj, property):
@@ -309,6 +315,7 @@ class Record:
     LINE = 13
     RECTANGLE = 14
     SHEET_SYMBOL = 15
+    SHEET_ENTRY = 16
     POWER_PORT = 17
     PORT = 18
     NO_ERC = 22
@@ -543,6 +550,7 @@ class render:
         for child in owner.children:
             obj = child.properties
             record = obj.get_int("RECORD")
+            obj.get("GRAPHICALLYLOCKED") # Prevent warning. Property not necessary
             handler = self.handlers.get(record)
             if handler:
                 handler(self, owner, obj)
@@ -842,22 +850,73 @@ class render:
             obj.get(property)
         obj.check("DESIMPCOUNT", b"1", None)
     
-    @_setitem(handlers, 16)
-    def handle_unknown(self, objects, obj):
-        for [name, value] in (
-            ("AREACOLOR", b"8454143"), ("ARROWKIND", b"Block & Triangle"),
-            ("COLOR", b"128"), ("OWNERPARTID", b"-1"),
-            ("TEXTCOLOR", b"128"), ("TEXTFONTID", b"1"),
-            ("TEXTSTYLE", b"Full"),
-        ):
-            obj.check(name, value)
-        obj.get("HARNESSTYPE")
-        obj.check("SIDE", None, b"1")
-        obj.get_int("INDEXINSHEET")
-        obj.get_int("DISTANCEFROMTOP")
-        obj.get_int("STYLE")
-        obj.get_int("IOTYPE")
-        obj.get("NAME")
+    @_setitem(handlers, Record.SHEET_ENTRY) # id=16
+    def handle_sheetport(self, parent, obj):
+        for p in ("OWNERPARTID", "INDEXINSHEET", "ARROWKIND", "STYLE", "TEXTSTYLE"):
+            obj.get(p)
+            
+        with self.renderer.view(offset=get_location(parent.properties)) as view:
+            kw =  dict()
+            
+            shapes = (
+                ((-5,-5),(-25,-5),(-25,5),(-5,5),(-5,-5)),                 # undefined direction
+                ((-5,0),(-10,-5),(-25,-5),(-25,5),(-10,5),(-5,0)),         #output entry
+                ((-5,0),(-10,-5),(-25,-5),(-25,5),(-10,5),(-5,0)),         # input entry
+                ((-5,0),(-10,-5),(-20,-5),(-25,0),(-20,5),(-10,5),(-5,0))  # bidirectional
+            )
+            
+            side = obj.get_int("SIDE")
+            px=0
+            py=0
+            shape_x_factor = 1
+            shape_y_factor = 1
+            
+            if side==0: # Left side of sheet symbol
+                py=-get_int_frac1(obj, "DISTANCEFROMTOP") # in contrast to all other elements, DISTANCEFROMTOP uses x10 coordinates.
+                px=25 # set x-offset to 25 (the length of the shape) to get a starting point for both text and shape
+                kw.update(vert=view.CENTRE, horiz=self.renderer.LEFT)
+
+            elif side==1: # Right side of sheet symbol
+                py=-get_int_frac1(obj, "DISTANCEFROMTOP") # in contrast to all other elements, DISTANCEFROMTOP uses x10 coordinates.
+                px=parent.properties.get_int("XSIZE")-25 
+                kw.update(vert=view.CENTRE, horiz=self.renderer.RIGHT)
+                shape_x_factor = -1 # mirror shape in x-direction because we are on the right side of our sheet symbol
+
+            elif side==2: # Top edge of sheet symbol
+                px=get_int_frac1(obj, "DISTANCEFROMTOP")
+                py=-25  # set y-offset to 25 (the length of the shape) to get a starting point for both text and shape
+                kw.update(vert=view.CENTRE, horiz=self.renderer.RIGHT)
+
+            elif side==3: # Bottom edge of sheet symbol
+                px=get_int_frac1(obj, "DISTANCEFROMTOP")
+                py=-parent.properties.get_int("YSIZE")+25   # set y-offset to 25 (the length of the shape) to get a starting point for both text and shape
+                kw.update(vert=view.CENTRE, horiz=self.renderer.LEFT)
+                shape_y_factor = -1
+            
+            iotype = obj.get_int("IOTYPE")
+            shape = tuple(shapes[iotype]) # force copy, we'll modify shape later 
+            
+            if(side==2) or (side==3): # vertical sheet entry. need to flip shape x- and y-axis.
+                shape = tuple((x[1],-x[0]) for x in shape) # invert y-axis since svg counts from top-left whereas our drawing area counts from bottom-left
+                kw.update(angle=+90),
+            
+            pointsx = tuple((x[0]*shape_x_factor+px, x[1]*shape_y_factor+py) for x in shape)
+    
+            view.text(obj.get("NAME").decode("ascii"),
+                colour=colour(obj,"TEXTCOLOR"),
+                offset=(px,py),
+                font=font_name(obj.get_int("TEXTFONTID")),
+            **kw)
+            
+            areacolor = colour(obj, "AREACOLOR")
+            if obj.get("HARNESSTYPE"): # Altium does not use the AREACOLOR for harness entries.
+                areacolor = (0.84, 0.89, 1)
+            
+            view.polygon(pointsx,
+                outline=colour(obj),
+                width=1,
+                fill=areacolor
+            )
     
     @_setitem(handlers, 216)
     def handle_unknown(self, objects, obj):
@@ -911,6 +970,7 @@ class render:
             get_utf8(obj, "NAME")
         obj.get_bool("SHOWNAME")
         obj.get_bool("NOTAUTOPOSITION")
+        obj.get("JUSTIFICATION")
         
         text_colour = colour(obj)
         val = obj.get("TEXT")
@@ -1244,7 +1304,7 @@ class render:
         obj.check("OWNERPARTID", b"-1")
         obj.get_bool("ISSOLID")
         obj.check("SYMBOLTYPE", None, b"Normal")
-        
+
         corner = (obj.get_int("XSIZE"), -obj.get_int("YSIZE"))
         self.renderer.rectangle(corner,
             width=obj.get_int("LINEWIDTH") or 0.6,
