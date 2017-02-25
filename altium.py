@@ -296,10 +296,11 @@ def get_location(obj):
 def display_part(objects, obj):
     '''Determine if obj is in the component's current part and display mode
     '''
-    part = obj["OWNERPARTID"]
+    part = obj.get("OWNERPARTID")
     owner = objects.properties
-    return ((part == b"-1" or part == owner["CURRENTPARTID"]) and
-        obj.get_int("OWNERPARTDISPLAYMODE") == owner.get_int("DISPLAYMODE"))
+    mode = obj.get_int("OWNERPARTDISPLAYMODE")
+    return ((part == b"-1" or part == owner.get("CURRENTPARTID")) and
+        mode == owner.get_int("DISPLAYMODE"))
 
 class Record:
     """Schematic object record types"""
@@ -570,6 +571,7 @@ class render:
         PinElectrical.IO: diamond,
         PinElectrical.OUTPUT: arrowtail,
         PinElectrical.PASSIVE: None,
+        PinElectrical.HI_Z: None,
         PinElectrical.POWER: None,
     }
     
@@ -602,6 +604,7 @@ class render:
     def handle_polyline(self, objects, obj):
         obj.get_int("INDEXINSHEET")
         obj.get_bool("ISNOTACCESIBLE")
+        obj.check("ENDLINESHAPE", None, b"2")
         linewidth = obj.get_int("LINEWIDTH")
         
         points = list()
@@ -695,19 +698,18 @@ class render:
             obj.get(property)
         
         colour(obj)
-        obj["TEXT"]
         get_location(obj)
         obj.get_int("FONTID")
         
         if display_part(objects, obj):
             self.text(obj)
+        else:
+            obj.get("TEXT")
     
     @_setitem(handlers, Record.POLYGON)
     def handle_polygon(self, objects, obj):
         obj.get_int("INDEXINSHEET")
         obj.check("ISNOTACCESIBLE", b"T")
-        obj.check("OWNERPARTID", b"1")
-        obj.get("OWNERPARTDISPLAYMODE")
         obj.get_bool("IGNOREONLOAD")
         
         points = list()
@@ -722,14 +724,16 @@ class render:
             points.append(tuple(point))
         fill = colour(obj, "AREACOLOR")
         
-        kw = dict()
+        kw = dict(
+            outline=colour(obj),
+            width=obj.get_int("LINEWIDTH") or 0.6,
+        )
         if obj.get_bool("ISSOLID"):
             kw.update(fill=fill)
-        self.renderer.polygon(
-            outline=colour(obj),
-            points=points,
-            width=obj.get_int("LINEWIDTH") or 0.6,
-        **kw)
+        if display_part(objects, obj):
+            self.renderer.polygon(
+                points=points,
+            **kw)
     
     @_setitem(handlers, Record.ELLIPSE)
     def handle_ellipse(self, objects, obj):
@@ -754,21 +758,28 @@ class render:
     def handle_text_frame(self, objects, obj):
         obj.get("CLIPTORECT")
         obj.check("ALIGNMENT", b"1")
-        obj.check("AREACOLOR", b"16777215")
-        obj.check("ISSOLID", b"T")
+        obj.get_bool("ISSOLID")
         obj.get_int("OWNERPARTID")
         obj.check("WORDWRAP", b"T")
         obj.get_int("INDEXINSHEET")
         obj.get_int("TEXTMARGIN_FRAC")
         obj.get_bool("ISNOTACCESIBLE")
+        obj.get_bool("SHOWBORDER")
         
-        [lhs, _] = get_location(obj)
+        location = get_location(obj)
+        [lhs, _] = location
+        cx = get_int_frac(obj, "CORNER.X")
+        cy = get_int_frac(obj, "CORNER.Y")
+        self.renderer.rectangle(location, (cx, cy),
+            fill=colour(obj, "AREACOLOR"),
+        )
         self.renderer.text(
             font=font_name(obj.get_int("FONTID")),
-            offset=(lhs, get_int_frac(obj, "CORNER.Y")),
-            width=get_int_frac(obj, "CORNER.X") - lhs,
+            offset=(lhs, cy),
+            width=cx - lhs,
             text=obj["TEXT"].decode("ascii").replace("~1", "\n"),
             vert=self.renderer.TOP,
+            colour=colour(obj),
         )
 
     @_setitem(handlers, Record.IMAGE)
@@ -958,8 +969,8 @@ class render:
             "READONLYSTATE", "INDEXINSHEET", "UNIQUEID", "ISMIRRORED",
         ):
             obj.get(property)
-        obj.check("OWNERPARTID", b"-1", b"1")
-        get_utf8(obj, "NAME")
+        if obj.get("NAME") is not None:
+            get_utf8(obj, "NAME")
         obj.get_bool("SHOWNAME")
         obj.get_bool("NOTAUTOPOSITION")
         obj.get("JUSTIFICATION")
@@ -969,11 +980,14 @@ class render:
         offset = get_location(obj)
         font = obj.get_int("FONTID")
         
+        part = obj["OWNERPARTID"]
+        if part != b"-1" and part != objects.properties["CURRENTPARTID"]:
+            return
         if objects.properties.get_int("RECORD") == 48:
             return
         orient = obj.get_int("ORIENTATION")
         if not obj.get_bool("ISHIDDEN") and val:
-            kw =  dict()
+            kw = dict()
             if orient & 1:
                 kw.update(angle=+90)
             if orient & 2:
@@ -1011,27 +1025,30 @@ class render:
         obj.check("READONLYSTATE", b"1")
         obj.get("UNIQUEID")
         
+        location = get_location(obj)
+        kw = dict(
+            colour=colour(obj),
+            font=font_name(obj.get_int("FONTID")),
+        )
+        if obj.get_bool("ISHIDDEN"):
+            obj.check("TEXT", None)
+            return
         desig = obj["TEXT"].decode("ascii")
         owner = objects.properties
         if owner.get_int("PARTCOUNT") > 2:
             desig += chr(ord("A") + owner.get_int("CURRENTPARTID") - 1)
         
-        kw = dict()
         orient = obj.get_int("ORIENTATION")
         if orient & 1:
             kw.update(angle=+90)
         if orient & 2:
             kw.update(vert=self.renderer.TOP, horiz=self.renderer.RIGHT)
         
-        self.renderer.text(desig, get_location(obj),
-            colour=colour(obj),
-            font=font_name(obj.get_int("FONTID")),
-        **kw)
+        self.renderer.text(desig, location, **kw)
     
     @_setitem(handlers, Record.PIN)
     def handle_pin(self, objects, obj):
-        for property in ("SWAPIDPIN", "OWNERPARTDISPLAYMODE"):
-            obj.get(property)
+        obj.get("SWAPIDPIN")
         obj.check("FORMALTYPE", b"1")
         if obj.get("DESCRIPTION") is not None:
             get_utf8(obj, "DESCRIPTION")
@@ -1046,8 +1063,7 @@ class render:
         electrical = obj.get_int("ELECTRICAL")
         name = obj.get("NAME")
         designator = obj["DESIGNATOR"].decode("ascii")
-        part = objects.properties["CURRENTPARTID"]
-        if obj.get("OWNERPARTID") in {None, part}:
+        if display_part(objects, obj):
             rotate = pinconglomerate & 3
             with self.renderer.view(offset=offset, rotate=rotate) as view:
                 kw = dict()
@@ -1098,6 +1114,15 @@ class render:
                     **copy)
                     obj.check("PINDESIGNATOR_POSITIONCONGLOMERATE",
                         None, b"1", b"16")
+    
+    @_setitem(handlers, 3)
+    def handle_3(self, parent, obj):
+        obj.check("SYMBOL", b"3", b"4", b"10", b"17", b"19")
+        obj.check("SCALEFACTOR", b"4", b"6", b"8")
+        obj.check("ISNOTACCESIBLE", b"T")
+        display_part(parent, obj)
+        get_location(obj)
+        colour(obj)
     
     @_setitem(handlers, Record.WIRE)
     @_setitem(handlers, Record.BUS)
@@ -1297,7 +1322,12 @@ class render:
         obj.check("INDEXINSHEET", None, b"-1")
         obj.check("OWNERPARTID", b"-1")
         obj.get_bool("OWNERINDEXADDITIONALLIST")
-        self.text(obj)
+        colour(obj)
+        get_utf8(obj, "TEXT")
+        get_location(obj)
+        obj.get_int("FONTID")
+        if not obj.get_bool("ISHIDDEN"):
+            self.text(obj)
     
     def text(self, obj, **kw):
         kw["colour"] = colour(obj)

@@ -15,6 +15,7 @@ Contents:
     * [0: Header](#header)
     * [1: Component](#component)
     * [2: Pin](#pin)
+    * [3](#3)
     * [4: Label](#label)
     * [5: Bezier](#bezier)
     * [6: Polyline](#polyline)
@@ -204,7 +205,7 @@ The component object seems to occur before any of its child objects.
 * `|ISMIRRORED=T|ORIENTATION`: Optional
 * `|CURRENTPARTID` ([integer]):
     Objects belonging to this part
-    with `|OWNERPARTID` set to a different number (other than −1 or 0)
+    with `|OWNERPARTID` set to a different number (other than −1)
     should probably be ignored, otherwise each part of a quad op amp
     will probably display four op-amps (sixteen total)
 * `|LIBRARYPATH`: Optional
@@ -260,8 +261,17 @@ The component object seems to occur before any of its child objects.
 * `|DESIGNATOR_CUSTOMPOSITION_MARGIN=5`: Default is +9
 * `|PINDESIGNATOR_POSITIONCONGLOMERATE` ([integer]): 0, 1 or 16
 * `|SWAPIDPIN`: Optional
-* `|SWAPINPART|%UTF8%SWAPIDPART` (optional): Seen containing broken bars
+* `|SWAPIDPART|%UTF8%SWAPIDPART` (optional): Seen containing broken bars
     (U+00A6, ¦), the non-UTF-8 encoding of one being the single byte 0x8E
+
+### 3 ###
+`|RECORD=3`: Located near some component pins
+* `|COLOR=255|LOCATION.X|LOCATION.Y`
+* `|SYMBOL`: 3, 4, 10, 17 or 19
+* `|ISNOTACCESIBLE=T`
+* `|SCALEFACTOR`: 4, 6, or 8
+* `|OWNERPARTID|OWNERPARTDISPLAYMODE`:
+    See [Component](#component) `|CURRENTPARTID` and `|DISPLAYMODE`
 
 ### Label ###
 `|RECORD=4`: Text note
@@ -273,7 +283,8 @@ The component object seems to occur before any of its child objects.
 * `|ORIENTATION=3|JUSTIFICATION=2|COLOR`: Each optional
 * `|FONTID` ([integer]): Selects from the font table in the
     [Sheet](#sheet) object
-* `|TEXT`
+* `|TEXT`:
+    Optional if not displayed due to being the wrong current component part
 
 ### Bezier ###
 `|RECORD=5`: Bezier curve for component symbol
@@ -294,13 +305,14 @@ The component object seems to occur before any of its child objects.
     than expected
 * `|COLOR`
 * `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .: May also include `_FRAC` counterparts
+* `|ENDLINESHAPE=2`: Optional
 
 ### Polygon ###
 `|RECORD=7`: Polygon for component symbol
 * `|OWNERINDEX|ISNOTACCESIBLE=T`
 * `|INDEXINSHEET`: [Integer]
-* `|OWNERPARTID=1`
-* `|OWNERPARTDISPLAYMODE`: Optional
+* `|OWNERPARTID|OWNERPARTDISPLAYMODE`:
+    See [Component](#component) `|CURRENTPARTID` and `|DISPLAYMODE`
 * `|LINEWIDTH` ([integer]): If omitted (zero), there is a thin but visible
     outline
 * `|COLOR|AREACOLOR|ISSOLID`
@@ -508,6 +520,7 @@ That record is directly followed by multiple RECORD=16 entries which define the 
 * `|ORIENTATION|TEXTMARGIN_FRAC|INDEXINSHEET`: Optional
 * `|TEXT`: Special code “`~1`” starts a new line. Property name is
     often seen in title case: `|Text`.
+* `|SHOWBORDER=T`: Optional
 
 ### Junction ###
 `|RECORD=29`:
@@ -609,7 +622,8 @@ Labels on top-level schematic
 * `|ISMIRRORED`: [Boolean]
 * `|ORIENTATION` ([integer]): Probably the same as for [Parameter]
     (#parameter)
-* `|ISHIDDEN|UNIQUEID`: Optional
+* `|ISHIDDEN` ([Boolean]): if true, `|TEXT` is omitted
+* `|UNIQUEID`: Optional
 
 ### Bus entry ###
 `|RECORD=37`: Bus entry line
@@ -626,7 +640,7 @@ display label if the record is a child of record [48](#48), even if
 `|ISHIDDEN=T` not specified.
 * `|INDEXINSHEET`: [Integer]
 * `|OWNERINDEX` ([integer]): May be zero (omitted) for sheet parameters
-* `|OWNERPARTID`
+* `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
 * `|LOCATION.X|LOCATION.X_FRAC|LOCATION.Y|LOCATION.Y_FRAC`
 * `|ORIENTATION` ([integer]):
     * 0: Text is aligned at the bottom-left corner
@@ -644,7 +658,7 @@ display label if the record is a child of record [48](#48), even if
     whose `|NAME` matches the rest of the text, ignoring any space
     following the equal sign, and the actual text is taken
     from the referenced parameter’s `|TEXT` property.
-* `|NAME`
+* `|NAME`: Optional
 * `|%UTF8%TEXT|%UTF8%NAME`: Optional UTF-8-encoded version of the `|TEXT` or
     `|NAME` property, which is also included (presumably for compatibility)
 * `|READONLYSTATE`: Same as for [Designator](#designator)?
@@ -703,5 +717,6 @@ Children of [Sheet](#sheet), seen in the Additional stream
 
 `|RECORD=217`: Similar to [Sheet name and file name]
 (#sheet-name-and-file-name), also with `|OWNERINDEXADDITIONALLIST=T`
+and optionally `|ISHIDDEN=T`
 
 `|RECORD=218|COLOR=15187117|INDEXINSHEET|LINEWIDTH=2|LOCATIONCOUNT=2|OWNERPARTID=-1|X1|X2|Y1|Y2`

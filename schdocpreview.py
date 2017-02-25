@@ -12,8 +12,8 @@ height = image.getint("Preview", "LargeImageHeight", raw=True)
 ppm = BytesIO()
 ppm.write(
     "P6\n"
-    f"{width} {height}\n"
-    "255\n".encode("ascii")
+    "{} {}\n"
+    "255\n".format(width, height).encode("ascii")
 )
 
 image = image.get("Preview", "LargeImage", raw=True)

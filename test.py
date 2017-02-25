@@ -75,7 +75,7 @@ class ConversionTest(TestCase):
             b"|RECORD=7"
                 b"|LOCATIONCOUNT=3|X1=100|Y1=100|X2=110|Y2=120|X3=120|Y3=100"
                 b"|ISSOLID=T|COLOR=16711680|AREACOLOR=16777215"
-                b"|OWNERPARTID=1|ISNOTACCESIBLE=T\x00",
+                b"|OWNERPARTID=-1|ISNOTACCESIBLE=T\x00",
         )
         output = XML(self.convert(sch))
         SVG = "{http://www.w3.org/2000/svg}"

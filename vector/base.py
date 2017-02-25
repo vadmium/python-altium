@@ -138,14 +138,8 @@ class Subview(View):
         self._rotatearg = rotate
         
         # Copy parameters in case they are generators or mutable
-        if offset:
-            self._offset = tuple(offset)
-        else:
-            self._offset = None
-        if colour:
-            self._colour = tuple(colour)
-        else:
-            self._colour = None
+        self._offset = offset and tuple(offset)
+        self._colour = colour and tuple(colour)
         
         self._rotation = self._rotatearg or 0
     
@@ -260,4 +254,6 @@ class Subview(View):
             for param in ("fill", "outline"):
                 if kw.get(param) and not isinstance(kw[param], Iterable):
                     kw[param] = self._colour
+            if kw.get("fill") is kw.get("outline") is None:
+                kw.update(outline=self._colour)
         self._map_offset(kw)
