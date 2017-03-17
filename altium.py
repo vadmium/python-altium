@@ -536,7 +536,7 @@ class render:
         obj.check("CUSTOMMARGINWIDTH", None, b"20")
         obj.check("CUSTOMXZONES", None, b"6")
         obj.check("CUSTOMYZONES", None, b"4")
-        obj.check("DISPLAY_UNIT", b"4")
+        obj.check("DISPLAY_UNIT", b"1", b"4")
         obj.check("HOTSPOTGRIDON", b"T")
         obj.check("ISBOC", b"T")
         obj.check("SHEETNUMBERSPACESIZE", b"4")

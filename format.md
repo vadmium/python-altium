@@ -593,7 +593,12 @@ with properties for the entire schematic
     `|SHEETSTYLE`. How does this interact with `|USECUSTOMSHEET=T`?
     * 0: Landscape
     * 1: Portrait
-* `|CUSTOMXZONES=6|CUSTOMYZONES=4|CUSTOMMARGINWIDTH=20|DISPLAY_UNIT=4`
+* `|CUSTOMXZONES=6|CUSTOMYZONES=4|CUSTOMMARGINWIDTH=20`
+* `|DISPLAY_UNIT` ([integer]): Units used for displaying distances (?)
+    * 1: Millimetres
+    * cm, m, autoranging metric
+    * 4: Units of 1/100″ = 10 mils
+    * mil, in, autoranging imperial
 * `|REFERENCEZONESON`: [Boolean]
 * `|SHOWTEMPLATEGRAPHICS`: [Boolean]
 * `|TEMPLATEFILENAME`: Optional Windows path
