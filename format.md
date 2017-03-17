@@ -284,7 +284,11 @@ The component object seems to occur before any of its child objects.
 * `|FONTID` ([integer]): Selects from the font table in the
     [Sheet](#sheet) object
 * `|TEXT`:
-    Optional if not displayed due to being the wrong current component part
+    Optional if not displayed due to being the wrong current component part.
+    If it begins with an equals sign (=), the rest references a [Parameter](
+    #parameter) object of the parent's owner with a matching `|NAME`.
+    I.e. for a label being the child of a template object which is the child
+    of a sheet object, look at parameter children of the sheet object).
 
 ### Bezier ###
 `|RECORD=5`: Bezier curve for component symbol

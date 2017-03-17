@@ -699,14 +699,17 @@ class render:
         ):
             obj.get(property)
         
-        colour(obj)
-        get_location(obj)
-        obj.get_int("FONTID")
+        text_colour = colour(obj)
+        location = get_location(obj)
+        font = obj.get_int("FONTID")
+        text = obj.get("TEXT")
         
         if display_part(owners[-1], obj):
-            self.text(obj)
-        else:
-            obj.get("TEXT")
+            if text.startswith(b"="):
+                self.parameter(text[1:], owners[-2],
+                    colour=text_colour, offset=location, font=font)
+            else:
+                self.text(obj)
     
     @_setitem(handlers, Record.POLYGON)
     def handle_polygon(self, owners, obj):
@@ -996,23 +999,10 @@ class render:
             if orient & 2:
                 kw.update(vert=self.renderer.TOP, horiz=self.renderer.RIGHT)
             if val.startswith(b"="):
-                match = val[1:].lstrip().lower()
-                for o in owners[-1].children:
-                    o = o.properties
-                    if o.get_int("RECORD") != Record.PARAMETER:
-                        continue
-                    if o["NAME"].lower() != match:
-                        continue
-                    val = get_utf8(o, "TEXT")
-                    break
-                else:
-                    msg = "Parameter value not found for |TEXT={} in {!r}"
-                    warn(msg.format(val.decode("ascii"), owners[-1]))
-                    return
-                self.renderer.text(val,
+                self.parameter(val[1:].lstrip(), owners[-1],
                     colour=text_colour,
                     offset=offset,
-                    font=font_name(font),
+                    font=font,
                 **kw)
             else:
                 self.text(obj, **kw)
@@ -1331,6 +1321,21 @@ class render:
         obj.get_int("FONTID")
         if not obj.get_bool("ISHIDDEN"):
             self.text(obj)
+    
+    def parameter(self, match, owner, *, font, **kw):
+        match = match.lower()
+        for o in owner.children:
+            o = o.properties
+            if o.get_int("RECORD") != Record.PARAMETER:
+                continue
+            if o["NAME"].lower() != match:
+                continue
+            self.renderer.text(get_utf8(o, "TEXT"),
+                font=font_name(font), **kw)
+            return
+        else:
+            msg = "Parameter value not found for {!r} in {!r}"
+            warn(msg.format(match, owner))
     
     def text(self, obj, **kw):
         kw["colour"] = colour(obj)
