@@ -518,7 +518,7 @@ class render:
                     block.text("Drawn By:", (-145, 0))
         self.check_sheet(sheet)
         
-        self.handle_children(objects)
+        self.handle_children([objects])
         unused = self.storage_files.keys() - self.files_used
         if unused:
             unused = ", ".join(map(repr, unused))
@@ -549,18 +549,20 @@ class render:
         
         obj.check_unknown()
     
-    def handle_children(self, owner):
-        for child in owner.children:
+    def handle_children(self, owners):
+        for child in owners[-1].children:
             obj = child.properties
             record = obj.get_int("RECORD")
             handler = self.handlers.get(record)
             if handler:
-                handler(self, owner, obj)
+                handler(self, owners, obj)
                 obj.check_unknown()
             else:
                 warn("Unhandled record type: {}".format(obj))
-        
-            self.handle_children(child)
+            
+            owners.append(child)
+            self.handle_children(owners)
+            owners.pop()
     
     arrowhead = dict(base=5, shoulder=7, radius=3)
     arrowtail = dict(base=7, shoulder=0, radius=2.5)
@@ -587,7 +589,7 @@ class render:
     handlers = dict()
     
     @_setitem(handlers, Record.LINE)
-    def handle_line(self, objects, obj):
+    def handle_line(self, owners, obj):
         obj.get_int("INDEXINSHEET")
         obj.check("ISNOTACCESIBLE", b"T")
         
@@ -597,11 +599,11 @@ class render:
             a=get_location(obj),
             b=tuple(obj.get_int("CORNER." + x) for x in "XY"),
         )
-        if display_part(objects, obj):
+        if display_part(owners[-1], obj):
             self.renderer.line(**kw)
     
     @_setitem(handlers, Record.POLYLINE)
-    def handle_polyline(self, objects, obj):
+    def handle_polyline(self, owners, obj):
         obj.get_int("INDEXINSHEET")
         obj.get_bool("ISNOTACCESIBLE")
         obj.check("ENDLINESHAPE", None, b"2")
@@ -615,14 +617,14 @@ class render:
         kw = dict(points=points)
         kw.update(colour=colour(obj))
         
-        if display_part(objects, obj):
+        if display_part(owners[-1], obj):
             if linewidth != 1:
                 kw.update(width=linewidth or 0.6)
             self.renderer.polyline(**kw)
     
     @_setitem(handlers, Record.ARC)
     @_setitem(handlers, Record.ELLIPTICAL_ARC)
-    def handle_arc(self, objects, obj):
+    def handle_arc(self, owners, obj):
         obj.get_int("INDEXINSHEET")
         obj.check("ISNOTACCESIBLE", b"T")
         obj.check("LINEWIDTH", b"1")
@@ -636,7 +638,7 @@ class render:
         end = obj.get_real("ENDANGLE")
         location = get_location(obj)
         col = colour(obj)
-        if display_part(objects, obj):
+        if display_part(owners[-1], obj):
             if end == start:  # Full circle rather than a zero-length arc
                 start = 0
                 end = 360
@@ -648,7 +650,7 @@ class render:
             self.renderer.arc((r, r2), start, end, location, colour=col)
     
     @_setitem(handlers, Record.BEZIER)
-    def handle_bezier(self, objects, obj):
+    def handle_bezier(self, owners, obj):
         obj.get_bool("ISNOTACCESIBLE")
         obj.get_int("OWNERPARTID")
         obj.check("LOCATIONCOUNT", b"4")
@@ -666,7 +668,7 @@ class render:
     
     @_setitem(handlers, Record.RECTANGLE)
     @_setitem(handlers, Record.ROUND_RECTANGLE)
-    def handle_rectangle(self, objects, obj):
+    def handle_rectangle(self, owners, obj):
         obj.get_int("INDEXINSHEET")
         obj.get_bool("ISNOTACCESIBLE")
         
@@ -680,7 +682,7 @@ class render:
             kw.update(fill=fill)
         a = get_location(obj)
         b = tuple(get_int_frac(obj, "CORNER." + x) for x in "XY")
-        if display_part(objects, obj):
+        if display_part(owners[-1], obj):
             if obj.get_int("RECORD") == Record.ROUND_RECTANGLE:
                 r = list()
                 for x in "XY":
@@ -691,7 +693,7 @@ class render:
                 self.renderer.rectangle(a, b, **kw)
     
     @_setitem(handlers, Record.LABEL)
-    def handle_label(self, objects, obj):
+    def handle_label(self, owners, obj):
         for property in (
             "INDEXINSHEET", "ISNOTACCESIBLE", "ORIENTATION", "JUSTIFICATION",
         ):
@@ -701,13 +703,13 @@ class render:
         get_location(obj)
         obj.get_int("FONTID")
         
-        if display_part(objects, obj):
+        if display_part(owners[-1], obj):
             self.text(obj)
         else:
             obj.get("TEXT")
     
     @_setitem(handlers, Record.POLYGON)
-    def handle_polygon(self, objects, obj):
+    def handle_polygon(self, owners, obj):
         obj.get_int("INDEXINSHEET")
         obj.check("ISNOTACCESIBLE", b"T")
         obj.get_bool("IGNOREONLOAD")
@@ -730,13 +732,13 @@ class render:
         )
         if obj.get_bool("ISSOLID"):
             kw.update(fill=fill)
-        if display_part(objects, obj):
+        if display_part(owners[-1], obj):
             self.renderer.polygon(
                 points=points,
             **kw)
     
     @_setitem(handlers, Record.ELLIPSE)
-    def handle_ellipse(self, objects, obj):
+    def handle_ellipse(self, owners, obj):
         obj["OWNERPARTID"]
         obj.check("ISNOTACCESIBLE", b"T")
         obj.check("SECONDARYRADIUS", obj["RADIUS"])
@@ -755,7 +757,7 @@ class render:
         **kw)
     
     @_setitem(handlers, Record.TEXT_FRAME)
-    def handle_text_frame(self, objects, obj):
+    def handle_text_frame(self, owners, obj):
         obj.get("CLIPTORECT")
         obj.check("ALIGNMENT", b"1")
         obj.get_bool("ISSOLID")
@@ -783,7 +785,7 @@ class render:
         )
 
     @_setitem(handlers, Record.IMAGE)
-    def handle_image(self, objects, obj):
+    def handle_image(self, owners, obj):
         obj.get_int("INDEXINSHEET")
         obj.check("OWNERPARTID", b"-1")
         obj.get_bool("KEEPASPECT")
@@ -828,11 +830,11 @@ class render:
     @_setitem(handlers, Record.IMPLEMENTATION_LIST)
     @_setitem(handlers, 46)
     @_setitem(handlers, 48)
-    def handle_simple(self, objects, obj):
+    def handle_simple(self, owners, obj):
         pass
     
     @_setitem(handlers, Record.IMPLEMENTATION)
-    def handle_implementation(self, objects, obj):
+    def handle_implementation(self, owners, obj):
         for property in (
             "USECOMPONENTLIBRARY", "DESCRIPTION", "MODELDATAFILEENTITY0",
             "MODELDATAFILEKIND0",
@@ -846,18 +848,19 @@ class render:
         obj.check("DATAFILECOUNT", None, b"1")
     
     @_setitem(handlers, 47)
-    def handle_unknown(self, objects, obj):
+    def handle_unknown(self, owners, obj):
         obj.get_int("INDEXINSHEET")
         for property in ("DESIMP0", "DESINTF"):
             obj.get(property)
         obj.check("DESIMPCOUNT", b"1", None)
     
     @_setitem(handlers, Record.SHEET_ENTRY) # id=16
-    def handle_sheetport(self, parent, obj):
+    def handle_sheetport(self, owners, obj):
         for p in ("OWNERPARTID", "INDEXINSHEET", "ARROWKIND", "STYLE", "TEXTSTYLE"):
             obj.get(p)
-            
-        with self.renderer.view(offset=get_location(parent.properties)) as view:
+        
+        sheet = owners[-1].properties
+        with self.renderer.view(offset=get_location(sheet)) as view:
             kw =  dict()
             
             shapes = (
@@ -881,7 +884,7 @@ class render:
 
             elif side==1: # Right side of sheet symbol
                 py=-dist
-                px=parent.properties.get_int("XSIZE")-25 
+                px=sheet.get_int("XSIZE")-25 
                 kw.update(vert=view.CENTRE, horiz=self.renderer.RIGHT)
                 shape_x_factor = -1 # mirror shape in x-direction because we are on the right side of our sheet symbol
 
@@ -892,7 +895,7 @@ class render:
 
             elif side==3: # Bottom edge of sheet symbol
                 px=dist
-                py=-parent.properties.get_int("YSIZE")+25   # set y-offset to 25 (the length of the shape) to get a starting point for both text and shape
+                py=-sheet.get_int("YSIZE")+25   # set y-offset to 25 (the length of the shape) to get a starting point for both text and shape
                 kw.update(vert=view.CENTRE, horiz=self.renderer.LEFT)
                 shape_y_factor = -1
             
@@ -922,7 +925,7 @@ class render:
             )
     
     @_setitem(handlers, 216)
-    def handle_unknown(self, objects, obj):
+    def handle_unknown(self, owners, obj):
         for property in (
             "AREACOLOR", "COLOR", "DISTANCEFROMTOP", "NAME",
             "OWNERINDEXADDITIONALLIST", "OWNERPARTID", "TEXTCOLOR",
@@ -933,13 +936,13 @@ class render:
         obj.get_int("SIDE")
     
     @_setitem(handlers, Record.TEMPLATE)
-    def handle_template(self, objects, obj):
+    def handle_template(self, owners, obj):
         obj.check("ISNOTACCESIBLE", b"T")
         obj.check("OWNERPARTID", b"-1")
         obj["FILENAME"]
     
     @_setitem(handlers, Record.COMPONENT)
-    def handle_component(self, objects, obj):
+    def handle_component(self, owners, obj):
         for property in (
             "ISMIRRORED", "ORIENTATION", "INDEXINSHEET",
             "SHEETPARTFILENAME", "DESIGNITEMID", "DISPLAYMODE",
@@ -964,7 +967,7 @@ class render:
         obj.check("COMPONENTKIND", None, b"3")
 
     @_setitem(handlers, Record.PARAMETER)
-    def handle_parameter(self, objects, obj):
+    def handle_parameter(self, owners, obj):
         for property in (
             "READONLYSTATE", "INDEXINSHEET", "UNIQUEID", "ISMIRRORED",
         ):
@@ -981,9 +984,9 @@ class render:
         font = obj.get_int("FONTID")
         
         part = obj["OWNERPARTID"]
-        if part != b"-1" and part != objects.properties["CURRENTPARTID"]:
+        if part != b"-1" and part != owners[-1].properties["CURRENTPARTID"]:
             return
-        if objects.properties.get_int("RECORD") == 48:
+        if owners[-1].properties.get_int("RECORD") == 48:
             return
         orient = obj.get_int("ORIENTATION")
         if not obj.get_bool("ISHIDDEN") and val:
@@ -994,7 +997,7 @@ class render:
                 kw.update(vert=self.renderer.TOP, horiz=self.renderer.RIGHT)
             if val.startswith(b"="):
                 match = val[1:].lstrip().lower()
-                for o in objects.children:
+                for o in owners[-1].children:
                     o = o.properties
                     if o.get_int("RECORD") != Record.PARAMETER:
                         continue
@@ -1004,7 +1007,7 @@ class render:
                     break
                 else:
                     msg = "Parameter value not found for |TEXT={} in {!r}"
-                    warn(msg.format(val.decode("ascii"), objects))
+                    warn(msg.format(val.decode("ascii"), owners[-1]))
                     return
                 self.renderer.text(val,
                     colour=text_colour,
@@ -1017,7 +1020,7 @@ class render:
             obj.get("%UTF8%TEXT")
     
     @_setitem(handlers, Record.DESIGNATOR)
-    def handle_designator(self, objects, obj):
+    def handle_designator(self, owners, obj):
         obj.get("ISMIRRORED")
         obj.check("OWNERPARTID", b"-1")
         obj.check("INDEXINSHEET", None, b"-1")
@@ -1034,7 +1037,7 @@ class render:
             obj.check("TEXT", None)
             return
         desig = obj["TEXT"].decode("ascii")
-        owner = objects.properties
+        owner = owners[-1].properties
         if owner.get_int("PARTCOUNT") > 2:
             desig += chr(ord("A") + owner.get_int("CURRENTPARTID") - 1)
         
@@ -1047,7 +1050,7 @@ class render:
         self.renderer.text(desig, location, **kw)
     
     @_setitem(handlers, Record.PIN)
-    def handle_pin(self, objects, obj):
+    def handle_pin(self, owners, obj):
         obj.get("SWAPIDPIN")
         obj.check("FORMALTYPE", b"1")
         if obj.get("DESCRIPTION") is not None:
@@ -1063,7 +1066,7 @@ class render:
         electrical = obj.get_int("ELECTRICAL")
         name = obj.get("NAME")
         designator = obj["DESIGNATOR"].decode("ascii")
-        if display_part(objects, obj):
+        if display_part(owners[-1], obj):
             rotate = pinconglomerate & 3
             with self.renderer.view(offset=offset, rotate=rotate) as view:
                 kw = dict()
@@ -1116,18 +1119,18 @@ class render:
                         None, b"1", b"16")
     
     @_setitem(handlers, 3)
-    def handle_3(self, parent, obj):
+    def handle_3(self, owners, obj):
         obj.check("SYMBOL", b"3", b"4", b"10", b"17", b"19")
         obj.check("SCALEFACTOR", b"4", b"6", b"8")
         obj.check("ISNOTACCESIBLE", b"T")
-        display_part(parent, obj)
+        display_part(owners[-1], obj)
         get_location(obj)
         colour(obj)
     
     @_setitem(handlers, Record.WIRE)
     @_setitem(handlers, Record.BUS)
     @_setitem(handlers, 218)
-    def handle_wire(self, objects, obj):
+    def handle_wire(self, owners, obj):
         obj.get_int("INDEXINSHEET")
         obj.check("OWNERPARTID", b"-1")
         obj.get("UNIQUEID")
@@ -1143,7 +1146,7 @@ class render:
         )
 
     @_setitem(handlers, Record.BUS_ENTRY)
-    def handle_bus_entry(self, objects, obj):
+    def handle_bus_entry(self, owners, obj):
         obj.check("LINEWIDTH", b"2")
         obj.check("OWNERPARTID", b"-1")
         self.renderer.line(
@@ -1154,7 +1157,7 @@ class render:
         )
     
     @_setitem(handlers, Record.JUNCTION)
-    def handle_junction(self, objects, obj):
+    def handle_junction(self, owners, obj):
         obj.check("INDEXINSHEET", None, b"-1")
         obj.check("OWNERPARTID", b"-1")
         
@@ -1162,7 +1165,7 @@ class render:
         self.renderer.circle(2, get_location(obj), fill=col)
     
     @_setitem(handlers, Record.PORT)
-    def handle_port(self, objects, obj):
+    def handle_port(self, owners, obj):
         obj.get_int("INDEXINSHEET")
         obj.check("OWNERPARTID", b"-1")
         obj.get("UNIQUEID")
@@ -1209,7 +1212,7 @@ class render:
                 **kw)
     
     @_setitem(handlers, Record.POWER_PORT)
-    def handle_power_port(self, objects, obj):
+    def handle_power_port(self, owners, obj):
         obj.get_int("INDEXINSHEET")
         obj.check("OWNERPARTID", b"-1")
         obj.get("UNIQUEID")
@@ -1250,7 +1253,7 @@ class render:
                 view.text(text, pos, horiz=horiz, vert=vert, **kw)
     
     @_setitem(handlers, Record.NET_LABEL)
-    def handle_net_label(self, objects, obj):
+    def handle_net_label(self, owners, obj):
         obj.get_int("INDEXINSHEET")
         obj.check("OWNERPARTID", b"-1")
         obj.get("UNIQUEID")
@@ -1272,7 +1275,7 @@ class render:
         **kw)
     
     @_setitem(handlers, Record.NO_ERC)
-    def handle_no_erc(self, objects, obj):
+    def handle_no_erc(self, owners, obj):
         obj.get_int("INDEXINSHEET")
         obj.check("OWNERPARTID", b"-1")
         
@@ -1280,7 +1283,7 @@ class render:
         self.renderer.draw(nc, get_location(obj), colour=col)
     
     @_setitem(handlers, Record.WARNING_SIGN)
-    def handle_warning(self, objects, obj):
+    def handle_warning(self, owners, obj):
         obj.get_int("INDEXINSHEET")
         obj.check("OWNERPARTID", b"-1")
         
@@ -1298,7 +1301,7 @@ class render:
     
     @_setitem(handlers, Record.SHEET_SYMBOL)
     @_setitem(handlers, 215)
-    def handle_sheet_symbol(self, objects, obj):
+    def handle_sheet_symbol(self, owners, obj):
         obj.get_int("INDEXINSHEET")
         for name in (
             "UNIQUEID", "HARNESSCONNECTORSIDE", "PRIMARYCONNECTIONPOSITION"
@@ -1318,7 +1321,7 @@ class render:
     @_setitem(handlers, Record.SHEET_NAME)
     @_setitem(handlers, Record.SHEET_FILE_NAME)
     @_setitem(handlers, 217)
-    def handle_sheet_name(self, objects, obj):
+    def handle_sheet_name(self, owners, obj):
         obj.check("INDEXINSHEET", None, b"-1")
         obj.check("OWNERPARTID", b"-1")
         obj.get_bool("OWNERINDEXADDITIONALLIST")
