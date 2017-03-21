@@ -1330,8 +1330,9 @@ class render:
                 continue
             if o["NAME"].lower() != match:
                 continue
-            self.renderer.text(get_utf8(o, "TEXT"),
-                font=font_name(font), **kw)
+            if o.get("TEXT") is not None:
+                self.renderer.text(get_utf8(o, "TEXT"),
+                    font=font_name(font), **kw)
             return
         else:
             msg = "Parameter value not found for {!r} in {!r}"
