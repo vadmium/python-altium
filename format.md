@@ -629,8 +629,8 @@ Labels on top-level schematic
 * `|READONLYSTATE` ([integer]):
     * 1: Name is read-only?
 * `|ISMIRRORED`: [Boolean]
-* `|ORIENTATION` ([integer]): Probably the same as for [Parameter]
-    (#parameter)
+* `|ORIENTATION` ([integer]): Probably the same as for [Parameter](
+    #parameter)
 * `|ISHIDDEN` ([Boolean]): if true, `|TEXT` is omitted
 * `|UNIQUEID`: Optional
 
