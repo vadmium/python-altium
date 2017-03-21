@@ -383,7 +383,7 @@ class SheetStyle:
 import vector
 import os
 import os.path
-from datetime import date
+from datetime import datetime
 import contextlib
 from importlib import import_module
 from inspect import getdoc
@@ -486,13 +486,15 @@ class render:
                                     ref.vline(-10, +10, offset=(x, 0),
                                         width=0.6)
             
+            if not os.path.isabs(filename):
+                cwd = os.getcwd()
+                pwd = os.getenv("PWD")
+                if os.path.samefile(pwd, cwd):
+                    cwd = pwd
+                filename = os.path.join(pwd, filename)
+            self.filename = filename
+            self.date = datetime.fromtimestamp(stat.st_mtime)
             if sheet.get_bool("TITLEBLOCKON"):
-                if not os.path.isabs(filename):
-                    cwd = os.getcwd()
-                    pwd = os.getenv("PWD")
-                    if os.path.samefile(pwd, cwd):
-                        cwd = pwd
-                    filename = os.path.join(pwd, filename)
                 with base.view(offset=(size[0] - 20, 20 - size[1])) as block:
                     points = ((-350, 0), (-350, 80), (-0, 80))
                     block.polyline(points, width=0.6)
@@ -509,10 +511,10 @@ class render:
                     block.text("Number", (-295, 40))
                     block.text("Revision", (-95, 40))
                     block.text("Date", (-345, 10))
-                    d = format(date.fromtimestamp(stat.st_mtime), "%x")
+                    d = format(self.date, "%x")
                     block.text(d, (-300, 10))
                     block.text("File", (-345, 0))
-                    block.text(filename, (-300, 0))
+                    block.text(self.filename, (-300, 0))
                     block.text("Sheet", (-145, 10))
                     block.text("of", (-117, 10))
                     block.text("Drawn By:", (-145, 0))
@@ -699,15 +701,22 @@ class render:
         ):
             obj.get(property)
         
-        text_colour = colour(obj)
-        location = get_location(obj)
-        font = obj.get_int("FONTID")
+        kw = dict(
+            colour=colour(obj),
+            offset=get_location(obj),
+            font=font_name(obj.get_int("FONTID")),
+        )
         text = obj.get("TEXT")
         
         if display_part(owners[-1], obj):
-            if text.startswith(b"="):
-                self.parameter(text[1:], owners[-2],
-                    colour=text_colour, offset=location, font=font)
+            if text == b"=CurrentDate":
+                self.renderer.text(format(self.date, "%x"), **kw)
+            elif text == b"=CurrentTime":
+                self.renderer.text(format(self.date, "%X"), **kw)
+            elif text == b"=DocumentFullPathAndName":
+                self.renderer.text(self.filename, **kw)
+            elif text.startswith(b"="):
+                self.parameter(text[1:], owners[-2], **kw)
             else:
                 self.text(obj)
     
@@ -1002,7 +1011,7 @@ class render:
                 self.parameter(val[1:].lstrip(), owners[-1],
                     colour=text_colour,
                     offset=offset,
-                    font=font,
+                    font=font_name(font),
                 **kw)
             else:
                 self.text(obj, **kw)
@@ -1322,7 +1331,7 @@ class render:
         if not obj.get_bool("ISHIDDEN"):
             self.text(obj)
     
-    def parameter(self, match, owner, *, font, **kw):
+    def parameter(self, match, owner, **kw):
         match = match.lower()
         for o in owner.children:
             o = o.properties
@@ -1331,8 +1340,7 @@ class render:
             if o["NAME"].lower() != match:
                 continue
             if o.get("TEXT") is not None:
-                self.renderer.text(get_utf8(o, "TEXT"),
-                    font=font_name(font), **kw)
+                self.renderer.text(get_utf8(o, "TEXT"), **kw)
             return
         else:
             msg = "Parameter value not found for {!r} in {!r}"

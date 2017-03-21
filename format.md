@@ -289,6 +289,9 @@ The component object seems to occur before any of its child objects.
     #parameter) object of the parent's owner with a matching `|NAME`.
     I.e. for a label being the child of a template object which is the child
     of a sheet object, look at parameter children of the sheet object).
+    Parameter values for `=CurrentDate`, `=CurrentTime` and
+    `=DocumentFullPathAndName` are automatically generated and not taken
+    from the Parameter object.
 
 ### Bezier ###
 `|RECORD=5`: Bezier curve for component symbol
