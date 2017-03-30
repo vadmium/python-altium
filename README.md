@@ -6,8 +6,8 @@ to SVG images, or display them in a window. It is incomplete and there are
 probably many schematic elements and settings that it does not (yet)
 understand.
 
-The schematic file format has been documented somewhat in [format.md]
-(format.md).
+The schematic file format has been documented somewhat in [format.md](
+format.md).
 
 You can redistribute and modify this program under the terms of the Do
 What The Fuck You Want To Public License (WTFPL) version 2, as published by

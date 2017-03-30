@@ -727,8 +727,8 @@ Children of [Sheet](#sheet), seen in the Additional stream
 
 `|RECORD=216`
 
-`|RECORD=217`: Similar to [Sheet name and file name]
-(#sheet-name-and-file-name), also with `|OWNERINDEXADDITIONALLIST=T`
+`|RECORD=217`: Similar to [Sheet name and file name](
+#sheet-name-and-file-name), also with `|OWNERINDEXADDITIONALLIST=T`
 and optionally `|ISHIDDEN=T`
 
 `|RECORD=218|COLOR=15187117|INDEXINSHEET|LINEWIDTH=2|LOCATIONCOUNT=2|OWNERPARTID=-1|X1|X2|Y1|Y2`
