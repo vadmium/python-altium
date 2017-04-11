@@ -716,7 +716,7 @@ class render:
             elif text == b"=DocumentFullPathAndName":
                 self.renderer.text(self.filename, **kw)
             elif text.startswith(b"="):
-                self.parameter(text[1:], owners[-2], **kw)
+                self.parameter(text[1:], owners, **kw)
             else:
                 self.text(obj)
     
@@ -1008,7 +1008,7 @@ class render:
             if orient & 2:
                 kw.update(vert=self.renderer.TOP, horiz=self.renderer.RIGHT)
             if val.startswith(b"="):
-                self.parameter(val[1:].lstrip(), owners[-1],
+                self.parameter(val[1:].lstrip(), owners,
                     colour=text_colour,
                     offset=offset,
                     font=font_name(font),
@@ -1331,20 +1331,27 @@ class render:
         if not obj.get_bool("ISHIDDEN"):
             self.text(obj)
     
-    def parameter(self, match, owner, **kw):
+    def parameter(self, match, owners, **kw):
         match = match.lower()
-        for o in owner.children:
-            o = o.properties
-            if o.get_int("RECORD") != Record.PARAMETER:
-                continue
-            if o["NAME"].lower() != match:
-                continue
-            if o.get("TEXT") is not None:
-                self.renderer.text(get_utf8(o, "TEXT"), **kw)
-            return
+        found = False
+        for owner in reversed(owners):
+            for o in owner.children:
+                o = o.properties
+                if o.get_int("RECORD") != Record.PARAMETER:
+                    continue
+                if o["NAME"].lower() != match:
+                    continue
+                
+                if found:
+                    warn("Multiple parameters matching {!r} in {!r}".format(
+                        match, owner))
+                found = True
+                if o.get("TEXT") is not None:
+                    self.renderer.text(get_utf8(o, "TEXT"), **kw)
+            if found:
+                break
         else:
-            msg = "Parameter value not found for {!r} in {!r}"
-            warn(msg.format(match, owner))
+            warn("Parameter value not found for {!r}".format(match))
     
     def text(self, obj, **kw):
         kw["colour"] = colour(obj)

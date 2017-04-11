@@ -286,9 +286,8 @@ The component object seems to occur before any of its child objects.
 * `|TEXT`:
     Optional if not displayed due to being the wrong current component part.
     If it begins with an equals sign (=), the rest references a [Parameter](
-    #parameter) object of the parent's owner with a matching `|NAME`.
-    I.e. for a label being the child of a template object which is the child
-    of a sheet object, look at parameter children of the sheet object).
+    #parameter) object, of the parent
+    or grandparent, with a matching `|NAME`.
     Parameter values for `=CurrentDate`, `=CurrentTime` and
     `=DocumentFullPathAndName` are automatically generated and not taken
     from the Parameter object.
