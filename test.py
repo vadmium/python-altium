@@ -8,6 +8,7 @@ from xml.etree.ElementTree import XML
 import subprocess
 from tempfile import NamedTemporaryFile
 import os
+from types import SimpleNamespace
 
 class ConversionTest(TestCase):
     def convert(self, sch):
@@ -37,7 +38,10 @@ class ConversionTest(TestCase):
         
         class mock_os:
             def stat(fileno):
-                return None
+                return SimpleNamespace(st_mtime=0)
+            class path:
+                def isabs(path):
+                    return True
         
         stream = BytesIO()
         stream.fileno = lambda: stream
