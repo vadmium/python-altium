@@ -182,15 +182,17 @@ class Renderer(base.Renderer):
         self._width(attrs, width)
         self.emptyelement("path", attrs, transform=self._offset(offset))
     
-    def circle(self, r, offset=None, *, outline=None, fill=None, width=None):
-        attrs = {"r": format(r)}
+    def ellipse(self, r, offset=None, *,
+            outline=None, fill=None, width=None):
+        [rx, ry] = r
+        attrs = {"rx": format(rx), "ry": format(ry)}
         style = list()
         self._closed(attrs, style, outline, fill, width)
         if offset:
             (x, y) = offset
             attrs["cx"] = format(x)
             attrs["cy"] = format(y * self.flip[1])
-        self.emptyelement("circle", attrs, style=style)
+        self.emptyelement("ellipse", attrs, style=style)
     
     def polygon(self, points, *,
     offset=None, rotate=None, outline=None, fill=None, width=None):
@@ -274,16 +276,7 @@ class Renderer(base.Renderer):
     
     def arc(self, r, start, end, offset=None, *, colour=None):
         if abs(end - start) >= 360:
-            (rx, ry) = r
-            assert rx == ry
-            return self.circle(rx, offset, outline=colour)
-            attrs = {"r": format(*r), "class": "outline"}
-            if offset:
-                (x, y) = offset
-                attrs["cx"] = format(x)
-                attrs["cy"] = format(y * self.flip[1])
-            attrs.update(self._colour(colour))
-            renderer.emptyelement("circle", attrs)
+            return self.ellipse(r, offset, outline=colour)
         
         a = list()
         d = list()

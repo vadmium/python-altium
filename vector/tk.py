@@ -85,8 +85,7 @@ class _RawRenderer(base.Renderer):
         (rx, ry) = r
         extent = end - start
         if abs(extent) >= 360:
-            assert rx == ry
-            return self.circle(rx, offset, outline=colour)
+            return self.ellipse(r, offset, outline=colour)
         extent %= 360
         
         (ox, oy) = offset
@@ -98,12 +97,13 @@ class _RawRenderer(base.Renderer):
             outline=self._colour(colour),
         )
     
-    def circle(self, r, offset=(0, 0), *,
+    def ellipse(self, r, offset=(0, 0), *,
     outline=None, fill=None, width=None):
+        [rx, ry] = r
         (ox, oy) = offset
         points = (
-            (ox - r) * self.scaling[0], (oy - r) * self.scaling[1],
-            (ox + r) * self.scaling[0], (oy + r) * self.scaling[1],
+            (ox - rx) * self.scaling[0], (oy - ry) * self.scaling[1],
+            (ox + rx) * self.scaling[0], (oy + ry) * self.scaling[1],
         )
         kw = self._closed(outline, fill, width)
         self.canvas.create_oval(*points, **kw)

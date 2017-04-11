@@ -95,26 +95,24 @@ class Renderer(View):
         
         # Only positive dimensions are considered
         (rx, ry) = r
-        assert rx == ry
-        r = rx
         cax = ax + rx
         cay = ay + ry
         cbx = bx - rx
         cby = by - ry
         
         with self.view(offset=offset):
-            # TODO: circles not good enough if fill=None; need arcs
+            # TODO: ellipses not good enough if fill=None; need arcs
             c0 = (cax, cay)
-            self.circle(r, c0, fill=fill, outline=outline, **kw)
+            self.ellipse(r, c0, fill=fill, outline=outline, **kw)
             c = (cbx, cay)
             if c != c0:
-                self.circle(r, c, fill=fill, outline=outline, **kw)
+                self.ellipse(r, c, fill=fill, outline=outline, **kw)
             c = (cax, cby)
             if c != c0:
-                self.circle(r, c, fill=fill, outline=outline, **kw)
+                self.ellipse(r, c, fill=fill, outline=outline, **kw)
             c = (cbx, cby)
             if c != c0:
-                self.circle(r, c, fill=fill, outline=outline, **kw)
+                self.ellipse(r, c, fill=fill, outline=outline, **kw)
             
             if cby != cay:
                 if fill:
@@ -196,10 +194,11 @@ class Subview(View):
         end += self._rotation * 90
         colour = colour or self._colour
         return self._parent.arc(r, start, end, colour=colour, **kw)
-    def circle(self, r, offset=None, **kw):
+    def ellipse(self, r, offset=None, **kw):
+        r = self._rotate(r)
         kw.update(offset=offset)
         self._closed(kw)
-        return self._parent.circle(r, **kw)
+        return self._parent.ellipse(r, **kw)
     def rectangle(self, *pos, **kw):
         pos = map(self._rotate, pos)
         self._closed(kw)

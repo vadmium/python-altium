@@ -753,16 +753,15 @@ class render:
     def handle_ellipse(self, owners, obj):
         obj["OWNERPARTID"]
         obj.check("ISNOTACCESIBLE", b"T")
-        obj.check("SECONDARYRADIUS", obj["RADIUS"])
-        obj.get_int("SECONDARYRADIUS_FRAC")
         obj.get_int("INDEXINSHEET")
         fill = colour(obj, "AREACOLOR")
         
         kw = dict()
         if obj.get_bool("ISSOLID"):
             kw.update(fill=fill)
-        self.renderer.circle(
-            r=get_int_frac(obj, "RADIUS"),
+        self.renderer.ellipse(
+            r=(get_int_frac(obj, "RADIUS"),
+                get_int_frac(obj, "SECONDARYRADIUS")),
             width=obj.get_int("LINEWIDTH") or 0.6,
             outline=colour(obj),
             offset=get_location(obj),
@@ -1071,7 +1070,7 @@ class render:
                 kw = dict()
                 points = list()
                 if outer_edge:
-                    view.circle(2.85, (3.15, 0), width=0.6)
+                    view.ellipse((2.85, 2.85), (3.15, 0), width=0.6)
                     points.append(6)
                 points.append(pinlength)
                 marker = self.pinmarkers[electrical]
@@ -1161,7 +1160,7 @@ class render:
         obj.check("OWNERPARTID", b"-1")
         
         col = colour(obj)
-        self.renderer.circle(2, get_location(obj), fill=col)
+        self.renderer.ellipse((2, 2), get_location(obj), fill=col)
     
     @_setitem(handlers, Record.PORT)
     def handle_port(self, owners, obj):

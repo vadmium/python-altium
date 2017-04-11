@@ -330,13 +330,11 @@ The component object seems to occur before any of its child objects.
 
 ### Ellipse ###
 `|RECORD=8`: Inherits Circle properties
-* `|RADIUS|RADIUS_FRAC`
-* `|SECONDARYRADIUS|SECONDARYRADIUS_FRAC`
+* `|RADIUS|RADIUS_FRAC`: Radius in _x_ direction
+* `|SECONDARYRADIUS|SECONDARYRADIUS_FRAC`: Radius in _y_ direction
 * `|COLOR|AREACOLOR|ISSOLID`
 * `|INDEXINSHEET`: [Integer]
 * `|LINEWIDTH=1`: Optional
-
-Circle:
 * `|OWNERINDEX|ISNOTACCESIBLE=T|OWNERPARTID=1|LOCATION.X|LOCATION.Y`
 
 ### Round rectangle ###
@@ -345,8 +343,8 @@ Circle:
 
 ### Elliptical arc ###
 `|RECORD=11`: Inherits [Arc](#arc) properties
-* `|SECONDARYRADIUS|SECONDARYRADIUS_FRAC`: Radius along _x_ axis;
-    `|RADIUS` is along _y_ axis
+* `|SECONDARYRADIUS|SECONDARYRADIUS_FRAC`: Radius along _y_ axis;
+    `|RADIUS` is along _x_ axis
 
 ### Arc ###
 `|RECORD=12`: Circle or arc for component symbol. The angles are
