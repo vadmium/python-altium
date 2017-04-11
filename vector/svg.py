@@ -10,6 +10,7 @@ from textwrap import TextWrapper
 from io import StringIO
 from contextlib import ExitStack
 from base64 import b64encode
+from sys import stdout
 
 class Renderer(base.Renderer):
     def __init__(self, size, units, unitmult=1, *, margin=0,
@@ -26,7 +27,9 @@ class Renderer(base.Renderer):
             self.flip = (+1, +1)
         viewbox = "{},{} {},{}".format(-margin, top - margin, width, height)
         
-        self.xml = XMLGenerator(encoding="UTF-8", short_empty_elements=True)
+        self.xml = XMLGenerator(
+            encoding=stdout.encoding, short_empty_elements=True)
+        self.xml.startDocument()
         attrs = {
             "xmlns": "http://www.w3.org/2000/svg",
             "xmlns:xlink": "http://www.w3.org/1999/xlink",
@@ -83,6 +86,7 @@ class Renderer(base.Renderer):
     
     def finish(self):
         self.xml.endElement("svg")
+        self.xml.endDocument()
     
     def line(self, a, b=None, *pos, **kw):
         attrs = dict()
