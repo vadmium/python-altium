@@ -1332,14 +1332,14 @@ class render:
             self.text(obj)
     
     def parameter(self, match, owners, **kw):
-        match = match.lower()
+        lmatch = match.lower()
         found = False
         for owner in reversed(owners):
             for o in owner.children:
                 o = o.properties
                 if o.get_int("RECORD") != Record.PARAMETER:
                     continue
-                if o["NAME"].lower() != match:
+                if o["NAME"].lower() != lmatch:
                     continue
                 
                 if found:
@@ -1351,7 +1351,9 @@ class render:
             if found:
                 break
         else:
+            match = match.decode("ascii")
             warn("Parameter value not found for {!r}".format(match))
+            self.renderer.text(match[0].capitalize() + match[1:], **kw)
     
     def text(self, obj, **kw):
         kw["colour"] = colour(obj)

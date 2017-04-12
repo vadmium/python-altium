@@ -667,7 +667,9 @@ display label if the record is a child of record [48](#48), even if
     it names another parameter with the same `|OWNERINDEX`,
     whose `|NAME` matches the rest of the text, ignoring any space
     following the equal sign, and the actual text is taken
-    from the referenced parameter’s `|TEXT` property.
+    from the referenced parameter’s `|TEXT` property. If no matching
+    parameter is found, the reference name is substituted, except for the
+    equals sign (=) prefix, and the initial letter is capitalized.
 * `|NAME`: Optional
 * `|%UTF8%TEXT|%UTF8%NAME`: Optional UTF-8-encoded version of the `|TEXT` or
     `|NAME` property, which is also included (presumably for compatibility)
