@@ -291,6 +291,7 @@ The component object seems to occur before any of its child objects.
     Parameter values for `=CurrentDate`, `=CurrentTime` and
     `=DocumentFullPathAndName` are automatically generated and not taken
     from the Parameter object.
+* `|GRAPHICALLYLOCKED` ([boolean]): “Locked” field in Altium
 
 ### Bezier ###
 `|RECORD=5`: Bezier curve for component symbol

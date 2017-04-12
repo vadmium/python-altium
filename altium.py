@@ -700,6 +700,7 @@ class render:
             "INDEXINSHEET", "ISNOTACCESIBLE", "ORIENTATION", "JUSTIFICATION",
         ):
             obj.get(property)
+        obj.get_bool("GRAPHICALLYLOCKED")
         
         kw = dict(
             colour=colour(obj),
