@@ -15,12 +15,13 @@ Contents:
     * [0: Header](#header)
     * [1: Component](#component)
     * [2: Pin](#pin)
-    * [3](#3)
+    * [3: IEEE Symbol](#ieee-symbol)
     * [4: Label](#label)
     * [5: Bezier](#bezier)
     * [6: Polyline](#polyline)
     * [7: Polygon](#polygon)
     * [8: Ellipse](#ellipse)
+    * [9: Piechart](#piechart)
     * [10: Round rectangle](#round-rectangle)
     * [11: Elliptical arc](#elliptical-arc)
     * [12: Arc](#arc)
@@ -50,6 +51,7 @@ Contents:
     * [47](#47)
     * [48](#48)
     * [215–218](#215218)
+    * [226](#hyperlink)
 
 Related references:
 
@@ -264,7 +266,7 @@ The component object seems to occur before any of its child objects.
 * `|SWAPIDPART|%UTF8%SWAPIDPART` (optional): Seen containing broken bars
     (U+00A6, ¦), the non-UTF-8 encoding of one being the single byte 0x8E
 
-### 3 ###
+### IEEE Symbol ###
 `|RECORD=3`: Located near some component pins
 * `|COLOR=255|LOCATION.X|LOCATION.Y`
 * `|SYMBOL`: 3, 4, 10, 17 or 19
@@ -337,6 +339,9 @@ The component object seems to occur before any of its child objects.
 * `|INDEXINSHEET`: [Integer]
 * `|LINEWIDTH=1`: Optional
 * `|OWNERINDEX|ISNOTACCESIBLE=T|OWNERPARTID=1|LOCATION.X|LOCATION.Y`
+
+### Piechart ###
+`|RECORD=9`
 
 ### Round rectangle ###
 `|RECORD=10`: As for [Rectangle](#rectangle); additionally:
@@ -690,10 +695,10 @@ display label if the record is a child of record [48](#48), even if
     * 2: Top-right corner alignment
 
 ### Implementation list ###
-`|RECORD=44|OWNERINDEX`: Implementation list?
+`|RECORD=44|OWNERINDEX`: Footprint, simulation model, PCB3D model, Ibis model list
 
 ### Implementation ###
-`|RECORD=45`: Implementation?
+`|RECORD=45`: Footprint, simulation model, PCB3D model or Ibis model
 * `|OWNERINDEX`
 * `|INDEXINSHEET=-1|UNIQUEID`: Optional
 * `|DESCRIPTION|USECOMPONENTLIBRARY=T`: Optional
@@ -732,3 +737,6 @@ Children of [Sheet](#sheet), seen in the Additional stream
 and optionally `|ISHIDDEN=T`
 
 `|RECORD=218|COLOR=15187117|INDEXINSHEET|LINEWIDTH=2|LOCATIONCOUNT=2|OWNERPARTID=-1|X1|X2|Y1|Y2`
+
+### Hyperlink ###
+`|RECORD=226`
