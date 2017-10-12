@@ -314,7 +314,9 @@ The component object seems to occur before any of its child objects.
     than expected
 * `|COLOR`
 * `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .: May also include `_FRAC` counterparts
+* `|STARTLINESHAPE=2`: Optional
 * `|ENDLINESHAPE=2`: Optional
+* `|LINESHAPESIZE=2`: Optional
 
 ### Polygon ###
 `|RECORD=7`: Polygon for component symbol
