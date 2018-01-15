@@ -314,9 +314,19 @@ The component object seems to occur before any of its child objects.
     than expected
 * `|COLOR`
 * `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .: May also include `_FRAC` counterparts
-* `|STARTLINESHAPE=2`: Optional
-* `|ENDLINESHAPE=2`: Optional
-* `|LINESHAPESIZE=2`: Optional
+* `|STARTLINESHAPE|ENDLINESHAPE`: [Integers](#integers)
+    * Omitted: No special shape
+    * 1: [Hollow?] arrowhead
+    * 2: Solid arrowhead
+    * 3: [Hollow?] arrow tail
+    * 4: Solid arrow tail
+    * 5: Circle
+    * 6: Square
+* `|LINESHAPESIZE`: [Integer]
+    * Omitted, 1: Small [Is there a distinction?
+        Perhaps 0 (omitted) is extra small, and 1 is larger.]
+    * 2: Medium
+    * 3: Large
 
 ### Polygon ###
 `|RECORD=7`: Polygon for component symbol

@@ -5,7 +5,7 @@ from math import sin, cos, radians
 from collections import Iterable
 from urllib.parse import urlunparse, ParseResult
 import operator
-from math import copysign
+from math import atan2, degrees, hypot
 from textwrap import TextWrapper
 from io import StringIO
 from contextlib import ExitStack
@@ -122,8 +122,11 @@ class Renderer(base.Renderer):
                 linewidth = self.linewidth
             else:
                 linewidth = width
-            a = self._arrow(startarrow, linewidth, dir, a, reala, flip=-1)
-            b = self._arrow(endarrow, linewidth, dir, b, b, flip=+1)
+            [a, zero] = self._arrow(startarrow,
+                linewidth, (dir, 0), (a, 0), (reala, 0), flip=-1)
+            b = (b, 0)
+            b = self._arrow(endarrow, linewidth, (dir, 0), b, b, flip=+1)
+            [b, zero] = b
             
             attrs = dict()
             if a is not None:
@@ -142,16 +145,25 @@ class Renderer(base.Renderer):
             # Distance to shaft junction from point
             shaft = base + (shoulder - base) * width / 2 / radius
             
-            rotate = 180 if dir < 0 else None
+            [dirx, diry] = dir
+            if not diry and dirx > 0:
+                rotate = None
+            else:
+                rotate = degrees(atan2(diry, dirx))
+            
             self.polygon((
                 (-shaft * flip, +width / 2),
                 (-shoulder * flip, +radius),
                 (0, 0),
                 (-shoulder * flip, -radius),
                 (-shaft * flip, -width / 2),
-            ), fill=True, offset=(realpt, 0), rotate=rotate)
+            ), fill=True, offset=realpt, rotate=rotate)
             
-            return realpt - copysign(shaft, dir) * flip
+            def end():
+                mag = hypot(*dir)
+                for [pt, d] in zip(realpt, dir):
+                    yield pt - shaft * d/mag * flip
+            return end()
     
     def vline(self, a, b=None, *pos, **kw):
         a = format(a * self.flip[1])
@@ -167,14 +179,34 @@ class Renderer(base.Renderer):
         transform = self._offset(offset)
         self.emptyelement("line", attrs, transform=transform)
     
-    def polyline(self, points, *, colour=None, **kw):
-        s = list()
-        for (x, y) in points:
-            s.append("{},{}".format(x, y * self.flip[1]))
-        attrs = {"points": " ".join(s)}
-        self._width(attrs, **kw)
-        attrs.update(self._colour(colour))
-        self.emptyelement("polyline", attrs)
+    def polyline(self, points, *,
+            startarrow=None, endarrow=None, width=None, colour=None):
+        points = list(points)
+        with ExitStack() as stack:
+            # Not using SVG 1.1 markers
+            # because it is too hard to customise their colour and shape
+            if (startarrow or endarrow) and colour:
+                stack.enter_context(self.view(colour=colour))
+                colour = None
+            
+            linewidth = self.linewidth if width is None else width
+            start = points[0]
+            dir = tuple(b - a for [b, a] in zip(points[1], start))
+            start = self._arrow(startarrow,
+                linewidth, dir, start, start, flip=-1)
+            end = points[-1]
+            dir = tuple(b - a for [b, a] in zip(end, points[-2]))
+            end = self._arrow(endarrow, linewidth, dir, end, end, flip=+1)
+            
+            points[0] = start
+            points[-1] = end
+            s = list()
+            for (x, y) in points:
+                s.append("{},{}".format(x, y * self.flip[1]))
+            attrs = {"points": " ".join(s)}
+            self._width(attrs, width)
+            attrs.update(self._colour(colour))
+            self.emptyelement("polyline", attrs)
     
     def cubicbezier(self, a, b, c, d, *,
     offset=None, colour=None, width=None):

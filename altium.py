@@ -380,6 +380,22 @@ class SheetStyle:
     ORCAD_D = 16
     ORCAD_E = 17
 
+class LineShape:
+    '''Start and end shapes for polylines'''
+    NONE = 0
+    HOLLOW_ARROW = 1
+    SOLID_ARROW = 2
+    HOLLOW_TAIL = 3
+    SOLID_TAIL = 4
+    CIRCLE = 5
+    SQUARE = 6
+
+class LineShapeSize:
+    '''Size of start and end shapes for polylines'''
+    SMALL = 0
+    MEDIUM = 2
+    LARGE = 3
+
 import vector
 import os
 import os.path
@@ -608,7 +624,6 @@ class render:
     def handle_polyline(self, owners, obj):
         obj.get_int("INDEXINSHEET")
         obj.get_bool("ISNOTACCESIBLE")
-        obj.check("ENDLINESHAPE", None, b"2")
         linewidth = obj.get_int("LINEWIDTH")
         
         points = list()
@@ -618,6 +633,32 @@ class render:
             points.append(tuple(location))
         kw = dict(points=points)
         kw.update(colour=colour(obj))
+        
+        scale = {
+            LineShapeSize.SMALL: 1,
+            LineShapeSize.MEDIUM: 1.5,
+            LineShapeSize.LARGE: 2,
+        }
+        scale = scale[obj.get_int("LINESHAPESIZE")]
+        arrows = {
+            LineShape.NONE: None,
+            LineShape.SOLID_ARROW:
+                dict(base=5 * scale, shoulder=7 * scale, radius=3 * scale),
+            LineShape.SOLID_TAIL:
+                dict(base=7 * scale, shoulder=0, radius=2.5 * scale),
+        }
+        
+        shape = obj.get_int("STARTLINESHAPE")
+        try:
+            kw.update(startarrow=arrows[shape])
+        except LookupError:
+            warn("Unhandled STARTLINESHAPE=" + format(shape))
+        
+        shape = obj.get_int("ENDLINESHAPE")
+        try:
+            kw.update(endarrow=arrows[shape])
+        except LookupError:
+            warn("Unhandled ENDLINESHAPE=" + format(shape))
         
         if display_part(owners[-1], obj):
             if linewidth != 1:

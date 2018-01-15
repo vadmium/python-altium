@@ -66,6 +66,9 @@ class _RawRenderer(base.Renderer):
             )
         if startarrow and endarrow:
             kw["arrow"] = tkinter.BOTH
+            if startarrow != endarrow:
+                from warnings import warn
+                warn("Different arrows on each end of a line")
         
         self.canvas.create_line(*tkpoints, fill=colour, width=width, **kw)
     

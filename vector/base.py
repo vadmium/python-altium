@@ -53,7 +53,7 @@ class Renderer(View):
     * radius: Lateral distance from axis to shoulder
     
     Types of shapes:
-    * Dart, chevron, barbed, concave arrowhead; shoulder > base:  ===>>
+    * Dart, chevron, barbed, concave arrowhead; shoulder > base:  ===)>
     * Triangular arrowhead; shoulder = base:  ===|>
     * Diamond, convex; 0 < shoulder < base:  ===<>
     * Triangular tail; shoulder = 0:  ===<|
