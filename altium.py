@@ -6,7 +6,7 @@ import zlib
 from pathlib import PureWindowsPath, Path
 import os
 from io import BytesIO
-from math import atan2, sin, cos, radians, degrees
+from math import atan2, sin, cos, radians, degrees, hypot
 
 try:
     from OleFileIO_PL import OleFileIO
@@ -431,21 +431,52 @@ def rail(renderer):
     renderer.vline(-7, +7, offset=(10, 0), width=1.5)
 
 def arrowconn(renderer):
-    thick = 1
-    inside = 2/3
-    point = 7/3
-    hang = 2.5
-    # Distance to shaft junction from point
-    shaft = hang * (point - inside) + thick/2 * point
-    barb = point * (thick/2 + hang)
-    renderer.hline(10 - shaft)
+    neck = arrow_neck(**render.arrowhead)
+    renderer.hline(10 - neck)
+    draw_arrow(renderer, neck, render.arrowhead["outside"],
+        render.arrowhead["hang"], offset=(10, 0))
+
+# Anatomy of arrow shapes:
+# * point: Where the line would end without the arrow
+# * shoulder: Part laterally furthest away from the shaft
+# * neck: Where the full width of the shaft intersects the arrow
+# 
+# shoulder __              
+#         \  ---___        
+# --------+\       --      
+#     neck| >        >point
+# --------+/    ___--      
+#         /__---           
+# 
+# Arrow shapes are defined by:
+# * inside: Flatness (run / rise) of the line from the shoulder to the neck
+# * outside: Flatness of the line from the shoulder to the point
+# * hang: Lateral distance from shoulder to edge of the shaft
+# 
+# Types of shapes:
+# * Dart, chevron, barbed, concave arrowhead; inside > outside > 0:  ===)>
+# * Triangular arrowhead; inside = 0 < outside:  ===|>
+# * Diamond, biconvex; inside < 0 < outside:  ===<>
+# * Triangular tail; inside < 0 = outside:  ===<|
+
+def arrow_neck(inside, outside, hang, *, thick=1):
+    r'''Distance to shaft junction from point'''
+    return hang * (outside - inside) + thick/2 * outside
+
+def draw_arrow(renderer, neck, outside, hang, dir=(1, 0), *, thick=1, **kw):
+    barb = outside * (thick/2 + hang)
+    
+    [dirx, diry] = dir
+    if diry or dirx <= 0:
+        kw.update(rotate=degrees(atan2(-diry, dirx)))
+    
     renderer.polygon((
-        (-shaft, +thick/2),
+        (-neck, +thick/2),
         (-barb, +thick/2 + hang),
         (0, 0),
         (-barb, -thick/2 - hang),
-        (-shaft, -thick/2),
-    ), fill=True, offset=(10, 0))
+        (-neck, -thick/2),
+    ), fill=True, **kw)
 
 def dchevron(renderer):
     renderer.hline(5)
@@ -598,9 +629,9 @@ class render:
             self.handle_children(owners)
             owners.pop()
     
-    arrowhead = dict(base=5, shoulder=7, radius=3)
-    arrowtail = dict(base=7, shoulder=0, radius=2.5)
-    diamond = dict(base=10, shoulder=5, radius=2.5)
+    arrowhead = dict(inside=2/3, outside=7/3, hang=2.5)
+    arrowtail = dict(inside=-7/2.5, outside=0, hang=2)
+    diamond = dict(inside=-5/2.5, outside=+5/2.5, hang=2)
     
     pinmarkers = {
         PinElectrical.INPUT: arrowhead,
@@ -648,7 +679,7 @@ class render:
                 for x in "XY")
             points.append(tuple(location))
         kw = dict(points=points)
-        kw.update(colour=colour(obj))
+        col = colour(obj)
         
         scale = {
             LineShapeSize.SMALL: 1,
@@ -658,28 +689,72 @@ class render:
         scale = scale[obj.get_int("LINESHAPESIZE")]
         arrows = {
             LineShape.NONE: None,
-            LineShape.SOLID_ARROW:
-                dict(base=5 * scale, shoulder=7 * scale, radius=3 * scale),
-            LineShape.SOLID_TAIL:
-                dict(base=7 * scale, shoulder=0, radius=2.5 * scale),
+            LineShape.SOLID_ARROW: self.arrowhead,
+            LineShape.SOLID_TAIL: self.arrowtail,
         }
         
-        shape = obj.get_int("STARTLINESHAPE")
+        start_shape = obj.get_int("STARTLINESHAPE")
         try:
-            kw.update(startarrow=arrows[shape])
+            start_shape = arrows[start_shape]
         except LookupError:
-            warn("Unhandled STARTLINESHAPE=" + format(shape))
+            warn("Unhandled STARTLINESHAPE=" + format(start_shape))
+            start_shape = None
         
-        shape = obj.get_int("ENDLINESHAPE")
+        end_shape = obj.get_int("ENDLINESHAPE")
         try:
-            kw.update(endarrow=arrows[shape])
+            end_shape = arrows[end_shape]
         except LookupError:
-            warn("Unhandled ENDLINESHAPE=" + format(shape))
+            warn("Unhandled ENDLINESHAPE=" + format(end_shape))
+            end_shape = None
         
         if display_part(owners[-1], obj):
-            if linewidth != 1:
-                kw.update(width=linewidth or 0.6)
-            self.renderer.polyline(**kw)
+            linewidth = linewidth or 0.6
+            start = points[0]
+            end = points[-1]
+            if start_shape:
+                start_dir = tuple(a - b for [a, b] in zip(start, points[1]))
+                start_hang = start_shape["hang"] * scale
+                start_neck = arrow_neck(start_shape["inside"],
+                    start_shape["outside"], start_hang, thick=linewidth)
+                mag = hypot(*start_dir)
+                start_point = start
+                start = (
+                    start_point[0] - start_neck * start_dir[0]/mag,
+                    start_point[1] - start_neck * start_dir[1]/mag,
+                )
+            if end_shape:
+                end_dir = tuple(b - a for [b, a] in zip(end, points[-2]))
+                end_hang = end_shape["hang"] * scale
+                end_neck = arrow_neck(end_shape["inside"],
+                    end_shape["outside"], end_hang, thick=linewidth)
+                mag = hypot(*end_dir)
+                end_point = end
+                end = (
+                    end_point[0] - end_neck * end_dir[0]/mag,
+                    end_point[1] - end_neck * end_dir[1]/mag,
+                )
+            points[0] = start
+            points[-1] = end
+            
+            with contextlib.ExitStack() as stack:
+                view = self.renderer
+                if start_shape or end_shape:
+                    view = stack.enter_context(view.view(colour=col))
+                else:
+                    kw.update(colour=col)
+                
+                if linewidth != 1:
+                    kw.update(width=linewidth)
+                view.polyline(**kw)
+                
+                if start_shape:
+                    draw_arrow(view, start_neck, start_shape["outside"],
+                        start_hang, start_dir, offset=start_point,
+                        thick=linewidth)
+                if end_shape:
+                    draw_arrow(view, end_neck, end_shape["outside"],
+                        end_hang, end_dir, offset=end_point,
+                        thick=linewidth)
     
     @_setitem(handlers, Record.ARC)
     @_setitem(handlers, Record.ELLIPTICAL_ARC)
@@ -1125,16 +1200,27 @@ class render:
         if display_part(owners[-1], obj):
             rotate = pinconglomerate & 3
             with self.renderer.view(offset=offset, rotate=rotate) as view:
-                kw = dict()
+                start = 0
                 points = list()
                 if outer_edge:
                     view.ellipse((2.85, 2.85), (3.15, 0), width=0.6)
-                    points.append(6)
-                points.append(pinlength)
+                    start = 6
+                
                 marker = self.pinmarkers[electrical]
                 if marker:
-                    kw.update(startarrow=marker)
-                view.hline(*points, **kw)
+                    kw = dict()
+                    if start:
+                        kw.update(offset=(start, 0))
+                    neck = arrow_neck(**marker)
+                    start += neck
+                
+                if start:
+                    points.append(start)
+                points.append(pinlength)
+                view.hline(*points)
+                if marker:
+                    draw_arrow(view, neck, marker["outside"], marker["hang"],
+                        dir=(-1, 0), **kw)
                 
                 if inner_edge == 3:
                     view.draw(clock)

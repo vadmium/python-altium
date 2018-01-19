@@ -34,30 +34,6 @@ class View:
 
 class Renderer(View):
     r"""
-    Arrow shapes are defined by:
-    * point: Where the line would end without the arrow
-    * shoulder: Part laterally furthest away from the shaft
-    * base: Where the lines from the shoulders intersect
-    
-    shoulder __
-            \  ---___
-    --------+\       --
-            | >base    >point
-    --------+/    ___--
-            /__---
-    
-    Attributes of arrows:
-    * width: Of shaft; default used if omitted
-    * base: Distance from point to base
-    * shoulder: Longitudinal distance from point to shoulder
-    * radius: Lateral distance from axis to shoulder
-    
-    Types of shapes:
-    * Dart, chevron, barbed, concave arrowhead; shoulder > base:  ===)>
-    * Triangular arrowhead; shoulder = base:  ===|>
-    * Diamond, convex; 0 < shoulder < base:  ===<>
-    * Triangular tail; shoulder = 0:  ===<|
-    
     Text is rendered by the text() method. The "text" argument may be:
     * A simple plain text string
     * A sequence of dict() objects, each specifying a formatted text segment.

@@ -42,35 +42,13 @@ class _RawRenderer(base.Renderer):
         self.polyline((a, (ox + bx, oy + by)), **kw)
     
     def polyline(self, points, *,
-    colour, width=None, startarrow=None, endarrow=None):
+            colour, width=None):
         tkpoints = list()
         for (x, y) in points:
             tkpoints.extend((x * self.scaling[0], y * self.scaling[1]))
         width = width or self.linewidth
         colour = self._colour(colour)
-        
-        kw = dict()
-        if startarrow:
-            kw["arrow"] = tkinter.FIRST
-            kw["arrowshape"] = (
-                startarrow["base"] * self.scaling[0],
-                startarrow["shoulder"] * self.scaling[0],
-                (startarrow["radius"] - width / 2) * self.scaling[0],
-            )
-        if endarrow:
-            kw["arrow"] = tkinter.LAST
-            kw["arrowshape"] = (
-                endarrow["base"] * self.scaling[0],
-                endarrow["shoulder"] * self.scaling[0],
-                (endarrow["radius"] - width / 2) * self.scaling[0],
-            )
-        if startarrow and endarrow:
-            kw["arrow"] = tkinter.BOTH
-            if startarrow != endarrow:
-                from warnings import warn
-                warn("Different arrows on each end of a line")
-        
-        self.canvas.create_line(*tkpoints, fill=colour, width=width, **kw)
+        self.canvas.create_line(*tkpoints, fill=colour, width=width)
     
     def cubicbezier(self, a, b, c, d, *,
     offset=(0, 0), colour, width=None):

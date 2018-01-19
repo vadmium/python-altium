@@ -5,10 +5,8 @@ from math import sin, cos, radians
 from collections import Iterable
 from urllib.parse import urlunparse, ParseResult
 import operator
-from math import atan2, degrees, hypot
 from textwrap import TextWrapper
 from io import StringIO
-from contextlib import ExitStack
 from base64 import b64encode
 from sys import stdout
 
@@ -101,69 +99,13 @@ class Renderer(base.Renderer):
         self._line(attrs, *pos, **kw)
     
     def hline(self, a, b=None, *,
-    startarrow=None, endarrow=None, width=None, offset=None, colour=None):
+            width=None, offset=None, colour=None):
+        a = format(a)
         if b is None:
-            b = a
-            a = None
-            reala = 0
+            attrs = {"x2": a}
         else:
-            reala = a
-        # Now a is always the start point and b is always the end point
-        
-        with ExitStack() as stack:
-            # Not using SVG 1.1 markers
-            # because it is too hard to customise their colour and shape
-            dir = b - reala
-            if (startarrow or endarrow) and (offset or colour):
-                stack.enter_context(self.view(offset=offset, colour=colour))
-                offset = None
-                colour = None
-            if width is None:
-                linewidth = self.linewidth
-            else:
-                linewidth = width
-            [a, zero] = self._arrow(startarrow,
-                linewidth, (dir, 0), (a, 0), (reala, 0), flip=-1)
-            b = (b, 0)
-            b = self._arrow(endarrow, linewidth, (dir, 0), b, b, flip=+1)
-            [b, zero] = b
-            
-            attrs = dict()
-            if a is not None:
-                attrs["x1"] = format(a)
-            attrs["x2"] = format(b)
-            self._line(attrs, width=width, offset=offset, colour=colour)
-    
-    def _arrow(self, arrow, width, dir, optpt, realpt, flip):
-            if not arrow:
-                return optpt
-            
-            radius = arrow["radius"]
-            base = arrow["base"]
-            shoulder = arrow.get("shoulder", base)
-            
-            # Distance to shaft junction from point
-            shaft = base + (shoulder - base) * width / 2 / radius
-            
-            [dirx, diry] = dir
-            if not diry and dirx > 0:
-                rotate = None
-            else:
-                rotate = degrees(atan2(diry, dirx))
-            
-            self.polygon((
-                (-shaft * flip, +width / 2),
-                (-shoulder * flip, +radius),
-                (0, 0),
-                (-shoulder * flip, -radius),
-                (-shaft * flip, -width / 2),
-            ), fill=True, offset=realpt, rotate=rotate)
-            
-            def end():
-                mag = hypot(*dir)
-                for [pt, d] in zip(realpt, dir):
-                    yield pt - shaft * d/mag * flip
-            return end()
+            attrs = {"x1": a, "x2": format(b)}
+        self._line(attrs, width=width, offset=offset, colour=colour)
     
     def vline(self, a, b=None, *pos, **kw):
         a = format(a * self.flip[1])
@@ -180,33 +122,14 @@ class Renderer(base.Renderer):
         self.emptyelement("line", attrs, transform=transform)
     
     def polyline(self, points, *,
-            startarrow=None, endarrow=None, width=None, colour=None):
-        points = list(points)
-        with ExitStack() as stack:
-            # Not using SVG 1.1 markers
-            # because it is too hard to customise their colour and shape
-            if (startarrow or endarrow) and colour:
-                stack.enter_context(self.view(colour=colour))
-                colour = None
-            
-            linewidth = self.linewidth if width is None else width
-            start = points[0]
-            dir = tuple(b - a for [b, a] in zip(points[1], start))
-            start = self._arrow(startarrow,
-                linewidth, dir, start, start, flip=-1)
-            end = points[-1]
-            dir = tuple(b - a for [b, a] in zip(end, points[-2]))
-            end = self._arrow(endarrow, linewidth, dir, end, end, flip=+1)
-            
-            points[0] = start
-            points[-1] = end
-            s = list()
-            for (x, y) in points:
-                s.append("{},{}".format(x, y * self.flip[1]))
-            attrs = {"points": " ".join(s)}
-            self._width(attrs, width)
-            attrs.update(self._colour(colour))
-            self.emptyelement("polyline", attrs)
+            width=None, colour=None):
+        s = list()
+        for (x, y) in points:
+            s.append("{},{}".format(x, y * self.flip[1]))
+        attrs = {"points": " ".join(s)}
+        self._width(attrs, width)
+        attrs.update(self._colour(colour))
+        self.emptyelement("polyline", attrs)
     
     def cubicbezier(self, a, b, c, d, *,
     offset=None, colour=None, width=None):
