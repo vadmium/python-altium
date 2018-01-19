@@ -383,9 +383,9 @@ class SheetStyle:
 class LineShape:
     '''Start and end shapes for polylines'''
     NONE = 0
-    HOLLOW_ARROW = 1
+    THIN_ARROW = 1
     SOLID_ARROW = 2
-    HOLLOW_TAIL = 3
+    THIN_TAIL = 3
     SOLID_TAIL = 4
     CIRCLE = 5
     SQUARE = 6

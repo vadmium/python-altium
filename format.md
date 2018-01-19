@@ -314,14 +314,15 @@ The component object seems to occur before any of its child objects.
     than expected
 * `|COLOR`
 * `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .: May also include `_FRAC` counterparts
-* `|STARTLINESHAPE|ENDLINESHAPE`: [Integers](#integers)
+* `|STARTLINESHAPE|ENDLINESHAPE` ([Integers](#integers)):
+    In general, the shapes are wider than the line.
     * Omitted: No special shape
-    * 1: [Hollow?] arrowhead
-    * 2: Solid arrowhead
-    * 3: [Hollow?] arrow tail
-    * 4: Solid arrow tail
-    * 5: Circle
-    * 6: Square
+    * 1: Arrowhead with thin barbs
+    * 2: Solid fat arrowhead
+    * 3: Thin arrow tail
+    * 4: Solid fat arrow tail
+    * 5: Solid circle
+    * 6: Solid square
 * `|LINESHAPESIZE`: [Integer]
     * Omitted, 1: Small [Is there a distinction?
         Perhaps 0 (omitted) is extra small, and 1 is larger.]
