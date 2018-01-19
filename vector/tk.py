@@ -62,20 +62,24 @@ class _RawRenderer(base.Renderer):
         self.canvas.create_line(*points, smooth="bezier",
             fill=colour, width=width)
     
-    def arc(self, r, start, end, offset=(0, 0), *, colour):
+    def arc(self, r, start, end, offset=(0, 0), *, colour, width=None):
         (rx, ry) = r
         extent = end - start
         if abs(extent) >= 360:
-            return self.ellipse(r, offset, outline=colour)
+            return self.ellipse(r, offset, outline=colour, width=width)
         extent %= 360
         
         (ox, oy) = offset
+        kw = dict()
+        if width is not None:
+            kw.update(width=width)
         self.canvas.create_arc(
             (ox - rx) * self.scaling[0], (oy - ry) * self.scaling[1],
             (ox + rx) * self.scaling[0], (oy + ry) * self.scaling[1],
             style=tkinter.ARC,
             start=start, extent=extent,
             outline=self._colour(colour),
+            **kw,
         )
     
     def ellipse(self, r, offset=(0, 0), *,

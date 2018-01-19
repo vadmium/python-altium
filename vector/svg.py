@@ -233,9 +233,9 @@ class Renderer(base.Renderer):
         if width is not None:
             attrs["stroke-width"] = format(width)
     
-    def arc(self, r, start, end, offset=None, *, colour=None):
+    def arc(self, r, start, end, offset=None, *, colour=None, width=None):
         if abs(end - start) >= 360:
-            return self.ellipse(r, offset, outline=colour)
+            return self.ellipse(r, offset, outline=colour, width=width)
         
         a = list()
         d = list()
@@ -253,6 +253,7 @@ class Renderer(base.Renderer):
             large=large,
             d=",".join(d),
         )
+        self._width(at, width)
         self.emptyelement("path", at, transform=self._offset(offset))
     
     def text(self, text, offset=None, horiz=None, vert=None, *,

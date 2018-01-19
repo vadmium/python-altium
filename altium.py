@@ -302,6 +302,9 @@ def display_part(objects, obj):
     return ((part == b"-1" or part == owner.get("CURRENTPARTID")) and
         mode == owner.get_int("DISPLAYMODE"))
 
+def get_line_width(obj):
+    return [0.4, 1, 2, 4][obj.get_int("LINEWIDTH")]
+
 class Record:
     """Schematic object record types"""
     HEADER = 0
@@ -392,7 +395,8 @@ class LineShape:
 
 class LineShapeSize:
     '''Size of start and end shapes for polylines'''
-    SMALL = 0
+    XSMALL = 0
+    SMALL = 1
     MEDIUM = 2
     LARGE = 3
 
@@ -660,7 +664,7 @@ class render:
         
         kw = dict(
             colour=colour(obj),
-            width=obj.get_int("LINEWIDTH"),
+            width=get_line_width(obj),
             a=get_location(obj),
             b=tuple(obj.get_int("CORNER." + x) for x in "XY"),
         )
@@ -671,7 +675,7 @@ class render:
     def handle_polyline(self, owners, obj):
         obj.get_int("INDEXINSHEET")
         obj.get_bool("ISNOTACCESIBLE")
-        linewidth = obj.get_int("LINEWIDTH")
+        linewidth = get_line_width(obj)
         
         points = list()
         for i in range(obj.get_int("LOCATIONCOUNT")):
@@ -682,9 +686,10 @@ class render:
         col = colour(obj)
         
         scale = {
-            LineShapeSize.SMALL: 1,
-            LineShapeSize.MEDIUM: 1.5,
-            LineShapeSize.LARGE: 2,
+            LineShapeSize.XSMALL: 1,
+            LineShapeSize.SMALL: 2.5,
+            LineShapeSize.MEDIUM: 5,
+            LineShapeSize.LARGE: 10,
         }
         scale = scale[obj.get_int("LINESHAPESIZE")]
         arrows = {
@@ -708,7 +713,6 @@ class render:
             end_shape = None
         
         if display_part(owners[-1], obj):
-            linewidth = linewidth or 0.6
             start = points[0]
             end = points[-1]
             if start_shape:
@@ -761,7 +765,7 @@ class render:
     def handle_arc(self, owners, obj):
         obj.get_int("INDEXINSHEET")
         obj.check("ISNOTACCESIBLE", b"T")
-        obj.check("LINEWIDTH", b"1")
+        width = get_line_width(obj)
         
         r = get_int_frac(obj, "RADIUS")
         if obj.get_int("RECORD") == Record.ELLIPTICAL_ARC:
@@ -781,7 +785,11 @@ class render:
                 start = degrees(atan2(r * sin(start), r2 * cos(start)))
                 end = radians(end)
                 end = degrees(atan2(r * sin(end), r2 * cos(end)))
-            self.renderer.arc((r, r2), start, end, location, colour=col)
+            kw = dict()
+            if width != 1:
+                kw.update(width=width)
+            self.renderer.arc((r, r2), start, end, location,
+                colour=col, **kw)
     
     @_setitem(handlers, Record.BEZIER)
     def handle_bezier(self, owners, obj):
@@ -795,7 +803,7 @@ class render:
         for n in range(4):
             n = format(1 + n)
             points.append(tuple(obj.get_int(x + n) for x in "XY"))
-        width = obj.get_int("LINEWIDTH")
+        width = get_line_width(obj)
         if width != 1:
             kw.update(width=width)
         self.renderer.cubicbezier(*points, **kw)
@@ -807,7 +815,7 @@ class render:
         obj.get_bool("ISNOTACCESIBLE")
         
         kw = dict(
-            width=obj.get_int("LINEWIDTH") or 0.6,
+            width=get_line_width(obj),
             outline=colour(obj),
         )
         fill = colour(obj, "AREACOLOR")
@@ -873,7 +881,7 @@ class render:
         
         kw = dict(
             outline=colour(obj),
-            width=obj.get_int("LINEWIDTH") or 0.6,
+            width=get_line_width(obj),
         )
         if obj.get_bool("ISSOLID"):
             kw.update(fill=fill)
@@ -895,7 +903,7 @@ class render:
         self.renderer.ellipse(
             r=(get_int_frac(obj, "RADIUS"),
                 get_int_frac(obj, "SECONDARYRADIUS")),
-            width=obj.get_int("LINEWIDTH") or 0.6,
+            width=get_line_width(obj),
             outline=colour(obj),
             offset=get_location(obj),
         **kw)
@@ -1284,18 +1292,17 @@ class render:
             points.append(point)
         self.renderer.polyline(points,
             colour=colour(obj),
-            width=obj.get_int("LINEWIDTH"),
+            width=get_line_width(obj),
         )
 
     @_setitem(handlers, Record.BUS_ENTRY)
     def handle_bus_entry(self, owners, obj):
-        obj.check("LINEWIDTH", b"2")
         obj.check("OWNERPARTID", b"-1")
         self.renderer.line(
             get_location(obj),
             tuple(obj.get_int("CORNER." + x) for x in "XY"),
             colour=colour(obj),
-            width=obj.get_int("LINEWIDTH"),
+            width=get_line_width(obj),
         )
     
     @_setitem(handlers, Record.JUNCTION)
@@ -1455,7 +1462,7 @@ class render:
         
         corner = (obj.get_int("XSIZE"), -obj.get_int("YSIZE"))
         self.renderer.rectangle(corner,
-            width=obj.get_int("LINEWIDTH") or 0.6,
+            width=get_line_width(obj),
             outline=colour(obj), fill=colour(obj, "AREACOLOR"),
             offset=get_location(obj),
         )

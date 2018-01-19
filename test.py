@@ -109,14 +109,14 @@ class ConversionTest(TestCase):
         self.assertCountEqual(sheet.items(), (
             ("transform",  "translate(100.0, -200.0)"),
             ("width", "40"), ("height", "30"),
-            ("stroke-width", "0.6"), ("class", "solid"),
+            ("stroke-width", "0.4"), ("class", "solid"),
             ("style", "fill: #DD9933; stroke: #11BB77"),
         ))
         
         self.assertEqual(triangle.tag, SVG + "polygon")
         self.assertCountEqual(triangle.items(), (
             ("points", "100.0,-100.0 110.0,-120.0 120.0,-100.0"),
-            ("class", "solid"), ("stroke-width", "0.6"),
+            ("class", "solid"), ("stroke-width", "0.4"),
             ("style", "fill: #FFFFFF; stroke: #0000FF"),
         ))
     

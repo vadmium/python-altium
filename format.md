@@ -10,7 +10,8 @@ Contents:
 
 * [OLE compound document](#ole-compound-document)
 * [Property list](#property-list)
-* [Data types](#data-types): [Integer], [Colour], [Real], [Boolean]
+* [Data types](#data-types): [Integer], [Colour], [Real], [Boolean],
+    [Line width]
 * [Object records](#object-records)
     * [0: Header](#header)
     * [1: Component](#component)
@@ -163,6 +164,15 @@ Typically three decimal places. Property omitted when the value is zero.
 `|ISHIDDEN=T|PARTIDLOCKED=F`. When false, the property is often omitted,
 rather than explicitly set to `F`.
 
+### Line width ###
+
+`|LINEWIDTH`
+
+* Omitted: 4 mil
+* 1: 10 mil
+* 2: 20 mil
+* 3: 40 mil
+
 ## Object records ##
 
 Each item in the FileHeader stream describes an object.
@@ -310,8 +320,7 @@ The component object seems to occur before any of its child objects.
 * `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
 * `|OWNERPARTDISPLAYMODE`: See [Component](#component) `|DISPLAYMODE`
-* `|LINEWIDTH` ([integer]): Values greater than one seem to be drawn thicker
-    than expected
+* `|LINEWIDTH`
 * `|COLOR`
 * `|LOCATIONCOUNT|X`_n_`|Y`_n_`|`. . .: May also include `_FRAC` counterparts
 * `|STARTLINESHAPE|ENDLINESHAPE` ([Integers](#integers)):
@@ -324,8 +333,8 @@ The component object seems to occur before any of its child objects.
     * 5: Solid circle
     * 6: Solid square
 * `|LINESHAPESIZE`: [Integer]
-    * Omitted, 1: Small [Is there a distinction?
-        Perhaps 0 (omitted) is extra small, and 1 is larger.]
+    * Omitted: Extra small
+    * 1: Small
     * 2: Medium
     * 3: Large
 
@@ -335,8 +344,7 @@ The component object seems to occur before any of its child objects.
 * `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID|OWNERPARTDISPLAYMODE`:
     See [Component](#component) `|CURRENTPARTID` and `|DISPLAYMODE`
-* `|LINEWIDTH` ([integer]): If omitted (zero), there is a thin but visible
-    outline
+* `|LINEWIDTH`
 * `|COLOR|AREACOLOR|ISSOLID`
 * `|LOCATIONCOUNT|X`_n_`|X`_n_`_FRAC|Y`_n_`Y`_n_`_FRAC|`. . .
 * `|EXTRALOCATIONCOUNT|E(X/Y)<n>[_FRAC]`:
@@ -350,7 +358,7 @@ The component object seems to occur before any of its child objects.
 * `|SECONDARYRADIUS|SECONDARYRADIUS_FRAC`: Radius in _y_ direction
 * `|COLOR|AREACOLOR|ISSOLID`
 * `|INDEXINSHEET`: [Integer]
-* `|LINEWIDTH=1`: Optional
+* `|LINEWIDTH`
 * `|OWNERINDEX|ISNOTACCESIBLE=T|OWNERPARTID=1|LOCATION.X|LOCATION.Y`
 
 ### Piechart ###
@@ -380,7 +388,7 @@ circ_angle = atan2( RADIUS * sin(angle), SECONDARYRADIUS * cos(angle) )
 * `|OWNERPARTDISPLAYMODE`: See [Component](#component) `|DISPLAYMODE`
 * `|LOCATION.X|LOCATION.Y`: Centre of circle
 * `|RADIUS|RADIUS_FRAC`: [Integer]s
-* `|LINEWIDTH=1`
+* `|LINEWIDTH`
 * `|STARTANGLE` ([real]): Default 0; 0 for full circle
 * `|ENDANGLE` ([real]): 360 for full circle. Setting both to zero may
     also specify a full circle.
@@ -394,7 +402,7 @@ circ_angle = atan2( RADIUS * sin(angle), SECONDARYRADIUS * cos(angle) )
 * `|OWNERPARTID=1`
 * `|OWNERPARTDISPLAYMODE`: See [Component](#component) `|DISPLAYMODE`
 * `|LOCATION.X|LOCATION.Y|CORNER.X|CORNER.Y`: Endpoints of the line
-* `|LINEWIDTH=1`: Line thickness
+* `|LINEWIDTH`: Line thickness
 * `|COLOR`
 
 ### Rectangle ###
@@ -406,7 +414,7 @@ circ_angle = atan2( RADIUS * sin(angle), SECONDARYRADIUS * cos(angle) )
 * `|OWNERPARTDISPLAYMODE`: Optional
 * `|LOCATION.X|LOCATION.Y`: Bottom left corner
 * `|CORNER.X[_FRAC]|CORNER.Y[_FRAC]`: Top right corner
-* `|LINEWIDTH`: [Integer]. If zero, there is still a thin visible outline.
+* `|LINEWIDTH`
 * `|COLOR`: Outline colour
 * `|AREACOLOR`: Fill colour
 * `|ISSOLID` ([boolean]):
@@ -656,7 +664,7 @@ Labels on top-level schematic
 ### Bus entry ###
 `|RECORD=37`: Bus entry line
 
-`|COLOR=8388608|CORNER.X|CORNER.Y|LINEWIDTH=2|LOCATION.X|LOCATION.Y|OWNERPARTID=-1`
+`|COLOR=8388608|CORNER.X|CORNER.Y|LINEWIDTH|LOCATION.X|LOCATION.Y|OWNERPARTID=-1`
 
 ### Template ###
 `|RECORD=39`: Sheet template, owning custom title block lines and labels
@@ -749,7 +757,7 @@ Children of [Sheet](#sheet), seen in the Additional stream
 #sheet-name-and-file-name), also with `|OWNERINDEXADDITIONALLIST=T`
 and optionally `|ISHIDDEN=T`
 
-`|RECORD=218|COLOR=15187117|INDEXINSHEET|LINEWIDTH=2|LOCATIONCOUNT=2|OWNERPARTID=-1|X1|X2|Y1|Y2`
+`|RECORD=218|COLOR=15187117|INDEXINSHEET|LINEWIDTH|LOCATIONCOUNT=2|OWNERPARTID=-1|X1|X2|Y1|Y2`
 
 ### Hyperlink ###
 `|RECORD=226`
