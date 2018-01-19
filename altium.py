@@ -429,8 +429,24 @@ def gnd(renderer):
 def rail(renderer):
     renderer.hline(10)
     renderer.vline(-7, +7, offset=(10, 0), width=1.5)
+
 def arrowconn(renderer):
-    renderer.hline(10, endarrow=render.arrowhead)
+    thick = 1
+    inside = 2/3
+    point = 7/3
+    hang = 2.5
+    # Distance to shaft junction from point
+    shaft = hang * (point - inside) + thick/2 * point
+    barb = point * (thick/2 + hang)
+    renderer.hline(10 - shaft)
+    renderer.polygon((
+        (-shaft, +thick/2),
+        (-barb, +thick/2 + hang),
+        (0, 0),
+        (-barb, -thick/2 - hang),
+        (-shaft, -thick/2),
+    ), fill=True, offset=(10, 0))
+
 def dchevron(renderer):
     renderer.hline(5)
     renderer.polyline(((8, +4), (5, 0), (8, -4)))
