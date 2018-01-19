@@ -339,7 +339,7 @@ class Renderer(base.Renderer):
         transform = list()
         if vert is not None:
             baselines = {
-                self.CENTRE: "middle",
+                self.CENTRE: "central",
                 self.TOP: "text-before-edge",
                 self.BOTTOM: "text-after-edge",
             }
