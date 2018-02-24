@@ -696,6 +696,7 @@ class render:
             LineShape.NONE: None,
             LineShape.SOLID_ARROW: self.arrowhead,
             LineShape.SOLID_TAIL: self.arrowtail,
+            LineShape.CIRCLE: LineShape.CIRCLE,
         }
         
         start_shape = obj.get_int("STARTLINESHAPE")
@@ -715,7 +716,7 @@ class render:
         if display_part(owners[-1], obj):
             start = points[0]
             end = points[-1]
-            if start_shape:
+            if isinstance(start_shape, dict):
                 start_dir = tuple(a - b for [a, b] in zip(start, points[1]))
                 start_hang = start_shape["hang"] * scale
                 start_neck = arrow_neck(start_shape["inside"],
@@ -726,7 +727,7 @@ class render:
                     start_point[0] - start_neck * start_dir[0]/mag,
                     start_point[1] - start_neck * start_dir[1]/mag,
                 )
-            if end_shape:
+            if isinstance(end_shape, dict):
                 end_dir = tuple(b - a for [b, a] in zip(end, points[-2]))
                 end_hang = end_shape["hang"] * scale
                 end_neck = arrow_neck(end_shape["inside"],
@@ -751,14 +752,19 @@ class render:
                     kw.update(width=linewidth)
                 view.polyline(**kw)
                 
-                if start_shape:
+                r = scale * 1.5 + linewidth / 2
+                if isinstance(start_shape, dict):
                     draw_arrow(view, start_neck, start_shape["outside"],
                         start_hang, start_dir, offset=start_point,
                         thick=linewidth)
-                if end_shape:
+                elif start_shape == LineShape.CIRCLE:
+                    view.ellipse((r, r), start, fill=True)
+                if isinstance(end_shape, dict):
                     draw_arrow(view, end_neck, end_shape["outside"],
                         end_hang, end_dir, offset=end_point,
                         thick=linewidth)
+                elif end_shape == LineShape.CIRCLE:
+                    view.ellipse((r, r), end, fill=True)
     
     @_setitem(handlers, Record.ARC)
     @_setitem(handlers, Record.ELLIPTICAL_ARC)
