@@ -696,6 +696,7 @@ class render:
             LineShape.NONE: None,
             LineShape.SOLID_ARROW: self.arrowhead,
             LineShape.SOLID_TAIL: self.arrowtail,
+            LineShape.SQUARE: LineShape.SQUARE,
             LineShape.CIRCLE: LineShape.CIRCLE,
         }
         
@@ -716,8 +717,9 @@ class render:
         if display_part(owners[-1], obj):
             start = points[0]
             end = points[-1]
+            start_dir = tuple(a - b for [a, b] in zip(start, points[1]))
+            end_dir = tuple(b - a for [b, a] in zip(end, points[-2]))
             if isinstance(start_shape, dict):
-                start_dir = tuple(a - b for [a, b] in zip(start, points[1]))
                 start_hang = start_shape["hang"] * scale
                 start_neck = arrow_neck(start_shape["inside"],
                     start_shape["outside"], start_hang, thick=linewidth)
@@ -728,7 +730,6 @@ class render:
                     start_point[1] - start_neck * start_dir[1]/mag,
                 )
             if isinstance(end_shape, dict):
-                end_dir = tuple(b - a for [b, a] in zip(end, points[-2]))
                 end_hang = end_shape["hang"] * scale
                 end_neck = arrow_neck(end_shape["inside"],
                     end_shape["outside"], end_hang, thick=linewidth)
@@ -757,12 +758,22 @@ class render:
                     draw_arrow(view, start_neck, start_shape["outside"],
                         start_hang, start_dir, offset=start_point,
                         thick=linewidth)
+                elif start_shape == LineShape.SQUARE:
+                    [run, rise] = start_dir
+                    rotate = degrees(atan2(rise, run))
+                    view.rectangle((-r, -r), (+r, +r), offset=start,
+                        fill=True, rotate=rotate)
                 elif start_shape == LineShape.CIRCLE:
                     view.ellipse((r, r), start, fill=True)
                 if isinstance(end_shape, dict):
                     draw_arrow(view, end_neck, end_shape["outside"],
                         end_hang, end_dir, offset=end_point,
                         thick=linewidth)
+                elif end_shape == LineShape.SQUARE:
+                    [run, rise] = end_dir
+                    rotate = degrees(atan2(rise, run))
+                    view.rectangle((-r, -r), (+r, +r), offset=end,
+                        fill=True, rotate=rotate)
                 elif end_shape == LineShape.CIRCLE:
                     view.ellipse((r, r), end, fill=True)
     

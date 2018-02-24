@@ -166,7 +166,7 @@ class Renderer(base.Renderer):
         self._closed(attrs, style, outline, fill, width)
         self.emptyelement("polygon", attrs, style=style, transform=transform)
     
-    def rectangle(self, a, b=None, *, offset=None,
+    def rectangle(self, a, b=None, *, offset=None, rotate=None,
     outline=None, fill=None, width=None, _attrs=()):
         """
         rectangle(a) -> <rect width=a />
@@ -177,7 +177,10 @@ class Renderer(base.Renderer):
         
         attrs = dict(_attrs)
         style = list()
-        transform = list()
+        transform = self._offset(offset)
+        if rotate is not None:
+            transform.append("rotate({})".format(rotate))
+        
         if b:
             (x, y) = a
             attrs["x"] = format(x)
@@ -208,7 +211,6 @@ class Renderer(base.Renderer):
         attrs["width"] = format(w)
         attrs["height"] = format(h)
         
-        transform.extend(self._offset(offset))
         self._closed(attrs, style, outline, fill, width)
         self.emptyelement("rect", attrs, style=style, transform=transform)
     

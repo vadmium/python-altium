@@ -54,6 +54,14 @@ class Renderer(View):
             kw.update(b=(0, b))
         self.line((0, a), **kw)
     
+    def rectangle(self, a, b=None, **kw):
+        if not b:
+            b = a
+            a = (0, 0)
+        [ax, ay] = a
+        [bx, by] = b
+        return self.polygon(((ax, ay), (ax, by), (bx, by), (bx, ay)), **kw)
+    
     def roundrect(self, r, a, b=None, *, offset=None,
     fill=None, outline=None, **kw):
         if not all(r):

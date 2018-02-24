@@ -110,8 +110,11 @@ class _RawRenderer(base.Renderer):
         kw = self._closed(outline, fill, width)
         self.canvas.create_polygon(tkpoints, **kw)
     
-    def rectangle(self, a, b=None, *, offset=(0, 0),
+    def rectangle(self, a, b=None, *, offset=(0, 0), rotate=None,
     outline=None, fill=None, width=None):
+        if rotate is not None:
+            return super().rectangle(a, b, offset=offset, rotate=rotate,
+                outline=outline, fill=fill, width=width)
         if not b:
             b = a
             a = (0, 0)
