@@ -696,6 +696,8 @@ class render:
             LineShape.NONE: None,
             LineShape.SOLID_ARROW: self.arrowhead,
             LineShape.SOLID_TAIL: self.arrowtail,
+            LineShape.THIN_ARROW: LineShape.THIN_ARROW,
+            LineShape.THIN_TAIL: LineShape.THIN_TAIL,
             LineShape.SQUARE: LineShape.SQUARE,
             LineShape.CIRCLE: LineShape.CIRCLE,
         }
@@ -719,26 +721,38 @@ class render:
             end = points[-1]
             start_dir = tuple(a - b for [a, b] in zip(start, points[1]))
             end_dir = tuple(b - a for [b, a] in zip(end, points[-2]))
+            
+            start_hang = scale * 2
             if isinstance(start_shape, dict):
                 start_hang = start_shape["hang"] * scale
                 start_neck = arrow_neck(start_shape["inside"],
                     start_shape["outside"], start_hang, thick=linewidth)
-                mag = hypot(*start_dir)
-                start_point = start
-                start = (
-                    start_point[0] - start_neck * start_dir[0]/mag,
-                    start_point[1] - start_neck * start_dir[1]/mag,
-                )
+            elif start_shape == LineShape.THIN_ARROW:
+                start_neck = (hypot(1, 3/2) + 3/2/2) * linewidth
+            else:
+                start_neck = 0
+            mag = hypot(*start_dir)
+            start_point = start
+            start = (
+                start_point[0] - start_neck * start_dir[0]/mag,
+                start_point[1] - start_neck * start_dir[1]/mag,
+            )
+            
+            end_hang = scale * 2
             if isinstance(end_shape, dict):
                 end_hang = end_shape["hang"] * scale
                 end_neck = arrow_neck(end_shape["inside"],
                     end_shape["outside"], end_hang, thick=linewidth)
-                mag = hypot(*end_dir)
-                end_point = end
-                end = (
-                    end_point[0] - end_neck * end_dir[0]/mag,
-                    end_point[1] - end_neck * end_dir[1]/mag,
-                )
+            elif end_shape == LineShape.THIN_ARROW:
+                end_neck = (hypot(1, 3/2) + 3/2/2) * linewidth
+            else:
+                end_neck = 0
+            mag = hypot(*end_dir)
+            end_point = end
+            end = (
+                end_point[0] - end_neck * end_dir[0]/mag,
+                end_point[1] - end_neck * end_dir[1]/mag,
+            )
             points[0] = start
             points[-1] = end
             
@@ -753,29 +767,45 @@ class render:
                     kw.update(width=linewidth)
                 view.polyline(**kw)
                 
-                r = scale * 1.5 + linewidth / 2
-                if isinstance(start_shape, dict):
-                    draw_arrow(view, start_neck, start_shape["outside"],
-                        start_hang, start_dir, offset=start_point,
-                        thick=linewidth)
-                elif start_shape == LineShape.SQUARE:
-                    [run, rise] = start_dir
+                def draw(shape, point, neck, dir, hang):
+                    r = scale * 1.5 + linewidth / 2
+                    [run, rise] = dir
                     rotate = degrees(atan2(rise, run))
-                    view.rectangle((-r, -r), (+r, +r), offset=start,
-                        fill=True, rotate=rotate)
-                elif start_shape == LineShape.CIRCLE:
-                    view.ellipse((r, r), start, fill=True)
-                if isinstance(end_shape, dict):
-                    draw_arrow(view, end_neck, end_shape["outside"],
-                        end_hang, end_dir, offset=end_point,
-                        thick=linewidth)
-                elif end_shape == LineShape.SQUARE:
-                    [run, rise] = end_dir
-                    rotate = degrees(atan2(rise, run))
-                    view.rectangle((-r, -r), (+r, +r), offset=end,
-                        fill=True, rotate=rotate)
-                elif end_shape == LineShape.CIRCLE:
-                    view.ellipse((r, r), end, fill=True)
+                    if isinstance(shape, dict):
+                        draw_arrow(view, neck, shape["outside"],
+                            hang, dir, offset=point,
+                            thick=linewidth)
+                    elif shape == LineShape.THIN_ARROW:
+                        hang += linewidth / 2
+                        flat = hypot(1, 3/2) * linewidth
+                        view.polygon((
+                            (-neck, +linewidth/2),
+                            (-hang * 3/2 - flat, +hang),
+                            (-hang * 3/2, +hang),
+                            (0, 0),
+                            (-hang * 3/2, -hang),
+                            (-hang * 3/2 - flat, -hang),
+                            (-neck, -linewidth/2),
+                        ), fill=True, offset=point, rotate=rotate)
+                    elif shape == LineShape.THIN_TAIL:
+                        hang += linewidth / 2
+                        flat = hypot(1, 3/2) * linewidth
+                        view.polygon((
+                            (-flat, 0),
+                            (hang * 3/2 - flat, +hang),
+                            (+hang * 3/2, +hang),
+                            (0, 0),
+                            (+hang * 3/2, -hang),
+                            (hang * 3/2 - flat, -hang),
+                        ), fill=True, offset=point, rotate=rotate)
+                    elif shape == LineShape.SQUARE:
+                        view.rectangle((-r, -r), (+r, +r), offset=point,
+                            fill=True, rotate=rotate)
+                    elif shape == LineShape.CIRCLE:
+                        view.ellipse((r, r), point, fill=True)
+                draw(start_shape, start_point,
+                    start_neck, start_dir, start_hang)
+                draw(end_shape, end_point, end_neck, end_dir, end_hang)
     
     @_setitem(handlers, Record.ARC)
     @_setitem(handlers, Record.ELLIPTICAL_ARC)
