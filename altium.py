@@ -883,9 +883,7 @@ class render:
     
     @_setitem(handlers, Record.LABEL)
     def handle_label(self, owners, obj):
-        for property in (
-            "INDEXINSHEET", "ISNOTACCESIBLE", "ORIENTATION", "JUSTIFICATION",
-        ):
+        for property in ("INDEXINSHEET", "ISNOTACCESIBLE"):
             obj.get(property)
         obj.get_bool("GRAPHICALLYLOCKED")
         
@@ -897,6 +895,18 @@ class render:
         text = obj.get("TEXT")
         
         if display_part(owners[-1], obj):
+            just = obj.get_int("JUSTIFICATION")
+            orient = obj.get_int("ORIENTATION")
+            if just or orient:
+                [horiz, vert] = divmod(just, 3)
+                horiz -= 1
+                vert = 1 - vert
+                obj.check("ORIENTATION", None, b"2")
+                if orient == 2:
+                    horiz = -horiz
+                    vert = -vert
+                kw.update(horiz=horiz, vert=vert)
+            
             if text == b"=CurrentDate":
                 self.renderer.text(format(self.date, "%x"), **kw)
             elif text == b"=CurrentTime":
@@ -906,7 +916,10 @@ class render:
             elif text.startswith(b"="):
                 self.parameter(text[1:], owners, **kw)
             else:
-                self.text(obj)
+                kw = dict()
+                if just or orient:
+                    kw.update(horiz=horiz, vert=vert)
+                self.text(obj, **kw)
     
     @_setitem(handlers, Record.POLYGON)
     def handle_polygon(self, owners, obj):

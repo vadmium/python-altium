@@ -291,19 +291,20 @@ The component object seems to occur before any of its child objects.
 * `|ISNOTACCESIBLE`: [Boolean]
 * `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID`: See [Component](#component) `|CURRENTPARTID`
-* `|LOCATION.X|LOCATION.Y|ISMIRRORED=T`
-* `|ORIENTATION=3`
-* `|JUSTIFICATION`:
-   * 0: BottonLeft  
-   * 1: BottonCenter
-   * 2: BottonRight
+* `|LOCATION.X|LOCATION.Y|COLOR`
+* `|ISMIRRORED`: [Boolean]
+* `|ORIENTATION=2`: Orientation 2 with justification 8 fixes the bottom left
+    corner of the text (otherwise justification 8 would be top-right)
+* `|JUSTIFICATION` ([integer]):
+   * 0: Bottom left  
+   * 1: Bottom center
+   * 2: Bottom right
    * 3: CenterLeft
    * 4: CenterCenter
    * 5: CenterRight
    * 6: TopLeft
    * 7: TopCenter
    * 8: TopRight 
-* `|COLOR`: Each optional
 * `|FONTID` ([integer]): Selects from the font table in the
     [Sheet](#sheet) object
 * `|TEXT`:
