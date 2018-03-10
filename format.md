@@ -11,7 +11,7 @@ Contents:
 * [OLE compound document](#ole-compound-document)
 * [Property list](#property-list)
 * [Data types](#data-types): [Integer], [Colour], [Real], [Boolean],
-    [Line width]
+    [Line width](#line-width)
 * [Object records](#object-records)
     * [0: Header](#header)
     * [1: Component](#component)
