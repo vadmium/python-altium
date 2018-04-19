@@ -1226,6 +1226,7 @@ class render:
         obj.check("NAME", b"Designator")
         obj.check("READONLYSTATE", b"1")
         obj.get("UNIQUEID")
+        obj.get_bool("OVERRIDENOTAUTOPOSITION")
         
         location = get_location(obj)
         kw = dict(

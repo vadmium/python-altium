@@ -672,6 +672,8 @@ Labels on top-level schematic
     #parameter)
 * `|ISHIDDEN` ([Boolean]): if true, `|TEXT` is omitted
 * `|UNIQUEID`: Optional
+* `|OVERRIDENOTAUTOPOSITION` ([Boolean]):
+    Maybe related to `|NOTAUTOPOSITION` in [Parameter](#parameter)
 
 ### Bus entry ###
 `|RECORD=37`: Bus entry line
