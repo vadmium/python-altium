@@ -652,7 +652,7 @@ class render:
         PowerObjectStyle.GND: (gnd, 20),
     }
     
-    # Mapping of record type numbers to handler method nanes. The handlers
+    # Mapping of record type numbers to handler method names. The handlers
     # should read all recognized properties from the "obj" dictionary, so
     # that unhandled properties can be detected.
     handlers = dict()
