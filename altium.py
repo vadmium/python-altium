@@ -7,12 +7,7 @@ from pathlib import PureWindowsPath, Path
 import os
 from io import BytesIO
 from math import atan2, sin, cos, radians, degrees, hypot
-
-try:
-    from OleFileIO_PL import OleFileIO
-except ImportError:
-    # Pillow version tends to do illegal seeks with Altium files
-    from PIL.OleFileIO import OleFileIO
+from olefile import OleFileIO
 
 class Object:
     '''Base class for Altium schematic objects'''
@@ -652,7 +647,7 @@ class render:
         PowerObjectStyle.GND: (gnd, 20),
     }
     
-    # Mapping of record type numbers to handler method nanes. The handlers
+    # Mapping of record type numbers to handler method names. The handlers
     # should read all recognized properties from the "obj" dictionary, so
     # that unhandled properties can be detected.
     handlers = dict()
