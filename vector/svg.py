@@ -2,7 +2,11 @@ from xml.sax.saxutils import XMLGenerator
 from contextlib import contextmanager
 from . import base
 from math import sin, cos, radians
-from collections import Iterable
+try:
+    # since python 3.10
+    from collections.abc import Iterable
+except ImportError:
+    from collections import Iterable
 from urllib.parse import urlunparse, ParseResult
 import operator
 from textwrap import TextWrapper
