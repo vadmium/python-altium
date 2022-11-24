@@ -763,23 +763,22 @@ Child of RECORD=45 ([Implementation](#implementation))
 ### 215–218 ###
 Children of [Sheet](#sheet), seen in the Additional stream
 
-`|RECORD=215`: Harness breakout entry - Similar to [Sheet symbol](#sheet-symbol)
+`|RECORD=215`: Harness connector - Similar to [Sheet symbol](#sheet-symbol)
 * `|INDEXINSHEET`: [Integer]
 * `|OWNERPARTID=-1`
 * `|LOCATION.X|LOCATION.Y`: Top left corner (not bottom left like
     other objects!)
 * `|XSIZE|YSIZE`: Positive [integers](#integers) of width and height
 * `|LINEWIDTH`: Positive [integers](#integers)
+* `|PRIMARYCONNECTIONPOSITION`: Positive [integers](#integers) where the signal harness connects to the harness connector. Position is relative from top-left coordinate
 * `|COLOR|AREACOLOR|UNIQUEID`
-* `|PRIMARYCONNECTIONPOSITION`: Positive [integers](#integers) where the bus connection to the harness breakout is. Position is relative
 
-`|RECORD=216`: Harness pin entry inside a harness breakout entry - Similar to [Sheet entry](#sheet-entry)
-* `|AREACOLOR=8454143|COLOR=128`
+`|RECORD=216`: Harness pin entry inside a harness connector - Similar to [Sheet entry](#sheet-entry)
 * `|DISTANCEFROMTOP` ([integer]): Distance from top-left coordinate. If SIDE==0/1 Y-Coordinate, else X-Coordinate in x10 units. DISTANCEFROMTOP=10 ==> 100 in Altium.
 * `|DISTANCEFROMTOP_FRAC1` ([integer]): Fractional distance from top-left coordinate. If SIDE==0/1 Y-Coordinate, else X-Coordinate in x0.00001 units. DISTANCEFROMTOP_FRAC1=500000 ==> 5 in Altium.
 * `|NAME` (ASCII): Name of the harness pin entry.
-* `|OWNERPARTID=-1|INDEXINSHEET|OWNERINDEXADDITIONALLIST=T` 
-* `|TEXTCOLOR=128|TEXTFONTID=1|TEXTSTYLE=Full|INDEXINSHEET`
+* `|OWNERPARTID=-1|INDEXINSHEET|OWNERINDEXADDITIONALLIST=T|AREACOLOR|COLOR`
+* `|TEXTCOLOR=128|TEXTFONTID=1|TEXTSTYLE=Full`
 * `|SIDE` ([integer]): Optional. Indicates on which side of the sheet symbol the entry resides. 0 (or omitted): Left, 1: Right, 2: Top, 3: Bottom.
 
 `|RECORD=217`: Similar to [Sheet name and file name](
