@@ -458,7 +458,7 @@ That record is directly followed by multiple RECORD=16 entries which define the 
 * `|OWNERINDEX=1234` ([integer]): Link to parent element. Value directly references zero-oriented implicit number of record in SchDoc file. Use dump.py to see these numbers. 
 * `|TEXTCOLOR=128|TEXTFONTID=1|TEXTSTYLE=Full|INDEXINSHEET`
 * `|HARNESSTYPE` (ASCII): Name of the Harness type. Omitted if normal signal.
-* `|SIDE` ([integer]): Optional. Indicates on which side of the sheet symbol the entry resides. 0 (or ommitted): Left, 1: Right, 2: Top, 3: Bottom.
+* `|SIDE` ([integer]): Optional. Indicates on which side of the sheet symbol the entry resides. 0 (or omitted): Left, 1: Right, 2: Top, 3: Bottom.
 * `|STYLE` ([integer]): Usually 2 or 3. Corresponds to "Style" ListBox in "Sheet Entry" dialog.
 * `|IOTYPE` ([integer]): Optional. Indicates signal flow direction. 0 (or omitted): Undefined, 1: Output, 2: Input, 3: Bidirectional.
 
@@ -763,9 +763,24 @@ Child of RECORD=45 ([Implementation](#implementation))
 ### 215–218 ###
 Children of [Sheet](#sheet), seen in the Additional stream
 
-`|RECORD=215`: Similar to [Sheet symbol](#sheet-symbol)
+`|RECORD=215`: Harness breakout entry - Similar to [Sheet symbol](#sheet-symbol)
+* `|INDEXINSHEET`: [Integer]
+* `|OWNERPARTID=-1`
+* `|LOCATION.X|LOCATION.Y`: Top left corner (not bottom left like
+    other objects!)
+* `|XSIZE|YSIZE`: Positive [integers](#integers) of width and height
+* `|LINEWIDTH`: Positive [integers](#integers)
+* `|COLOR|AREACOLOR|UNIQUEID`
+* `|PRIMARYCONNECTIONPOSITION`: Positive [integers](#integers) where the bus connection to the harness breakout is. Position is relative
 
-`|RECORD=216`
+`|RECORD=216`: Harness pin entry inside a harness breakout entry - Similar to [Sheet entry](#sheet-entry)
+* `|AREACOLOR=8454143|COLOR=128`
+* `|DISTANCEFROMTOP` ([integer]): Distance from top-left coordinate. If SIDE==0/1 Y-Coordinate, else X-Coordinate in x10 units. DISTANCEFROMTOP=10 ==> 100 in Altium.
+* `|DISTANCEFROMTOP_FRAC1` ([integer]): Fractional distance from top-left coordinate. If SIDE==0/1 Y-Coordinate, else X-Coordinate in x0.00001 units. DISTANCEFROMTOP_FRAC1=500000 ==> 5 in Altium.
+* `|NAME` (ASCII): Name of the harness pin entry.
+* `|OWNERPARTID=-1|INDEXINSHEET|OWNERINDEXADDITIONALLIST=T` 
+* `|TEXTCOLOR=128|TEXTFONTID=1|TEXTSTYLE=Full|INDEXINSHEET`
+* `|SIDE` ([integer]): Optional. Indicates on which side of the sheet symbol the entry resides. 0 (or omitted): Left, 1: Right, 2: Top, 3: Bottom.
 
 `|RECORD=217`: Similar to [Sheet name and file name](
 #sheet-name-and-file-name), also with `|OWNERINDEXADDITIONALLIST=T`
